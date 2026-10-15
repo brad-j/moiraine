@@ -260,6 +260,15 @@ test("settings rename an agent, remove a host allowed for good, and let it messa
 	await expect(access.getByRole("switch", { name: "personal" })).toHaveAttribute("aria-checked", "true");
 	await access.getByRole("switch", { name: "personal" }).click();
 	await expect(access.getByRole("switch", { name: "personal" })).toHaveAttribute("aria-checked", "false");
+
+	// Sites it acts on without asking, added when an approval allows one, are removed here.
+	expect((await page.request.post("/api/agents/save", { data: { id: "gaidin", actHosts: [{ profile: "personal", hosts: ["shop.example", "mail.example"] }] } })).ok()).toBe(true);
+	await page.reload();
+	await expect(access.locator(".chip", { hasText: "shop.example" })).toContainText("in personal");
+	await access.getByRole("button", { name: "Remove shop.example in personal" }).click();
+	await expect(access).toContainText("shop.example removed: Gaidin asks before acting on it in personal.");
+	await expect(access.locator(".chip", { hasText: "shop.example" })).toHaveCount(0);
+	await expect(access.locator(".chip", { hasText: "mail.example" })).toHaveCount(1);
 });
 
 test("the agents page makes an agent, archives it and restores it", async ({ page }) => {

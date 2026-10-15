@@ -364,7 +364,10 @@ function InstructionsSection({ settings, configure, saved }: { settings: AgentSe
 	);
 }
 
-/** What the agent may reach: hosts it fetches from without asking, workspaces, browser profiles, and the agents it may message. */
+/**
+ * What the agent may reach: hosts it fetches from without asking, workspaces, browser profiles and the sites it acts on
+ * there without asking, and the agents it may message.
+ */
 function AccessSection({ agent, save, saved }: { agent: Agent; save: (section: string, text: string, change: EntryChange) => Promise<void>; saved: ReactNode }) {
 	const { agents } = useAgents();
 	const names = useQuery(queries.workspaces).data?.names;
@@ -373,6 +376,7 @@ function AccessSection({ agent, save, saved }: { agent: Agent; save: (section: s
 	const profiles = useQuery(queries.profiles).data?.names;
 	// No list: no profiles, the default agent's included.
 	const browsers = agent.profiles ?? [];
+	const acting = Object.entries(agent.actHosts ?? {}).flatMap(([profile, hosts]) => hosts.map((host) => ({ profile, host })));
 	const others = agents.filter((a) => a.id !== agent.id && (a.archived === undefined || agent.canMessage.includes(a.id)));
 	const toggle = (list: readonly string[], item: string) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 	return (
@@ -425,6 +429,27 @@ function AccessSection({ agent, save, saved }: { agent: Agent; save: (section: s
 						</ul>
 					)}
 				</Field>
+				{profiles !== undefined && profiles.length > 0 && (
+					<Field label="acts on" hint="sites it clicks and types on without asking; added when you allow one">
+						{acting.length === 0 ? (
+							<p className="field-empty">None yet.</p>
+						) : (
+							<ul className="chips">
+								{acting.map(({ profile, host }) => (
+									<li key={`${profile}/${host}`} className="chip">
+										<code>{host}</code> in {profile}
+										<Action
+											label={`Remove ${host} in ${profile}`}
+											run={() => save("access", `${host} removed: ${agent.name} asks before acting on it in ${profile}.`, { actHosts: [{ profile, hosts: (agent.actHosts?.[profile] ?? []).filter((h) => h !== host) }] })}
+										>
+											remove
+										</Action>
+									</li>
+								))}
+							</ul>
+						)}
+					</Field>
+				)}
 				<Field label="may message" hint="agents it may ask and hand work to">
 					{others.length === 0 ? (
 						<p className="field-empty">No other agents.</p>
