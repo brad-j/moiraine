@@ -132,6 +132,12 @@ main.page a { color: var(--color-accent); }
 
 .row.you .b { padding: var(--space-xs) var(--space-sm); background: var(--color-paper-3); border-radius: var(--radius-md); white-space: pre-wrap; }
 .row.you .t { align-self: start; padding-top: var(--space-xs); }
+.row .said { display: block; }
+.row .images { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.row .said + .images, .row .said + .files-note, .row .images + .files-note { margin-top: var(--space-xs); }
+.row .images img { display: block; max-width: min(100%, 320px); max-height: 240px; border-radius: var(--radius-sm); border: var(--rule-hair) solid var(--color-rule-2); }
+.row .files-note { margin: 0; padding: 0; list-style: none; color: var(--color-ink-3); font-size: var(--text-sm); white-space: normal; }
+.row .files-note li::before { content: "↳ "; }
 /* A job's prompt or another agent's message: labeled above, so it isn't read as yours. */
 .row.prompt { grid-template-areas: "k t" "b b"; row-gap: var(--space-2xs); }
 .row.prompt .k { position: static; width: auto; height: auto; clip-path: none; grid-area: k; color: var(--color-ok); font-size: var(--text-xs); font-weight: 500; }
@@ -503,6 +509,25 @@ section > button { margin-top: var(--space-sm); }
 	color: var(--color-ink); font-size: var(--text-md); line-height: 1.55; caret-color: var(--color-accent);
 }
 #message::placeholder { color: var(--color-ink-3); }
+#prompt.dropping { border-color: var(--color-accent); border-style: dashed; box-shadow: 0 0 0 3px var(--color-accent-wash), 0 8px 24px var(--color-shadow); }
+
+/* Files going with the message, above its text. */
+.attachments { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin: 0; padding: var(--space-sm) var(--space-sm) 0; list-style: none; }
+.attachment {
+	display: flex; align-items: center; gap: var(--space-xs); max-width: 260px; padding: var(--space-2xs); padding-left: var(--space-2xs);
+	background: var(--color-paper-3); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md);
+}
+.attachment img, .attachment .kind { flex: none; width: 36px; height: 36px; border-radius: var(--radius-sm); }
+.attachment img { object-fit: cover; }
+.attachment .kind { display: grid; place-items: center; background: var(--color-paper-4); color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.attachment .about { display: flex; flex-direction: column; min-width: 0; }
+.attachment .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); }
+.attachment .state { color: var(--color-ink-3); font-size: var(--text-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attachment.sending .state { color: var(--color-accent); }
+.attachment.failed { border-color: var(--color-bad); }
+.attachment.failed .state { color: var(--color-bad); }
+.attachment button { flex: none; min-height: 26px; padding: 0 var(--space-xs); font-size: var(--text-md); }
+#bar .attach { flex: none; min-height: 28px; padding: 0 var(--space-xs); }
 #bar { display: flex; align-items: center; gap: var(--space-xs); padding: var(--space-2xs) var(--space-xs) var(--space-xs) var(--space-sm); }
 #send { flex: none; }
 
@@ -563,7 +588,9 @@ section > button { margin-top: var(--space-sm); }
 
 /* A phone: the composer is one line that grows, with Send beside it and the status below. */
 @media (max-width: 600px) {
-	#prompt { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "message send" "status status"; }
+	#prompt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "files files files" "attach message send" "status status status"; }
+	.attachments { grid-area: files; }
+	#bar .attach { grid-area: attach; align-self: end; margin: var(--space-xs) 0 var(--space-xs) var(--space-2xs); min-height: 32px; }
 	#bar { display: contents; }
 	#message { grid-area: message; align-self: center; min-height: calc(1.45em + 2 * var(--space-sm)); padding: var(--space-sm); line-height: 1.45; }
 	#message::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

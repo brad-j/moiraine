@@ -33,9 +33,10 @@ The build is `dist/client`, built for `/app/`: hashed assets and `_shell.html`, 
 - `src/sidebar.tsx`: the agent switcher, the home conversation, New thread, and the agent's threads, job runs and conversations from other agents, virtualized and loaded as it scrolls. On a phone it's a drawer.
 - `src/frame.tsx`: the sidebar beside the column, for an agent's routes and, with the agent shown last, for the pages across agents.
 - `src/pages/`: the pages beside the conversations, built from `page.tsx` (the frame with the dock, section heads, actions that show what went wrong, and a second press to confirm). Each agent's `schedule.tsx`, `memory.tsx`, `skills.tsx` and `settings.tsx`, and across agents `agents.tsx` and `activity.tsx`. The roster forms use TanStack Form.
+- `src/attachments.ts`: files going with a message, sent to gaidin as they're added (an image over 3.75 MB made smaller first), shown as chips in the composer.
 - `src/push.ts`: notifications for this device, through gaidin's service worker at `/sw.js` until the switch moves it here.
 - `src/routes/`, under `/app/`: `/<agent>` (home; `?draft=` starts the prompt with a request), `/<agent>/t/<id>` (a thread), `/<agent>/new` (a thread about to start), `/<agent>/schedule`, `/<agent>/memory`, `/<agent>/skills[/<name>[/<file>]]` (`?create` for a file being added), `/<agent>/settings`, `/agents` and `/activity`. The web view's `#/<page>` and `#/history/<id>` addresses open the matching page or thread. An agent can't have the id `agents` or `activity`.
 
 ## Status
 
-Steps 2 and 3 of the plan are done: the conversations and every page. Pages ask for the approvals every 5 seconds, since no conversation's event stream is open on them. Next are attachments (step 4); there's no deploy script yet.
+Steps 2 to 4 of the plan are done: the conversations, every page, and attachments. Pages ask for the approvals every 5 seconds, since no conversation's event stream is open on them. Next is Slack mirroring (step 5); there's no deploy script yet.

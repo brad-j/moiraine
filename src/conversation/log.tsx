@@ -2,7 +2,7 @@
 // thinking folded to a line. Two or more such steps in a row fold together into one line, open while one is running.
 import { createContext, type ReactNode, useContext, useState } from "react";
 import type { Block, Entry, ToolResult } from "../api.ts";
-import { argsSummary, isFields, isNumber, isText, shortStamp, splitStamp, textOf } from "../format.ts";
+import { argsSummary, isFields, isNumber, isText, ownerMessage, shortStamp, splitStamp, textOf } from "../format.ts";
 import { Markdown } from "../markdown.tsx";
 import type { Transcript } from "../transcript.ts";
 
@@ -92,6 +92,29 @@ export function Row({ kind, label, body, start, time, title }: Omit<Line, "key">
 			<span className="k">{label}</span>
 			<div className={`b${kind === "gaidin" ? " prose" : ""}`}>{body}</div>
 		</div>
+	);
+}
+
+/** A message to the agent: its text, the images that went with it, and where its other files were saved. */
+function Said({ text, images, files }: ReturnType<typeof ownerMessage>) {
+	return (
+		<>
+			{text !== "" && <span className="said">{text}</span>}
+			{images.length > 0 && (
+				<span className="images">
+					{images.map((image, n) => (
+						<img key={n} src={`data:${image.mimeType};base64,${image.data}`} alt={`Image ${n + 1} sent with the message`} />
+					))}
+				</span>
+			)}
+			{files.length > 0 && (
+				<ul className="files-note">
+					{files.map((file) => (
+						<li key={file}>{file}</li>
+					))}
+				</ul>
+			)}
+		</>
 	);
 }
 
@@ -213,13 +236,14 @@ function entryLines(transcript: Transcript, entry: Entry, results: Map<string, T
 	}
 	for (const [n, message] of (entry.model ?? []).entries()) {
 		if (message.role === "user") {
-			const split = splitStamp(textOf(message.content));
 			if (entry.kind === "pi.user") {
+				const said = ownerMessage(message.content);
 				starts = true;
-				time = split.time;
+				time = said.time;
 				const prompts = options.prompts;
-				out.push(prompts === undefined ? { key: `${key}:${n}`, kind: "you", label: "you", body: split.text } : { key: `${key}:${n}`, kind: "prompt", label: PROMPTS[prompts], body: split.text });
-			} else out.push({ key: `${key}:${n}`, kind: "sys", label: "note", body: `${entry.kind}: ${split.text}` });
+				const body = <Said text={said.text} images={said.images} files={said.files} />;
+				out.push(prompts === undefined ? { key: `${key}:${n}`, kind: "you", label: "you", body } : { key: `${key}:${n}`, kind: "prompt", label: PROMPTS[prompts], body });
+			} else out.push({ key: `${key}:${n}`, kind: "sys", label: "note", body: `${entry.kind}: ${splitStamp(textOf(message.content)).text}` });
 		} else if (message.role === "assistant") {
 			out.push(...blockLines(transcript, message.content, key, results));
 			if (message.stopReason === "error") out.push({ key: `${key}:error`, kind: "err", label: "error", body: message.errorMessage ?? "The model returned an error." });

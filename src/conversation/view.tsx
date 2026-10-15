@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type Agent, type Entry, post, problem, requestId, type Summary } from "../api.ts";
-import { fromNow, money, splitStamp, textOf, when } from "../format.ts";
+import { fromNow, money, ownerMessage, when } from "../format.ts";
 import { queries } from "../queries.ts";
 import type { Transcript } from "../transcript.ts";
 import { alt, Dock, useApprovals } from "./dock.tsx";
@@ -41,9 +41,9 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 	const prompt = useRef<PromptHandle>(null);
 	const home = id === undefined;
 
-	async function send(content: string) {
+	async function send(content: string, files: string[]) {
 		try {
-			const sent = await post("/api/message", { content, requestId: requestId(), agent: agent.id, conversation: id });
+			const sent = await post("/api/message", { content, requestId: requestId(), agent: agent.id, conversation: id, files: files.length === 0 ? undefined : files });
 			// gaidin takes a message as the answer when the agent is waiting on a question.
 			if (sent.answered) say("sys", `Taken as the answer to ${agent.name}'s question; the run goes on.`);
 			// A job run or another agent's conversation is forked, and the message went to the fork.
@@ -121,9 +121,9 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 						placeholder={`Message ${agent.name}, or type / for commands`}
 						commands={commands}
 						history={() => ownerMessages(transcript, mine)}
-						send={(content) => {
+						send={(content, files) => {
 							stick();
-							return send(content);
+							return send(content, files);
 						}}
 						command={(line) => runCommand(commands, line, say)}
 						running={transcript.running}
@@ -163,10 +163,10 @@ export function NewThread({ agent, menu }: Omit<Shown, "thread" | "draft">) {
 						placeholder={`Start a thread with ${agent.name}`}
 						commands={[]}
 						history={() => []}
-						send={async (content) => {
+						send={async (content, files) => {
 							setProblem(undefined);
 							try {
-								const { conversation } = await post("/api/threads/start", { content, requestId: requestId(), agent: agent.id });
+								const { conversation } = await post("/api/threads/start", { content, requestId: requestId(), agent: agent.id, files: files.length === 0 ? undefined : files });
 								void queryClient.invalidateQueries({ queryKey: ["conversations", agent.id] });
 								void navigate({ to: "/$agent/t/$id", params: { agent: agent.id, id: String(conversation) }, replace: true });
 							} catch (error) {
@@ -226,7 +226,8 @@ function ownerMessages(transcript: Transcript, include: (entry: Entry) => boolea
 	return [...transcript.entries.values()]
 		.filter((e) => e.kind === "pi.user" && include(e))
 		.sort((a, b) => a.id - b.id)
-		.flatMap((e) => (e.model ?? []).flatMap((m) => (m.role === "user" ? [splitStamp(textOf(m.content)).text] : [])));
+		.flatMap((e) => (e.model ?? []).flatMap((m) => (m.role === "user" ? [ownerMessage(m.content).text] : [])))
+		.filter((text) => text !== "");
 }
 
 /**

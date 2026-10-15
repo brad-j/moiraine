@@ -1,7 +1,8 @@
 // The prompt, as in gaidin's console: a text box that grows, with the status line under it. Enter sends, a leading /
 // runs a command (Tab completes, and a menu offers them), ↑ and ↓ go through earlier messages, and Esc or Ctrl+C
-// stops a run.
+// stops a run. Files go with a message: attached, dropped on it or pasted, shown as chips above the text.
 import { type ReactNode, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { type Attachment, useAttachments } from "../attachments.ts";
 
 export type Choice = { value: string; hint?: string };
 export type Command = { name: string; args?: string; help: string; run: (arg: string) => void | Promise<void>; complete?: () => Choice[] };
@@ -35,8 +36,8 @@ export function Prompt({ ref, ...props }: {
 	commands: readonly Command[];
 	/** Earlier messages in the conversation, oldest first, for ↑. */
 	history: () => string[];
-	/** Sends a message; throws to put it back in the box. */
-	send: (content: string) => Promise<void>;
+	/** Sends a message with the files gaidin has, by id; throws to put it back in the box. */
+	send: (content: string, files: string[]) => Promise<void>;
 	/** Echoes and runs a command line. */
 	command: (line: string) => Promise<void>;
 	running: boolean;
@@ -46,6 +47,11 @@ export function Prompt({ ref, ...props }: {
 }) {
 	const { commands, running, stop } = props;
 	const input = useRef<HTMLTextAreaElement>(null);
+	const picker = useRef<HTMLInputElement>(null);
+	const attachments = useAttachments();
+	const [dropping, setDropping] = useState(false);
+	// A message waits for its files to be sent, and doesn't go while one couldn't be.
+	const held = attachments.sending || attachments.items.some((a) => a.state === "failed");
 	const [text, setText] = useState("");
 	const [menuIndex, setMenuIndex] = useState(0);
 	const [dismissed, setDismissed] = useState<string>();
@@ -78,19 +84,23 @@ export function Prompt({ ref, ...props }: {
 
 	async function submit(value = text) {
 		const content = value.trim();
-		if (content === "") return;
+		const command = content.startsWith("/") && !content.startsWith("//");
+		if (content === "" && attachments.items.length === 0) return;
+		if (!command && held) return;
 		recalling.current = undefined;
 		setDismissed(undefined);
 		setText("");
 		setMenuIndex(0);
-		if (content.startsWith("/") && !content.startsWith("//")) {
+		if (command) {
 			typed.current.push(content);
 			return props.command(content);
 		}
+		const files = attachments.ids;
 		try {
-			await props.send(content.startsWith("//") ? content.slice(1) : content);
+			await props.send(content.startsWith("//") ? content.slice(1) : content, files);
+			attachments.clear();
 		} catch {
-			// Put the message back so it isn't lost; the conversation says what went wrong.
+			// Put the message back so it isn't lost; the conversation says what went wrong. The files stay too.
 			setText((now) => (now === "" ? value : now));
 		}
 	}
@@ -207,11 +217,28 @@ export function Prompt({ ref, ...props }: {
 			)}
 			<form
 				id="prompt"
+				className={dropping ? "dropping" : undefined}
 				onSubmit={(event) => {
 					event.preventDefault();
 					void submit();
 				}}
+				onDragOver={(event) => {
+					if (!event.dataTransfer.types.includes("Files")) return;
+					event.preventDefault();
+					setDropping(true);
+				}}
+				onDragLeave={(event) => {
+					if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDropping(false);
+				}}
+				onDrop={(event) => {
+					if (event.dataTransfer.files.length === 0) return;
+					event.preventDefault();
+					setDropping(false);
+					attachments.add(event.dataTransfer.files);
+					input.current?.focus();
+				}}
 			>
+				{attachments.items.length > 0 && <Chips items={attachments.items} remove={attachments.remove} />}
 				<textarea
 					id="message"
 					ref={input}
@@ -230,14 +257,62 @@ export function Prompt({ ref, ...props }: {
 						setText(event.target.value);
 					}}
 					onKeyDown={keydown}
+					onPaste={(event) => {
+						// A pasted picture or file goes with the message; pasted text stays text.
+						if (event.clipboardData.files.length === 0) return;
+						event.preventDefault();
+						attachments.add(event.clipboardData.files);
+					}}
 				/>
 				<div id="bar">
+					<input
+						ref={picker}
+						type="file"
+						multiple
+						hidden
+						onChange={(event) => {
+							if (event.target.files !== null) attachments.add(event.target.files);
+							event.target.value = "";
+						}}
+					/>
+					<button className="plain attach" type="button" aria-label="Attach files" title="Attach files (or drop or paste them here)" onClick={() => picker.current?.click()}>
+						<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+							<path d="M10.5 4.5 5.8 9.2a1.4 1.4 0 0 0 2 2l5-5a2.8 2.8 0 0 0-4-4l-5.2 5.2a4.2 4.2 0 0 0 6 6L14 9" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+						</svg>
+					</button>
 					<div id="statusline">{props.children}</div>
-					<button id="send" className="primary" type="submit">
+					<button id="send" className="primary" type="submit" disabled={held} title={held ? (attachments.sending ? "Sending the files…" : "Remove the files that couldn't be sent") : undefined}>
 						Send <kbd>↵</kbd>
 					</button>
 				</div>
 			</form>
 		</>
+	);
+}
+
+const sizeFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+
+/** A file's size in words: "340 KB", "2.4 MB". */
+function size(bytes: number): string {
+	return bytes < 1_000_000 ? `${Math.max(1, Math.round(bytes / 1000))} KB` : `${sizeFormat.format(bytes / 1_000_000)} MB`;
+}
+
+/** The files going with the message, each with what's happening to it and a way to take it off. */
+function Chips({ items, remove }: { items: readonly Attachment[]; remove: (key: number) => void }) {
+	return (
+		<ul className="attachments" aria-label="Files">
+			{items.map((item) => (
+				<li key={item.key} className={`attachment ${item.state}`} title={item.problem}>
+					{item.preview !== undefined ? <img src={item.preview} alt="" /> : <span className="kind" aria-hidden="true">{/\.(\w{1,4})$/.exec(item.name)?.[1]?.toUpperCase() ?? "FILE"}</span>}
+					<span className="about">
+						<span className="name">{item.name}</span>
+						<span className="state">{item.state === "sending" ? "sending…" : item.state === "failed" ? (item.problem ?? "couldn't be sent") : size(item.size)}</span>
+					</span>
+					<button className="plain" type="button" aria-label={`Remove ${item.name}`} onClick={() => remove(item.key)}>
+						×
+					</button>
+				</li>
+			))}
+		</ul>
 	);
 }
