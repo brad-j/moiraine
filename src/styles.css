@@ -1,0 +1,59 @@
+/* gaidin's web view tokens: cool-neutral dark at hue 250, a steel-blue accent, a humanist sans for prose and
+ * system mono for the console. */
+:root {
+	color-scheme: dark;
+
+	--color-paper: oklch(15.5% 0.008 250);
+	--color-paper-2: oklch(18.5% 0.009 250);
+	--color-paper-3: oklch(22.5% 0.011 250);
+	--color-rule: oklch(25.5% 0.011 250);
+	--color-rule-2: oklch(33% 0.013 250);
+	--color-ink: oklch(92% 0.006 250);
+	--color-ink-2: oklch(75% 0.012 250);
+	--color-ink-3: oklch(57% 0.012 250);
+	--color-accent: oklch(76% 0.075 240);
+	--color-accent-ink: oklch(18% 0.02 240);
+	--color-voice: oklch(78% 0.07 175);
+	--color-warn: oklch(82% 0.11 85);
+	--color-warn-wash: oklch(82% 0.11 85 / 0.07);
+	--color-bad: oklch(71% 0.13 22);
+	--color-bad-wash: oklch(71% 0.13 22 / 0.1);
+	--color-focus: oklch(80% 0.09 240);
+	--color-focus-quiet: oklch(46% 0.02 245);
+
+	--font-body: Seravek, "Gill Sans Nova", Ubuntu, "Noto Sans", "Open Sans", Calibri, "DejaVu Sans", sans-serif;
+	--font-mono: "SF Mono", ui-monospace, "JetBrains Mono", "Cascadia Mono", "Noto Sans Mono", "DejaVu Sans Mono", monospace;
+
+	--text-2xs: 0.75rem;
+	--text-xs: 0.8125rem;
+	--text-sm: 0.9375rem;
+	--text-md: 1.0625rem;
+
+	--space-3xs: 2px;
+	--space-2xs: 4px;
+	--space-xs: 8px;
+	--space-sm: 12px;
+	--space-md: 16px;
+	--space-lg: 24px;
+
+	--radius-sm: 4px;
+	--radius-md: 6px;
+
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--dur-short: 120ms;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+	background: var(--color-paper);
+	color: var(--color-ink);
+	font-family: var(--font-body);
+	font-size: var(--text-sm);
+	-webkit-font-smoothing: antialiased;
+}
+code { font-family: var(--font-mono); font-size: 0.9em; }
+
+.placeholder { max-width: 720px; margin: 0 auto; padding: var(--space-lg) var(--space-md); }
+.placeholder h1 { margin: 0 0 var(--space-sm); font-size: var(--text-md); font-weight: 600; }
+.problem { color: var(--color-bad); }
