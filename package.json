@@ -12,7 +12,8 @@
     "check": "vite build && tsc && pnpm lint && pnpm test",
     "lint": "oxlint --deny-warnings src scripts test e2e vite.config.ts playwright.config.ts",
     "test": "node --no-warnings --test test/*.test.ts",
-    "e2e": "vite build && playwright test"
+    "e2e": "vite build && playwright test",
+    "ship": "node --no-warnings scripts/ship.ts"
   },
   "dependencies": {
     "@fontsource-variable/fira-code": "^5.3.0",

@@ -13,6 +13,7 @@ pnpm install
 pnpm dev:faux    # the app against gaidin's e2e server: a scripted model, no keys, a throwaway data directory
 pnpm dev         # the app against a gaidin already running at GAIDIN_URL (default http://127.0.0.1:8410)
 pnpm check       # build, type check, lint, and the transcript test against gaidin's e2e server
+pnpm ship        # build and copy to gaidin's VM (GAIDIN_HOST, default ubuntu@gaidin); --dry-run only checks
 pnpm e2e         # build, then the Playwright tests, each against its own gaidin e2e server serving the build at /app/
 ```
 
@@ -39,4 +40,8 @@ The build is `dist/client`, built for `/app/`: hashed assets and `_shell.html`, 
 
 ## Status
 
-Steps 2 to 4 of the plan are done: the conversations, every page, and attachments. Pages ask for the approvals every 5 seconds, since no conversation's event stream is open on them. Next is Slack mirroring (step 5); there's no deploy script yet.
+Steps 2 to 5 of the plan are done: the conversations, every page, and attachments. Pages ask for the approvals every 5 seconds, since no conversation's event stream is open on them. Slack mirroring (step 5) is in gaidin. Next is the switch (step 6).
+
+## Deploying
+
+`pnpm ship` asks the VM's gaidin which protocol it speaks and stops unless it's this build's (deploy gaidin first: push, then `setup.sh` on the VM), builds, and copies `dist/client` to `/var/lib/gaidin/moiraine` over Tailscale SSH: built files first, keeping older ones for two weeks, then the shell. gaidin needs `"app": "/var/lib/gaidin/moiraine"` in the `web` section of `/etc/gaidin/config.json` and a restart once; the script says so when it's missing, and doesn't edit the settings itself.
