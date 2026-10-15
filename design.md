@@ -46,6 +46,9 @@ terminal-styled. Brad is the only user, on a computer and a phone.
   was last active, then its newest message on one line, or a pulsing dot and "working…", with an amber count of what
   waits on the owner. The agent shown has the current background and opens to its newest five threads, indented on a
   hairline, then "show all". The pages are at the foot. No decorative imagery.
+- An agent's picture may carry a color of its own where it means something, brown included (Verin's Brown Ajah). Never
+  the Claude look: no terracotta, coral or clay accent, and no cream, beige or warm-paper ground. The app's own palette
+  stays the neutral greys and ice blue.
 - Each of the agent's answers opens with its avatar and name, once per answer.
 
 ## Spacing
