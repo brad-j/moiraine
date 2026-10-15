@@ -5,7 +5,7 @@ import { startGaidin, USER } from "../scripts/gaidin.ts";
 export { expect } from "@playwright/test";
 
 /**
- * Each test gets its own gaidin and data directory, serving this build at /app/, and a browser signed in as the owner
+ * Each test gets its own gaidin and data directory, serving this build, and a browser signed in as the owner
  * the way tailscale serve does it. A test fails if the page breaks its Content-Security-Policy or throws, which is
  * how a shell that doesn't match the app's first render shows up.
  */

@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 // Browser tests of the app (`pnpm e2e`, which builds first). Each test starts gaidin's e2e server on the scripted
-// model, serving this build at /app/ (e2e/fixtures.ts).
+// model, serving this build (e2e/fixtures.ts).
 export default defineConfig({
 	testDir: "e2e",
 	fullyParallel: true,

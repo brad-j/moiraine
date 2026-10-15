@@ -1,5 +1,5 @@
-// Web Push for this device: gaidin's service worker (/sw.js) holds the subscription and shows the notifications. From
-// gaidin's web/settings.ts. The worker stays gaidin's until the switch moves it here, at the same path and scope.
+// Web Push for this device: the service worker (public/sw.js, served as /sw.js) holds the subscription and shows the
+// notifications. From gaidin's web view's settings page.
 import { post } from "./api.ts";
 
 /** What kind of device this is, to tell the signed-up ones apart. */

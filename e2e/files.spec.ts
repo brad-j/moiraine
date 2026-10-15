@@ -29,7 +29,7 @@ async function attach(page: Page, ...given: { name: string; mimeType: string; bu
 }
 
 test("an image goes to the model with the message, and shows in the log", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await attach(page, { name: "dog.png", mimeType: "image/png", buffer: PIXEL });
 	const chip = files(page).locator(".attachment");
 	await expect(chip).toHaveClass(/ready/);
@@ -44,7 +44,7 @@ test("an image goes to the model with the message, and shows in the log", async 
 });
 
 test("another file is saved in the agent's sandbox, sent without text; one taken off doesn't go", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await attach(page, { name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("the NAS is in the hall closet") }, { name: "other.txt", mimeType: "text/plain", buffer: Buffer.from("not this") });
 	await expect(files(page).locator(".attachment.ready")).toHaveCount(2);
 	await files(page).getByRole("button", { name: "Remove other.txt" }).click();
@@ -57,7 +57,7 @@ test("another file is saved in the agent's sandbox, sent without text; one taken
 test("an image over what the model takes is made smaller first, and still goes as an image", async ({ page }) => {
 	const big = noisePng(1500, 1500);
 	expect(big.length).toBeGreaterThan(3_750_000);
-	await page.goto("/app/");
+	await page.goto("/");
 	await attach(page, { name: "photo.png", mimeType: "image/png", buffer: big });
 	const chip = files(page).locator(".attachment");
 	await expect(chip).toHaveClass(/ready/, { timeout: 15_000 });
@@ -70,7 +70,7 @@ test("an image over what the model takes is made smaller first, and still goes a
 });
 
 test("files dropped on the composer or pasted into it go with the message", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await page.locator("#message").waitFor();
 	await page.evaluate((pixel) => {
 		const bytes = Uint8Array.from(atob(pixel), (c) => c.charCodeAt(0));
@@ -88,7 +88,7 @@ test("files dropped on the composer or pasted into it go with the message", asyn
 });
 
 test("a file over 20 MB isn't sent, and holds the message until it's taken off", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await attach(page, { name: "backup.tar", mimeType: "application/x-tar", buffer: Buffer.alloc(20_000_001) });
 	const chip = files(page).locator(".attachment");
 	await expect(chip).toHaveClass(/failed/);
@@ -99,12 +99,12 @@ test("a file over 20 MB isn't sent, and holds the message until it's taken off",
 });
 
 test("a new thread starts with a file", async ({ page }) => {
-	await page.goto("/app/gaidin/new");
+	await page.goto("/gaidin/new");
 	await expect(page.locator(".convo-head h1")).toHaveText("New thread");
 	await attach(page, { name: "dog.png", mimeType: "image/png", buffer: PIXEL });
 	await expect(files(page).locator(".attachment.ready")).toHaveCount(1);
 	await page.locator("#message").fill("about the dog");
 	await page.locator("#message").press("Enter");
-	await expect(page).toHaveURL(/\/app\/gaidin\/t\/\d+$/);
+	await expect(page).toHaveURL(/\/gaidin\/t\/\d+$/);
 	await expect(page.locator("#log")).toContainText("I can see 1 image.");
 });

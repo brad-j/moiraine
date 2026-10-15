@@ -5,7 +5,7 @@ import type { FILE_HEADER as ServerFileHeader, Gets, Posts, PROTOCOL as ServerPr
 export type { Gets, Posts, StreamEvent, Uploaded };
 
 /** The protocol version this build is typed against; tsc fails here when gaidin raises it. */
-export const PROTOCOL: typeof ServerProtocol = 3;
+export const PROTOCOL: typeof ServerProtocol = 4;
 /** The header that names a file sent to /api/files, as gaidin reads it. */
 const FILE_HEADER: typeof ServerFileHeader = "X-Gaidin-File";
 

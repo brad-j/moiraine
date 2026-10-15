@@ -9,7 +9,7 @@ async function send(page: Page, text: string) {
 const pages = (page: Page) => page.getByRole("group", { name: "Pages" });
 
 test("the schedule lists reminders and jobs, and pauses, opens and cancels them", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await send(page, "remind me about the dentist");
 	await expect(page.locator("#log")).toContainText("Reminder");
 	await send(page, "set up a briefing");
@@ -18,7 +18,7 @@ test("the schedule lists reminders and jobs, and pauses, opens and cancels them"
 	await expect(pages(page).getByRole("link", { name: /Schedule/ })).toContainText("2");
 
 	await pages(page).getByRole("link", { name: /Schedule/ }).click();
-	await expect(page).toHaveURL(/\/app\/gaidin\/schedule$/);
+	await expect(page).toHaveURL(/\/gaidin\/schedule$/);
 	await expect(page.locator(".convo-head h1")).toHaveText("Schedule");
 	const reminder = page.locator(".sched-row", { hasText: "Call the dentist" });
 	await expect(reminder).toContainText(/in (1 h 59 min|2 h)/);
@@ -45,10 +45,10 @@ test("the schedule lists reminders and jobs, and pauses, opens and cancels them"
 
 test("+ new reminder starts the request in the home conversation's prompt, on a phone too", async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
-	await page.goto("/app/gaidin/schedule");
+	await page.goto("/gaidin/schedule");
 	await expect(page.locator("#message")).toHaveCount(0);
 	await page.getByRole("button", { name: "+ new reminder" }).click();
-	await expect(page).toHaveURL(/\/app\/gaidin$/);
+	await expect(page).toHaveURL(/\/gaidin$/);
 	await expect(page.locator("#message")).toHaveValue("Remind me to ");
 	await expect(page.locator("#message")).toBeFocused();
 	// The draft left the address, so a reload starts empty.
@@ -57,11 +57,11 @@ test("+ new reminder starts the request in the home conversation's prompt, on a 
 });
 
 test("memory adds, edits and forgets shared notes, keeps work notes apart, and /remember adds one from a conversation", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await send(page, "/remember the dog is called Bela");
 	await expect(page.locator("#log")).toContainText("Noted [1]: the dog is called Bela");
 	await send(page, "/memory");
-	await expect(page).toHaveURL(/\/app\/gaidin\/memory$/);
+	await expect(page).toHaveURL(/\/gaidin\/memory$/);
 	const shared = page.locator("section", { has: page.getByRole("heading", { name: "Shared notes" }) });
 	const work = page.locator("section", { has: page.getByRole("heading", { name: "gaidin's work notes" }) });
 	await expect(shared.locator(".note-row")).toHaveCount(1);
@@ -93,13 +93,13 @@ test("memory adds, edits and forgets shared notes, keeps work notes apart, and /
 	await expect(shared).not.toContainText("Backups");
 
 	expect((await page.request.post("/api/agents/save", { data: { id: "scout", name: "Scout", job: "Looks things up." } })).ok()).toBe(true);
-	await page.goto("/app/scout/memory");
+	await page.goto("/scout/memory");
 	await expect(page.locator("section", { has: page.getByRole("heading", { name: "Scout's work notes" }) })).toContainText("No work notes yet.");
 	await expect(page.locator("section", { has: page.getByRole("heading", { name: "Shared notes" }) })).toContainText("hoover");
 });
 
 test("Esc in a text box on a page leaves the run going; in the conversation it stops it", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await send(page, "ask me something");
 	await expect(page.locator("#approvals")).toContainText("Keep the old branch?");
 	await pages(page).getByRole("link", { name: "Memory" }).click();
@@ -116,34 +116,34 @@ test("Esc in a text box on a page leaves the run going; in the conversation it s
 });
 
 test("the web view's addresses open the default agent's page, and /next opens the schedule", async ({ page }) => {
-	await page.goto("/app/#/schedule");
-	await expect(page).toHaveURL(/\/app\/gaidin\/schedule$/);
-	await page.goto("/app/#/memory");
-	await expect(page).toHaveURL(/\/app\/gaidin\/memory$/);
-	await page.goto("/app/#/");
-	await expect(page).toHaveURL(/\/app\/gaidin$/);
+	await page.goto("/#/schedule");
+	await expect(page).toHaveURL(/\/gaidin\/schedule$/);
+	await page.goto("/#/memory");
+	await expect(page).toHaveURL(/\/gaidin\/memory$/);
+	await page.goto("/#/");
+	await expect(page).toHaveURL(/\/gaidin$/);
 	await send(page, "/next");
-	await expect(page).toHaveURL(/\/app\/gaidin\/schedule$/);
+	await expect(page).toHaveURL(/\/gaidin\/schedule$/);
 });
 
 test("skills lists the gaidin skill and reads its files, following links between them", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await pages(page).getByRole("link", { name: "Skills" }).click();
-	await expect(page).toHaveURL(/\/app\/gaidin\/skills$/);
+	await expect(page).toHaveURL(/\/gaidin\/skills$/);
 	await expect(page.locator(".skill-row")).toHaveCount(1);
 	await page.locator(".skill-row", { hasText: "gaidin" }).click();
-	await expect(page).toHaveURL(/\/app\/gaidin\/skills\/gaidin$/);
+	await expect(page).toHaveURL(/\/gaidin\/skills\/gaidin$/);
 	const doc = page.locator(".skill-doc");
 	await expect(doc).toContainText("This is gaidin's documentation");
 	// The front matter is shown as the description above, not in the document.
 	await expect(doc).not.toContainText("description:");
 
 	await page.getByRole("navigation", { name: "Files" }).getByRole("link", { name: "tools.md" }).click();
-	await expect(page).toHaveURL(/\/app\/gaidin\/skills\/gaidin\/tools\.md$/);
+	await expect(page).toHaveURL(/\/gaidin\/skills\/gaidin\/tools\.md$/);
 	await expect(doc.locator("h2")).toHaveText("Tools");
 	// A link to another doc opens it here, at the heading it names.
 	await doc.getByRole("link", { name: "Security" }).first().click();
-	await expect(page).toHaveURL(/\/app\/gaidin\/skills\/gaidin\/security\.md#[a-z-]+$/);
+	await expect(page).toHaveURL(/\/gaidin\/skills\/gaidin\/security\.md#[a-z-]+$/);
 	await expect(doc.locator("h2")).toHaveText("Security");
 
 	await page.reload();
@@ -153,7 +153,7 @@ test("skills lists the gaidin skill and reads its files, following links between
 });
 
 test("the owner creates a skill, adds a file and edits it, and removes the skill", async ({ page }) => {
-	await page.goto("/app/gaidin/skills");
+	await page.goto("/gaidin/skills");
 	await expect(page.locator(".skill-row", { hasText: "gaidin" })).toBeVisible();
 	await page.getByRole("button", { name: "+ new skill" }).click();
 	await page.locator(".skill-form input").fill("homelab-alerts");
@@ -195,7 +195,7 @@ test("the owner creates a skill, adds a file and edits it, and removes the skill
 });
 
 test("settings switch the thinking and a tool, keep the instructions, and say what notifications need", async ({ page }) => {
-	await page.goto("/app/gaidin/settings");
+	await page.goto("/gaidin/settings");
 	const thinking = page.getByRole("group", { name: "Thinking" });
 	await thinking.getByRole("button", { name: "high" }).click();
 	await expect(thinking.getByRole("button", { name: "high" })).toHaveAttribute("aria-pressed", "true");
@@ -222,13 +222,13 @@ test("settings switch the thinking and a tool, keep the instructions, and say wh
 
 test("settings rename an agent, remove a host allowed for good, and let it message another agent", async ({ page }) => {
 	expect((await page.request.post("/api/agents/save", { data: { id: "scout", name: "Scout", job: "" } })).ok()).toBe(true);
-	await page.goto("/app/");
+	await page.goto("/");
 	await send(page, "fetch the page");
 	await page.locator("#approvals").getByRole("button", { name: /^Always/ }).click();
 	await expect(page.locator("#log")).toContainText("The page says: page text.");
 
 	await send(page, "/settings");
-	await expect(page).toHaveURL(/\/app\/gaidin\/settings$/);
+	await expect(page).toHaveURL(/\/gaidin\/settings$/);
 	const access = page.locator("section", { has: page.getByRole("heading", { name: "Access" }) });
 	await expect(access.locator(".chip")).toContainText("site.test");
 	await access.getByRole("button", { name: "Remove site.test" }).click();
@@ -257,9 +257,9 @@ test("settings rename an agent, remove a host allowed for good, and let it messa
 });
 
 test("the agents page makes an agent, archives it and restores it", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await pages(page).getByRole("link", { name: "Agents" }).click();
-	await expect(page).toHaveURL(/\/app\/agents$/);
+	await expect(page).toHaveURL(/\/agents$/);
 	// The sidebar stays the agent's shown last.
 	await expect(page.locator("#sidebar .switcher .name")).toHaveText("gaidin");
 	await expect(page.locator(".agent-row")).toHaveCount(1);
@@ -273,7 +273,7 @@ test("the agents page makes an agent, archives it and restores it", async ({ pag
 	await expect(form.locator("input").nth(1)).toHaveValue("scout");
 	await form.locator("input").nth(2).fill("Looks things up.");
 	await form.getByRole("button", { name: "make agent" }).click();
-	await expect(page).toHaveURL(/\/app\/scout\/settings$/);
+	await expect(page).toHaveURL(/\/scout\/settings$/);
 	await expect(page.locator("#sidebar .switcher .name")).toHaveText("Scout");
 
 	await pages(page).getByRole("link", { name: "Agents" }).click();
@@ -294,12 +294,12 @@ test("the agents page makes an agent, archives it and restores it", async ({ pag
 });
 
 test("activity shows spend against the limits and what each agent did", async ({ page }) => {
-	await page.goto("/app/");
+	await page.goto("/");
 	await send(page, "fetch the page");
 	await page.locator("#approvals").getByRole("button", { name: "Allow once" }).click();
 	await expect(page.locator("#log")).toContainText("The page says: page text.");
 	await send(page, "/timeline");
-	await expect(page).toHaveURL(/\/app\/activity$/);
+	await expect(page).toHaveURL(/\/activity$/);
 	await expect(page.getByRole("meter", { name: /^today: \$0\.000 of \$5\.00$/ })).toBeVisible();
 	await expect(page.locator(".event.is-tool")).toContainText("fetch_url");
 	await expect(page.locator(".event.is-tool .agent")).toHaveText("gaidin");

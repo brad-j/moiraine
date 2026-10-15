@@ -2,7 +2,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig, type ProxyOptions } from "vite";
 
-// gaidin, which `pnpm dev` passes /api, /events, the icon and the service worker to. It lets in only its web.user, which tailscale serve
+// gaidin, which `pnpm dev` passes /api and /events to. It lets in only its web.user, which tailscale serve
 // names in Tailscale-User-Login, and only POSTs whose Origin is its own, so the proxy sets both.
 const target = process.env.GAIDIN_URL ?? "http://127.0.0.1:8410";
 const proxy: ProxyOptions = {
@@ -12,8 +12,6 @@ const proxy: ProxyOptions = {
 };
 
 export default defineConfig({
-	// gaidin serves the build at /app/ beside its web view, until the switch moves it to /.
-	base: "/app/",
 	plugins: [tanstackStart({ spa: { enabled: true } }), viteReact()],
-	server: { proxy: { "/api": proxy, "/events": proxy, "/favicon.svg": proxy, "/sw.js": proxy } },
+	server: { proxy: { "/api": proxy, "/events": proxy } },
 });

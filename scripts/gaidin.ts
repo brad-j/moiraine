@@ -1,6 +1,6 @@
 // gaidin's e2e server from the checkout beside this one: a scripted model with no keys and a fresh data directory,
 // removed when it stops. See gaidin's e2e/server.ts for what the model does with each message. With `app`, it serves
-// that build of moiraine at /app/.
+// that build of moiraine.
 import { type ChildProcess, spawn } from "node:child_process";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline";

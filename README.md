@@ -14,12 +14,12 @@ pnpm dev:faux    # the app against gaidin's e2e server: a scripted model, no key
 pnpm dev         # the app against a gaidin already running at GAIDIN_URL (default http://127.0.0.1:8410)
 pnpm check       # build, type check, lint, and the transcript test against gaidin's e2e server
 pnpm ship        # build and copy to gaidin's VM (GAIDIN_HOST, default ubuntu@gaidin); --dry-run only checks
-pnpm e2e         # build, then the Playwright tests, each against its own gaidin e2e server serving the build at /app/
+pnpm e2e         # build, then the Playwright tests, each against its own gaidin e2e server serving the build
 ```
 
 `pnpm dev` passes `/api` and `/events` to gaidin with `Tailscale-User-Login` set to `GAIDIN_WEB_USER` (default `brad@example.com`, which the e2e server lets in), as `tailscale serve` would. It needs to match `web.user` in that gaidin's settings.
 
-The build is `dist/client`, built for `/app/`: hashed assets and `_shell.html`, the page gaidin serves for every path under `/app/` that isn't a file. gaidin serves it from the directory its `web.app` setting names. `dist/server` is a by-product of Start's build and isn't deployed.
+The build is `dist/client`: hashed assets, `_shell.html`, the page gaidin serves for every path that isn't the API or a file, and what's in `public/`: the service worker (`sw.js`), the manifest and the icons, at the paths gaidin's web view had them. gaidin serves it from the directory its `web.app` setting names. `dist/server` is a by-product of Start's build and isn't deployed.
 
 ## Design
 
@@ -36,11 +36,12 @@ The build is `dist/client`, built for `/app/`: hashed assets and `_shell.html`, 
 - `src/pages/`: the pages beside the conversations, built from `page.tsx` (the frame with the dock, section heads, actions that show what went wrong, and a second press to confirm). Each agent's `schedule.tsx`, `memory.tsx`, `skills.tsx` and `settings.tsx`, and across agents `agents.tsx` and `activity.tsx`. The roster forms use TanStack Form.
 - `src/attachments.ts`: files going with a message, sent to gaidin as they're added (an image over 3.75 MB made smaller first), shown as chips in the composer.
 - `src/push.ts`: notifications for this device, through gaidin's service worker at `/sw.js` until the switch moves it here.
-- `src/routes/`, under `/app/`: `/<agent>` (home; `?draft=` starts the prompt with a request), `/<agent>/t/<id>` (a thread), `/<agent>/new` (a thread about to start), `/<agent>/schedule`, `/<agent>/memory`, `/<agent>/skills[/<name>[/<file>]]` (`?create` for a file being added), `/<agent>/settings`, `/agents` and `/activity`. The web view's `#/<page>` and `#/history/<id>` addresses open the matching page or thread. An agent can't have the id `agents` or `activity`.
+- `public/sw.js`: the service worker, at `/sw.js` with the scope `/`, where the web view's was, so devices signed up for notifications stay signed up. It shows them, opens the conversation one came from, and answers with a short page when gaidin can't be reached.
+- `src/routes/`: `/<agent>` (home; `?draft=` starts the prompt with a request), `/<agent>/t/<id>` (a thread), `/<agent>/new` (a thread about to start), `/<agent>/schedule`, `/<agent>/memory`, `/<agent>/skills[/<name>[/<file>]]` (`?create` for a file being added), `/<agent>/settings`, `/agents` and `/activity`. The web view's `#/<page>` and `#/history/<id>` addresses open the matching page or thread, and gaidin sends the app's old `/app/...` addresses to the new ones. An agent can't have the id `agents`, `activity` or `app`.
 
 ## Status
 
-Steps 2 to 5 of the plan are done: the conversations, every page, and attachments. Pages ask for the approvals every 5 seconds, since no conversation's event stream is open on them. Slack mirroring (step 5) is in gaidin. Next is the switch (step 6).
+The plan's design for the app is built: the conversations, every page, attachments, Slack mirroring (in gaidin), and the switch, which made it gaidin's interface at `/` in place of the web view. Pages ask for the approvals every 5 seconds, since no conversation's event stream is open on them.
 
 ## Deploying
 

@@ -10,8 +10,8 @@ import { ago, initial, when } from "../format.ts";
 import { useAgents } from "../queries.ts";
 import { Action, Confirm, Page, SectionHead, useAttempt } from "./page.tsx";
 
-/** Addresses the app's own pages take, which an agent's id would be hidden behind. */
-const TAKEN = new Set(["agents", "activity"]);
+/** Addresses the app's own pages take, and /app/, the app's old address, which an agent's id would be hidden behind. */
+const TAKEN = new Set(["agents", "activity", "app"]);
 const ID = /^[a-z][a-z0-9-]{0,30}$/;
 
 export function Agents() {

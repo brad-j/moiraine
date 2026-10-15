@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { problem } from "../api.ts";
 import { Conversation } from "../conversation/view.tsx";
 import { queries, useAgent } from "../queries.ts";
@@ -12,7 +12,10 @@ function Thread() {
 	const params = Route.useParams();
 	const agent = useAgent(params.agent)!;
 	const id = Number(params.id);
-	const found = useQuery({ ...queries.conversation(id), enabled: Number.isInteger(id) && id > 0 });
+	// A notification names the conversation it came from, which may be the agent's home.
+	const isHome = agent.home !== 0 && id === agent.home;
+	const found = useQuery({ ...queries.conversation(id), enabled: Number.isInteger(id) && id > 0 && !isHome });
+	if (isHome) return <Navigate to="/$agent" params={{ agent: agent.id }} replace />;
 	if (found.isError || !(Number.isInteger(id) && id > 0)) {
 		return (
 			<>
