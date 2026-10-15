@@ -128,9 +128,13 @@ export function TakeOver({ name }: { name: string }) {
 	}
 
 	function send(event: LiveInput) {
-		// Of moves in a row, only the last matters.
-		if (event.type === "move" && queue.current.at(-1)?.type === "move") queue.current.pop();
-		queue.current.push(event);
+		const last = queue.current.at(-1);
+		// Of moves in a row, only the last matters, and scrolls in a row add up: a trackpad sends dozens a second, and
+		// each costs the page a frame. gaidin compacts what it's sent too.
+		if (event.type === "move" && last?.type === "move") queue.current.pop();
+		if (event.type === "wheel" && last?.type === "wheel") {
+			queue.current[queue.current.length - 1] = { ...event, dx: (last.dx ?? 0) + (event.dx ?? 0), dy: (last.dy ?? 0) + (event.dy ?? 0) };
+		} else queue.current.push(event);
 		void flush();
 	}
 
