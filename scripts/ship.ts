@@ -68,6 +68,6 @@ if (app !== TARGET) {
 	console.log(`\nweb.app isn't set to ${TARGET} in ${SETTINGS}${app === "" ? "" : ` (it's ${app})`}. Add it to the "web" section:\n\n    "app": "${TARGET}"\n\nthen restart gaidin (sudo systemctl restart gaidin), which reads its settings at start.`);
 } else if (!dry) {
 	const shell = remote(ask("/app/")).split("\n").pop();
-	if (shell !== "200") fail(`gaidin didn't serve the app at /app/ (HTTP ${shell}).`);
+	if (shell !== "200") fail(`the build is copied, but gaidin didn't serve it at /app/ (HTTP ${shell}). It reads web.app at start: if that was just set, restart it (sudo systemctl restart gaidin).`);
 	console.log(`The app is at /app/ on ${HOST}.`);
 }
