@@ -5,6 +5,7 @@
 // The owner creates, edits and removes local skills here, which takes effect at once; an agent's own changes
 // (write_skill, remove_skill) ask the owner first. The built-in skill is gaidin's documentation, and changes with its
 // code.
+import { PlusIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -59,7 +60,8 @@ export function Skills({ agent }: { agent: Agent }) {
 				<SectionHead title="Skills" count={listing.data?.skills.length}>
 					{!creating && (
 						<button className="plain" type="button" onClick={() => setCreating(true)}>
-							+ new skill
+							<PlusIcon aria-hidden="true" />
+							new skill
 						</button>
 					)}
 				</SectionHead>
@@ -271,7 +273,8 @@ function NewFile({ agent, skill }: { agent: Agent; skill: Skill }) {
 	if (path === undefined) {
 		return (
 			<button className="plain add-file" type="button" onClick={() => setPath("")}>
-				+ file
+				<PlusIcon aria-hidden="true" />
+				file
 			</button>
 		);
 	}

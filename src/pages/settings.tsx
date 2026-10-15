@@ -4,7 +4,9 @@
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { type Agent, type Posts, post, type Settings as AgentSettings } from "../api.ts";
+import { TrashIcon, UploadSimpleIcon } from "@phosphor-icons/react";
+import { type Agent, type Posts, post, type Settings as AgentSettings, upload } from "../api.ts";
+import { Avatar } from "../avatar.tsx";
 import { when } from "../format.ts";
 import { subscribeHere, supported, thisDevice, unsubscribe } from "../push.ts";
 import { queries, useAgents } from "../queries.ts";
@@ -137,6 +139,7 @@ function EntrySection({ agent, save, saved }: { agent: Agent; save: (change: Ent
 	return (
 		<section>
 			<SectionHead title="Agent" count={agent.id} />
+			<Picture agent={agent} save={save} />
 			<form
 				className="fields"
 				onSubmit={(event) => {
@@ -192,6 +195,68 @@ function EntrySection({ agent, save, saved }: { agent: Agent; save: (change: Ent
 			{saved}
 		</section>
 	);
+}
+
+/** The agent's picture: a square from an image you choose, made 512 pixels, or none, which shows its initial. */
+function Picture({ agent, save }: { agent: Agent; save: (change: EntryChange) => Promise<void> }) {
+	const picker = useRef<HTMLInputElement>(null);
+	const attempt = useAttempt();
+	const [busy, setBusy] = useState(false);
+	return (
+		<div className="fields">
+			<Field label="picture" hint="PNG, JPEG or WebP; shown cropped to a square">
+				<div className="picture">
+					<Avatar agent={agent} size="xl" />
+					<input
+						ref={picker}
+						type="file"
+						accept="image/png,image/jpeg,image/webp"
+						hidden
+						aria-label="Picture file"
+						onChange={async (event) => {
+							const file = event.target.files?.[0];
+							event.target.value = "";
+							if (file === undefined) return;
+							setBusy(true);
+							await attempt(async () => {
+								const square = await squared(file);
+								const { id } = await upload(square, `${agent.id}.webp`);
+								await save({ avatar: id });
+							});
+							setBusy(false);
+						}}
+					/>
+					<button className="plain" type="button" disabled={busy} onClick={() => picker.current?.click()}>
+						<UploadSimpleIcon aria-hidden="true" />
+						{agent.avatar === undefined ? "choose a picture" : "change"}
+					</button>
+					{agent.avatar !== undefined && (
+						<Action run={() => save({ avatar: "" })}>
+							<TrashIcon aria-hidden="true" />
+							remove
+						</Action>
+					)}
+				</div>
+			</Field>
+		</div>
+	);
+}
+
+/** The middle square of an image, 512 pixels a side or its own size if smaller, as WebP. */
+async function squared(file: File): Promise<Blob> {
+	const bitmap = await createImageBitmap(file).catch(() => {
+		throw new Error("That file isn't an image this browser can read.");
+	});
+	const crop = Math.min(bitmap.width, bitmap.height);
+	const side = Math.min(512, crop);
+	const canvas = document.createElement("canvas");
+	canvas.width = side;
+	canvas.height = side;
+	canvas.getContext("2d")?.drawImage(bitmap, (bitmap.width - crop) / 2, (bitmap.height - crop) / 2, crop, crop, 0, 0, side, side);
+	bitmap.close();
+	const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, "image/webp", 0.9));
+	if (blob === null) throw new Error("The picture couldn't be made.");
+	return blob;
 }
 
 type Configure = (section: string, text: string, change: Change) => Promise<void>;

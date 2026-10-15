@@ -34,6 +34,16 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 - Headings are small (1rem to 1.125rem). No display type in the app.
 - Prose in answers: `--text-md` at line-height 1.65, measure ~72ch.
 
+## Icons and avatars
+
+- Icons are Phosphor (`@phosphor-icons/react`), regular weight, 16 pixels, in the color of the text beside them (the root's
+  IconContext). Every icon sits beside a word that says the same; none stands alone except the menu, attach and
+  remove buttons, which have labels for screen readers. Fill weight only for Send and Stop.
+- An agent's avatar is a circle: its picture, from its settings page, or its initial on the accent's wash. Sizes: 16 in a
+  tag, 20 in the dock and above its answers, 24 to 28 in headers and the switcher, 40 on the agents page, 72 on its
+  settings.
+- Each of the agent's answers opens with its avatar and name, once per answer.
+
 ## Spacing
 
 4-point named scale (`--space-*` in `tokens.css`). Pages use named tokens, never raw values.

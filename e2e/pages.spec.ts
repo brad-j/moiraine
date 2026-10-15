@@ -47,7 +47,7 @@ test("+ new reminder starts the request in the home conversation's prompt, on a 
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.goto("/gaidin/schedule");
 	await expect(page.locator("#message")).toHaveCount(0);
-	await page.getByRole("button", { name: "+ new reminder" }).click();
+	await page.getByRole("button", { name: "new reminder" }).click();
 	await expect(page).toHaveURL(/\/gaidin$/);
 	await expect(page.locator("#message")).toHaveValue("Remind me to ");
 	await expect(page.locator("#message")).toBeFocused();
@@ -155,7 +155,7 @@ test("skills lists the gaidin skill and reads its files, following links between
 test("the owner creates a skill, adds a file and edits it, and removes the skill", async ({ page }) => {
 	await page.goto("/gaidin/skills");
 	await expect(page.locator(".skill-row", { hasText: "gaidin" })).toBeVisible();
-	await page.getByRole("button", { name: "+ new skill" }).click();
+	await page.getByRole("button", { name: "new skill" }).click();
 	await page.locator(".skill-form input").fill("homelab-alerts");
 	await page.getByRole("textbox", { name: "Description" }).fill("What to do when a homelab alert comes in.");
 	await page.getByRole("textbox", { name: "Guide" }).fill("# Homelab alerts\n\nCheck the NAS first.");
@@ -165,7 +165,7 @@ test("the owner creates a skill, adds a file and edits it, and removes the skill
 	await expect(doc.locator("h2")).toHaveText("Homelab alerts");
 	await expect(page.locator(".skill-head .tag")).toHaveText("local");
 
-	await page.getByRole("button", { name: "+ file" }).click();
+	await page.getByRole("button", { name: "file", exact: true }).click();
 	await page.getByRole("textbox", { name: "New file's path" }).fill("references/backups.md");
 	await page.getByRole("textbox", { name: "New file's path" }).press("Enter");
 	await page.getByRole("textbox", { name: "homelab-alerts/references/backups.md" }).fill("# Backups\n\nThey run at 03:00.");
@@ -266,7 +266,7 @@ test("the agents page makes an agent, archives it and restores it", async ({ pag
 	await expect(page.locator(".agent-row")).toContainText("default");
 	await expect(page.locator(".agent-row").getByRole("button", { name: "archive" })).toHaveCount(0);
 
-	await page.getByRole("button", { name: "+ new agent" }).click();
+	await page.getByRole("button", { name: "new agent" }).click();
 	const form = page.locator(".skill-form");
 	await form.locator("input").first().fill("Scout");
 	// The id follows the name.
@@ -287,7 +287,7 @@ test("the agents page makes an agent, archives it and restores it", async ({ pag
 	await expect(page.locator("section", { has: page.getByRole("heading", { name: "Archived" }) })).toHaveCount(0);
 
 	// An id the app's pages use is refused before it's sent.
-	await page.getByRole("button", { name: "+ new agent" }).click();
+	await page.getByRole("button", { name: "new agent" }).click();
 	await form.locator("input").first().fill("Activity");
 	await expect(form).toContainText("activity is the address of one of the app's pages.");
 	await expect(form.getByRole("button", { name: "make agent" })).toBeDisabled();
@@ -305,4 +305,26 @@ test("activity shows spend against the limits and what each agent did", async ({
 	await expect(page.locator(".event.is-tool .agent")).toHaveText("gaidin");
 	await expect(page.locator(".event.is-tool .outcome")).toHaveText("ok");
 	await expect(page.locator(".event.is-approval")).toContainText("allowed once");
+});
+
+test("an agent's picture is chosen in settings, shown wherever the agent is, and taken away again", async ({ page }) => {
+	await page.goto("/gaidin");
+	await page.locator("#message").fill("hi");
+	await page.locator("#message").press("Enter");
+	await expect(page.locator("#log .speaker")).toHaveText("gaidin");
+	await expect(page.locator("#sidebar .switcher .avatar.monogram")).toHaveCount(1);
+
+	await page.goto("/gaidin/settings");
+	// A 1×1 PNG, which the page makes a square WebP before sending.
+	const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
+	await page.getByLabel("Picture file").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: pixel });
+	const shown = page.locator("#sidebar .switcher img.avatar");
+	await expect(shown).toHaveAttribute("src", /^\/api\/agents\/avatar\?id=gaidin&v=gaidin-[0-9a-f]{12}\.(webp|png)$/);
+	expect(await shown.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+	await page.goto("/agents");
+	await expect(page.locator(".agent-row img.avatar")).toHaveCount(1);
+
+	await page.goto("/gaidin/settings");
+	await page.getByRole("button", { name: "remove" }).click();
+	await expect(page.locator("#sidebar .switcher .avatar.monogram")).toHaveCount(1);
 });

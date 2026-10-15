@@ -150,7 +150,7 @@ test("a new thread starts from the app, is listed in the sidebar as the app's, a
 	await page.goto("/");
 	const sidebar = page.getByRole("navigation", { name: "Conversations" });
 	await expect(sidebar).toContainText("No threads yet.");
-	await sidebar.getByRole("link", { name: "+ New thread" }).click();
+	await sidebar.getByRole("link", { name: "New thread" }).click();
 	await expect(page).toHaveURL(/\/gaidin\/new$/);
 	await expect(page.locator(".convo-head h1")).toHaveText("New thread");
 	await send(page, "plan the garden");
@@ -229,7 +229,7 @@ test("on a phone the sidebar is a drawer", async ({ page }) => {
 	await expect(sidebar).toBeHidden();
 	await page.getByRole("button", { name: "Conversations" }).click();
 	await expect(sidebar).toBeVisible();
-	await sidebar.getByRole("link", { name: "+ New thread" }).click();
+	await sidebar.getByRole("link", { name: "New thread" }).click();
 	await expect(page).toHaveURL(/\/new$/);
 	await expect(sidebar).toBeHidden();
 	await expect(page.locator("#message")).toBeVisible();

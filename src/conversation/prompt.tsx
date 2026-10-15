@@ -2,6 +2,7 @@
 // runs a command (Tab completes, and a menu offers them), ↑ and ↓ go through earlier messages, and Esc or Ctrl+C
 // stops a run. Files go with a message: attached, dropped on it or pasted, shown as chips above the text.
 import { type ReactNode, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { PaperclipIcon, PaperPlaneRightIcon, XIcon } from "@phosphor-icons/react";
 import { type Attachment, useAttachments } from "../attachments.ts";
 
 export type Choice = { value: string; hint?: string };
@@ -276,12 +277,11 @@ export function Prompt({ ref, ...props }: {
 						}}
 					/>
 					<button className="plain attach" type="button" aria-label="Attach files" title="Attach files (or drop or paste them here)" onClick={() => picker.current?.click()}>
-						<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-							<path d="M10.5 4.5 5.8 9.2a1.4 1.4 0 0 0 2 2l5-5a2.8 2.8 0 0 0-4-4l-5.2 5.2a4.2 4.2 0 0 0 6 6L14 9" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-						</svg>
+						<PaperclipIcon size={18} aria-hidden="true" />
 					</button>
 					<div id="statusline">{props.children}</div>
 					<button id="send" className="primary" type="submit" disabled={held} title={held ? (attachments.sending ? "Sending the files…" : "Remove the files that couldn't be sent") : undefined}>
+						<PaperPlaneRightIcon weight="fill" aria-hidden="true" />
 						Send <kbd>↵</kbd>
 					</button>
 				</div>
@@ -309,7 +309,7 @@ function Chips({ items, remove }: { items: readonly Attachment[]; remove: (key: 
 						<span className="state">{item.state === "sending" ? "sending…" : item.state === "failed" ? (item.problem ?? "couldn't be sent") : size(item.size)}</span>
 					</span>
 					<button className="plain" type="button" aria-label={`Remove ${item.name}`} onClick={() => remove(item.key)}>
-						×
+						<XIcon aria-hidden="true" />
 					</button>
 				</li>
 			))}

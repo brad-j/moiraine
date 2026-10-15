@@ -1,12 +1,14 @@
 // Agents: the roster. Each agent's job, its channel and who it may message, a way to its home conversation and
 // settings, and making, archiving and restoring agents. Archiving pauses its jobs and cancels its reminders; its
 // conversations, notes and sandbox stay, and restoring leaves its jobs paused. The default agent can't be archived.
+import { PlusIcon } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { type Agent, post } from "../api.ts";
-import { ago, initial, when } from "../format.ts";
+import { Avatar } from "../avatar.tsx";
+import { ago, when } from "../format.ts";
 import { useAgents } from "../queries.ts";
 import { Action, Confirm, Page, SectionHead, useAttempt } from "./page.tsx";
 
@@ -25,7 +27,8 @@ export function Agents() {
 				<SectionHead title="Agents" count={active.length}>
 					{!making && (
 						<button className="plain" type="button" onClick={() => setMaking(true)}>
-							+ new agent
+							<PlusIcon aria-hidden="true" />
+							new agent
 						</button>
 					)}
 				</SectionHead>
@@ -59,9 +62,7 @@ function AgentRow({ agent, isDefault, names }: { agent: Agent; isDefault: boolea
 	const archive = (archived: boolean) => post("/api/agents/archive", { id: agent.id, archived }).then(() => queryClient.invalidateQueries({ queryKey: ["agents"] }));
 	return (
 		<li className={`agent-row${agent.archived === undefined ? "" : " archived"}`}>
-			<span className="badge" aria-hidden="true">
-				{initial(agent.name)}
-			</span>
+			<Avatar agent={agent} size="lg" />
 			<div className="body">
 				<div className="title">
 					{agent.archived === undefined ? (

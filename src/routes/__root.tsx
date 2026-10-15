@@ -1,4 +1,5 @@
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { IconContext } from "@phosphor-icons/react";
 import { ClientOnly, createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import styles from "../styles.css?url";
@@ -24,6 +25,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 	component: Root,
 });
 
+/** Phosphor's icons, as design.md has them: 16 pixels, its regular weight, in the color of what they're in. */
+const ICONS = { size: 16, weight: "regular", color: "currentColor" } as const;
+
 function Root() {
 	const { queryClient } = Route.useRouteContext();
 	// The service worker shows notifications, and a short page when gaidin can't be reached.
@@ -32,10 +36,12 @@ function Root() {
 	}, []);
 	return (
 		<QueryClientProvider client={queryClient}>
-			{/* The shell is built ahead with no route in it; the routes render once it's hydrated, so the two always match. */}
-			<ClientOnly>
-				<Outlet />
-			</ClientOnly>
+			<IconContext.Provider value={ICONS}>
+				{/* The shell is built ahead with no route in it; the routes render once it's hydrated, so the two always match. */}
+				<ClientOnly>
+					<Outlet />
+				</ClientOnly>
+			</IconContext.Provider>
 		</QueryClientProvider>
 	);
 }

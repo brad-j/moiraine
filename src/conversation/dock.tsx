@@ -4,7 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type Approval, post, problem } from "../api.ts";
-import { clock, initial, when } from "../format.ts";
+import { QuestionIcon, ShieldWarningIcon } from "@phosphor-icons/react";
+import { Avatar } from "../avatar.tsx";
+import { clock, when } from "../format.ts";
 import { queries, useAgents } from "../queries.ts";
 
 type Decision = "once" | "always" | "deny";
@@ -72,11 +74,13 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 				// Where it came from: the agent's home, or one of its threads.
 				const from =
 					agent === undefined ? undefined : request.conversationId === agent.home ? (
-						<Link className="who" data-initial={initial(agent.name)} to="/$agent" params={{ agent: agent.id }} title={`${agent.name}'s home conversation`}>
+						<Link className="who" to="/$agent" params={{ agent: agent.id }} title={`${agent.name}'s home conversation`}>
+							<Avatar agent={agent} size="sm" />
 							{agent.name}
 						</Link>
 					) : (
-						<Link className="who" data-initial={initial(agent.name)} to="/$agent/t/$id" params={{ agent: agent.id, id: String(request.conversationId) }} title={`${agent.name}'s thread`}>
+						<Link className="who" to="/$agent/t/$id" params={{ agent: agent.id, id: String(request.conversationId) }} title={`${agent.name}'s thread`}>
+							<Avatar agent={agent} size="sm" />
 							{agent.name}
 						</Link>
 					);
@@ -86,7 +90,10 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 							<div className="ask">
 								<div className="ask-head">
 									{from}
-									<span className="kind">asks</span>
+									<span className="kind">
+										<QuestionIcon aria-hidden="true" />
+										asks
+									</span>
 								</div>
 								<p className="what">{request.summary}</p>
 							</div>
@@ -112,7 +119,10 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 						<div className="ask">
 							<div className="ask-head">
 								{from}
-								<span className="kind">wants to use</span>
+								<span className="kind">
+									<ShieldWarningIcon aria-hidden="true" />
+									wants to use
+								</span>
 								<code className="tool">{request.tool}</code>
 							</div>
 							<p className="what">{request.summary}</p>

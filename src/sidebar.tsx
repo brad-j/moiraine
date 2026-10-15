@@ -3,10 +3,12 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { createContext, useContext, useEffect, useRef } from "react";
+import { CalendarBlankIcon, CaretUpDownIcon, ChatCircleIcon, GearSixIcon, type Icon, ListIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
+import { createContext, type ReactNode, useContext, useEffect, useRef } from "react";
 import { type Agent, problem } from "./api.ts";
-import { PLACES, placeOf } from "./conversation/view.tsx";
-import { initial, since, when } from "./format.ts";
+import { Avatar } from "./avatar.tsx";
+import { Origin, PLACES, placeOf } from "./conversation/view.tsx";
+import { since, when } from "./format.ts";
 import { queries, troubled, useAgents } from "./queries.ts";
 
 /** Opens and closes the drawer, on a phone. */
@@ -17,7 +19,7 @@ export function MenuButton() {
 	const { open, toggle } = useContext(Drawer);
 	return (
 		<button id="menu-button" className="plain" type="button" aria-label="Conversations" aria-expanded={open} aria-controls="sidebar" onClick={() => toggle()}>
-			☰
+			<ListIcon size={20} />
 		</button>
 	);
 }
@@ -30,15 +32,13 @@ export function Sidebar({ agent }: { agent: Agent }) {
 	const shown = agents.filter((a) => a.archived === undefined || a.id === agent.id);
 	return (
 		<nav id="sidebar" aria-label="Conversations">
-			{/* The agent's badge and name, with the native select over it, unseen, to pick another. */}
+			{/* The agent's picture and name, with the native select over it, unseen, to pick another. */}
 			<label className="switcher">
-				<span className="badge" aria-hidden="true">
-					{initial(agent.name)}
-				</span>
+				<Avatar agent={agent} />
 				<span className="name" aria-hidden="true">
 					{agent.name}
 				</span>
-				<span className="chevron" aria-hidden="true" />
+				<CaretUpDownIcon className="chevron" aria-hidden="true" />
 				<span className="visually-hidden">Agent</span>
 				<select value={agent.id} onChange={(event) => void navigate({ to: "/$agent", params: { agent: event.target.value } }).then(close)}>
 					{shown.map((a) => (
@@ -52,10 +52,12 @@ export function Sidebar({ agent }: { agent: Agent }) {
 			{agent.job !== "" && <p className="job">{agent.job}</p>}
 			<div className="sidebar-actions">
 				<Link className="pinned" to="/$agent" params={{ agent: agent.id }} activeOptions={{ exact: true }} onClick={close}>
+					<ChatCircleIcon aria-hidden="true" />
 					Home conversation
 				</Link>
 				<Link className="new-thread" to="/$agent/new" params={{ agent: agent.id }} onClick={close}>
-					+ New thread
+					<NotePencilIcon aria-hidden="true" />
+					New thread
 				</Link>
 			</div>
 			<Threads agent={agent} onOpen={close} />
@@ -72,35 +74,45 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 	const trouble = troubled(jobs);
 	return (
 		<div className="pages" role="group" aria-label="Pages">
-			<Link to="/$agent/schedule" params={{ agent: agent.id }} onClick={onOpen}>
+			<Page to="/$agent/schedule" agent={agent} icon={CalendarBlankIcon} onOpen={onOpen}>
 				Schedule
 				{scheduled > 0 && (
 					<span className={`count${trouble > 0 ? " warn" : ""}`} title={trouble > 0 ? "A job is paused or failing" : undefined}>
 						{scheduled}
 					</span>
 				)}
-			</Link>
-			<Link to="/$agent/memory" params={{ agent: agent.id }} onClick={onOpen}>
+			</Page>
+			<Page to="/$agent/memory" agent={agent} icon={NotebookIcon} onOpen={onOpen}>
 				Memory
-			</Link>
-			<Link to="/$agent/skills" params={{ agent: agent.id }} onClick={onOpen}>
+			</Page>
+			<Page to="/$agent/skills" agent={agent} icon={PuzzlePieceIcon} onOpen={onOpen}>
 				Skills
-			</Link>
-			<Link to="/$agent/settings" params={{ agent: agent.id }} onClick={onOpen}>
+			</Page>
+			<Page to="/$agent/settings" agent={agent} icon={GearSixIcon} onOpen={onOpen}>
 				Settings
-			</Link>
+			</Page>
 			<span className="divider" aria-hidden="true" />
-			<Link to="/agents" onClick={onOpen}>
+			<Page to="/agents" agent={agent} icon={UsersThreeIcon} onOpen={onOpen}>
 				Agents
-			</Link>
-			<Link to="/activity" onClick={onOpen}>
+			</Page>
+			<Page to="/activity" agent={agent} icon={PulseIcon} onOpen={onOpen}>
 				Activity
-			</Link>
+			</Page>
 		</div>
 	);
 }
 
 const ROW = 52;
+
+/** A link at the sidebar's foot, with its icon. */
+function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {
+	return (
+		<Link to={to} params={{ agent: agent.id }} onClick={onOpen}>
+			<Glyph aria-hidden="true" />
+			{children}
+		</Link>
+	);
+}
 
 function Threads({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 	const list = useInfiniteQuery(queries.conversations(agent.id));
@@ -131,7 +143,10 @@ function Threads({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 								<Link className="thread" to="/$agent/t/$id" params={{ agent: agent.id, id: String(item.id) }} onClick={onOpen}>
 									<span className="title">{item.title || "(no message)"}</span>
 									<span className="meta">
-										<span className={`origin ${place}`}>{PLACES[place]}</span>
+										<span className={`origin ${place}`}>
+											<Origin place={place} />
+											{PLACES[place]}
+										</span>
 										<span title={when.format(item.lastAt)}>{since(item.lastAt)}</span>
 									</span>
 								</Link>

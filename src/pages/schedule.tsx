@@ -1,6 +1,7 @@
 // The schedule: the agent's open reminders and scheduled jobs, soonest first. A job opens to its instruction and the
 // reports it last sent, and pauses, resumes and cancels here. New ones are asked of the agent in its home
 // conversation, so they go through its approvals.
+import { CaretDownIcon, PlusIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -30,7 +31,8 @@ export function Schedule({ agent }: { agent: Agent }) {
 			<section>
 				<SectionHead title="Reminders" count={reminders.data?.length}>
 					<button className="plain" type="button" onClick={() => ask("Remind me to ")}>
-						+ new reminder
+						<PlusIcon aria-hidden="true" />
+						new reminder
 					</button>
 				</SectionHead>
 				{reminders.isPending ? (
@@ -48,7 +50,8 @@ export function Schedule({ agent }: { agent: Agent }) {
 			<section>
 				<SectionHead title="Jobs" count={jobs.data?.length}>
 					<button className="plain" type="button" onClick={() => ask("Schedule a job: ")}>
-						+ new job
+						<PlusIcon aria-hidden="true" />
+						new job
 					</button>
 				</SectionHead>
 				{jobs.isPending ? (
@@ -126,6 +129,7 @@ function JobRow({ job, changed }: { job: Job; changed: () => Promise<unknown> })
 			<div className="body">
 				<button className="title toggle" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
 					{job.title}
+					<CaretDownIcon className="caret" aria-hidden="true" />
 				</button>
 				<div className="meta">
 					{meta.map(([text, className]) => (

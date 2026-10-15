@@ -4,6 +4,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { type Agent, problem } from "../api.ts";
+import { Avatar } from "../avatar.tsx";
 import { Dock } from "../conversation/dock.tsx";
 import { queries } from "../queries.ts";
 import { MenuButton } from "../sidebar.tsx";
@@ -37,7 +38,12 @@ export function Page({ title, agent, children }: { title: string; agent?: Agent;
 			<header className="convo-head">
 				<MenuButton />
 				<h1>{title}</h1>
-				{agent !== undefined && <span className="tag">{agent.name}</span>}
+				{agent !== undefined && (
+					<span className="tag with-avatar">
+						<Avatar agent={agent} size="sm" />
+						{agent.name}
+					</span>
+				)}
 			</header>
 			<main className="page-scroll">
 				<div className="page">

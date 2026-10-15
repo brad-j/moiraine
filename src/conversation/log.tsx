@@ -1,7 +1,9 @@
 // A conversation as gaidin's console has it (web/log.ts): your messages, the answers, and each tool call and stretch of
 // thinking folded to a line. Two or more such steps in a row fold together into one line, open while one is running.
 import { createContext, type ReactNode, useContext, useState } from "react";
-import type { Block, Entry, ToolResult } from "../api.ts";
+import type { Agent, Block, Entry, ToolResult } from "../api.ts";
+import { CaretRightIcon, CheckIcon, HourglassIcon, XIcon } from "@phosphor-icons/react";
+import { Avatar } from "../avatar.tsx";
 import { argsSummary, isFields, isNumber, isText, ownerMessage, shortStamp, splitStamp, textOf } from "../format.ts";
 import { Markdown } from "../markdown.tsx";
 import type { Transcript } from "../transcript.ts";
@@ -16,7 +18,12 @@ export type LogOptions = {
 	prompts?: "job" | "agent";
 	/** Buttons beside a fired reminder. */
 	reminderActions?: (taskId: number) => ReactNode;
+	/** The agent answering, whose picture and name open each of its answers. */
+	speaker?: Pick<Agent, "id" | "name" | "avatar">;
 };
+
+/** Lines the agent writes, which an answer starts with: its words, thinking, tool calls, and a job's report. */
+const SPOKEN = /^(gaidin|think|tool|job)\b/;
 
 /** The folds the owner has opened, by key, so they stay open as the log is drawn again. */
 const Opened = createContext<Set<string>>(new Set());
@@ -25,7 +32,16 @@ export function Log(props: { transcript: Transcript; include: (entry: Entry) => 
 	const [opened] = useState(() => new Set<string>());
 	const lines = linesOf(props.transcript, props.include, props.local ?? [], props.options ?? {});
 	const shown: ReactNode[] = [];
+	const speaker = props.options?.speaker;
+	// Whether the agent's answer has started since the owner last spoke, so its picture opens it once.
+	let answering = false;
 	for (let i = 0; i < lines.length; ) {
+		const at = lines[i]!;
+		if (at.kind === "you" || at.kind.startsWith("prompt")) answering = false;
+		else if (speaker !== undefined && !answering && (at.step !== undefined || SPOKEN.test(at.kind))) {
+			answering = true;
+			shown.push(<Speaker key={`speaker:${at.key}`} agent={speaker} />);
+		}
 		let end = i;
 		while (end < lines.length && lines[end]!.step !== undefined) end++;
 		if (end - i >= 2) {
@@ -34,11 +50,29 @@ export function Log(props: { transcript: Transcript; include: (entry: Entry) => 
 			i = end;
 		} else {
 			const { key, ...line } = lines[i]!;
-			shown.push(<Row key={key} {...line} />);
+			shown.push(<Row key={key} {...line} label={line.kind === "gaidin" && speaker !== undefined ? speaker.name : line.label} />);
 			i++;
 		}
 	}
 	return <Opened.Provider value={opened}>{lines.length === 0 ? props.empty : shown}</Opened.Provider>;
+}
+
+/** A tool call's state as an icon: done, failed, or waiting to run. A running one has its pulsing dot instead. */
+function State({ status }: { status: string }) {
+	if (status === "done") return <CheckIcon weight="bold" aria-hidden="true" />;
+	if (status === "error" || status === "no result") return <XIcon weight="bold" aria-hidden="true" />;
+	if (status === "waiting") return <HourglassIcon aria-hidden="true" />;
+	return null;
+}
+
+/** The agent's picture and name, above its answer. */
+function Speaker({ agent }: { agent: Pick<Agent, "id" | "name" | "avatar"> }) {
+	return (
+		<div className="speaker" aria-hidden="true">
+			<Avatar agent={agent} size="sm" />
+			<span>{agent.name}</span>
+		</div>
+	);
 }
 
 /** Steps in a row, as one line naming them; open by itself while one is running or waiting, until the owner toggles it. */
@@ -66,6 +100,7 @@ function Steps({ id, lines }: { id: string; lines: Line[] }) {
 					}}
 				>
 					<summary>
+						<CaretRightIcon className="caret" aria-hidden="true" />
 						<span className="count">{lines.length} steps</span>
 						<span className="args">{names.join(", ")}</span>
 						<span className="state">{live ?? (failed > 0 ? `${failed} failed` : "done")}</span>
@@ -133,7 +168,10 @@ function Fold({ id, summary, sections, tail }: { id: string; summary: ReactNode;
 					setOpen(now);
 				}}
 			>
-				<summary>{summary}</summary>
+				<summary>
+					<CaretRightIcon className="caret" aria-hidden="true" />
+					{summary}
+				</summary>
 				{open && (
 					<div className="fold">
 						{sections.map(([label, text], n) => (
@@ -179,7 +217,10 @@ function blockLines(transcript: Transcript, blocks: readonly Block[], key: strin
 				<>
 					<span className="name">{block.name}</span>
 					<span className="args">{argsSummary(block.name, args)}</span>
-					<span className="state">{status}</span>
+					<span className="state">
+						<State status={status} />
+						{status}
+					</span>
 				</>
 			);
 			const tail = status === "running" && output.trim() !== "" ? lastLines(output, 6) : undefined;

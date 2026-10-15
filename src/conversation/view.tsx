@@ -1,5 +1,6 @@
 // A conversation: an agent's home, one of its threads, or a thread about to start. The log, the dock and the prompt,
 // with the status line under it, as gaidin's console has them.
+import { ArrowDownIcon, ChatCircleIcon, ClockIcon, RobotIcon, SlackLogoIcon, StopIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -7,6 +8,7 @@ import { type Agent, type Entry, post, problem, requestId, type Summary } from "
 import { fromNow, money, ownerMessage, when } from "../format.ts";
 import { queries } from "../queries.ts";
 import type { Transcript } from "../transcript.ts";
+import { Avatar } from "../avatar.tsx";
 import { alt, Dock, useApprovals } from "./dock.tsx";
 import { type Local, Log, type LogOptions, Row } from "./log.tsx";
 import { type Command, Prompt, type PromptHandle } from "./prompt.tsx";
@@ -17,6 +19,13 @@ const LEVELS = ["off", "low", "medium", "high"] as const;
 /** Where a conversation began, as its label says. */
 export const PLACES = { slack: "Slack", app: "app", job: "job run", agent: "from an agent" } as const;
 export const placeOf = (summary: Pick<Summary, "place" | "origin">) => (summary.place === "thread" ? (summary.origin ?? "slack") : summary.place);
+const ORIGINS = { slack: SlackLogoIcon, app: ChatCircleIcon, job: ClockIcon, agent: RobotIcon } as const;
+
+/** Where a conversation began, as an icon beside its label. */
+export function Origin({ place }: { place: keyof typeof PLACES }) {
+	const Glyph = ORIGINS[place];
+	return <Glyph className="origin-icon" aria-hidden="true" />;
+}
 
 type Shown = {
 	agent: Agent;
@@ -77,6 +86,7 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 	const commands = useCommands({ agent, home, say, setLocal, stop, prefill: (text) => prompt.current?.prefill(text) });
 	const summary = thread?.summary;
 	const options: LogOptions = {
+		speaker: agent,
 		prompts: summary?.place === "job" ? "job" : summary?.place === "agent" ? "agent" : undefined,
 		reminderActions: (taskId) => <Snooze id={taskId} say={say} />,
 	};
@@ -88,15 +98,25 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 		<>
 			<header className="convo-head">
 				{menu}
+				{home && <Avatar agent={agent} />}
 				<h1>{home ? agent.name : summary?.title || "(no message)"}</h1>
-				{home ? <span className="tag">home</span> : summary && <span className={`tag ${summary.place}`}>{PLACES[placeOf(summary)]}</span>}
+				{home ? (
+					<span className="tag">home</span>
+				) : (
+					summary && (
+						<span className={`tag ${summary.place}`}>
+							<Origin place={placeOf(summary)} />
+							{PLACES[placeOf(summary)]}
+						</span>
+					)
+				)}
 			</header>
 			<main id="scroll" ref={scroller}>
 				<div id="log" role="log" aria-live="polite" aria-relevant="additions">
 					{forkedAt !== undefined && transcript.entries.has(forkedAt) && (
 						<div className="replying">
 							<div className="label">in reply to</div>
-							<Log transcript={transcript} include={(entry) => entry.id === forkedAt} options={options} />
+							<Log transcript={transcript} include={(entry) => entry.id === forkedAt} options={{ ...options, speaker: undefined }} />
 						</div>
 					)}
 					<Log
@@ -111,7 +131,8 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 			<footer id="dock">
 				{jump && (
 					<button id="jump" type="button" onClick={() => toEnd()}>
-						↓ new activity
+						<ArrowDownIcon aria-hidden="true" />
+						new activity
 					</button>
 				)}
 				<div id="dock-inner">
@@ -148,6 +169,7 @@ export function NewThread({ agent, menu }: Omit<Shown, "thread" | "draft">) {
 		<>
 			<header className="convo-head">
 				{menu}
+				<Avatar agent={agent} />
 				<h1>New thread</h1>
 				<span className="tag">{agent.name}</span>
 			</header>
@@ -330,7 +352,8 @@ function StatusLine(props: { agent: Agent; home: boolean; transcript: Transcript
 			<span className={`status ${tone}`}>{label}</span>
 			{transcript.running && (
 				<button className="plain seg danger" type="button" title="Stop the run (Esc or Ctrl+C)" onClick={() => run("stop")}>
-					<kbd>esc</kbd>stop
+					<StopIcon weight="fill" aria-hidden="true" />
+					stop <kbd>esc</kbd>
 				</button>
 			)}
 			{home && settings !== undefined ? (
