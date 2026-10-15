@@ -11,11 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentRouteImport } from './routes/$agent'
+import { Route as ActivityRouteImport } from './routes/activity'
+import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as AgentIndexRouteImport } from './routes/$agent.index'
 import { Route as AgentMemoryRouteImport } from './routes/$agent.memory'
 import { Route as AgentNewRouteImport } from './routes/$agent.new'
 import { Route as AgentScheduleRouteImport } from './routes/$agent.schedule'
+import { Route as AgentSettingsRouteImport } from './routes/$agent.settings'
+import { Route as AgentSkillsIndexRouteImport } from './routes/$agent.skills.index'
 import { Route as AgentTIdRouteImport } from './routes/$agent.t.$id'
+import { Route as AgentSkillsNameIndexRouteImport } from './routes/$agent.skills.$name.index'
+import { Route as AgentSkillsNameSplatRouteImport } from './routes/$agent.skills.$name.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -25,6 +31,16 @@ const IndexRoute = IndexRouteImport.update({
 const AgentRoute = AgentRouteImport.update({
   id: '/$agent',
   path: '/$agent',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentIndexRoute = AgentIndexRouteImport.update({
@@ -47,71 +63,129 @@ const AgentScheduleRoute = AgentScheduleRouteImport.update({
   path: '/schedule',
   getParentRoute: () => AgentRoute,
 } as any)
+const AgentSettingsRoute = AgentSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AgentRoute,
+} as any)
+const AgentSkillsIndexRoute = AgentSkillsIndexRouteImport.update({
+  id: '/skills/',
+  path: '/skills/',
+  getParentRoute: () => AgentRoute,
+} as any)
 const AgentTIdRoute = AgentTIdRouteImport.update({
   id: '/t/$id',
   path: '/t/$id',
+  getParentRoute: () => AgentRoute,
+} as any)
+const AgentSkillsNameIndexRoute = AgentSkillsNameIndexRouteImport.update({
+  id: '/skills/$name/',
+  path: '/skills/$name/',
+  getParentRoute: () => AgentRoute,
+} as any)
+const AgentSkillsNameSplatRoute = AgentSkillsNameSplatRouteImport.update({
+  id: '/skills/$name/$',
+  path: '/skills/$name/$',
   getParentRoute: () => AgentRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$agent': typeof AgentRouteWithChildren
+  '/activity': typeof ActivityRoute
+  '/agents': typeof AgentsRoute
   '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
   '/$agent/schedule': typeof AgentScheduleRoute
+  '/$agent/settings': typeof AgentSettingsRoute
   '/$agent/': typeof AgentIndexRoute
   '/$agent/t/$id': typeof AgentTIdRoute
+  '/$agent/skills/': typeof AgentSkillsIndexRoute
+  '/$agent/skills/$name/$': typeof AgentSkillsNameSplatRoute
+  '/$agent/skills/$name/': typeof AgentSkillsNameIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
+  '/agents': typeof AgentsRoute
   '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
   '/$agent/schedule': typeof AgentScheduleRoute
+  '/$agent/settings': typeof AgentSettingsRoute
   '/$agent': typeof AgentIndexRoute
   '/$agent/t/$id': typeof AgentTIdRoute
+  '/$agent/skills': typeof AgentSkillsIndexRoute
+  '/$agent/skills/$name/$': typeof AgentSkillsNameSplatRoute
+  '/$agent/skills/$name': typeof AgentSkillsNameIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$agent': typeof AgentRouteWithChildren
+  '/activity': typeof ActivityRoute
+  '/agents': typeof AgentsRoute
   '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
   '/$agent/schedule': typeof AgentScheduleRoute
+  '/$agent/settings': typeof AgentSettingsRoute
   '/$agent/': typeof AgentIndexRoute
   '/$agent/t/$id': typeof AgentTIdRoute
+  '/$agent/skills/': typeof AgentSkillsIndexRoute
+  '/$agent/skills/$name/$': typeof AgentSkillsNameSplatRoute
+  '/$agent/skills/$name/': typeof AgentSkillsNameIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/$agent'
+    | '/activity'
+    | '/agents'
     | '/$agent/memory'
     | '/$agent/new'
     | '/$agent/schedule'
+    | '/$agent/settings'
     | '/$agent/'
     | '/$agent/t/$id'
+    | '/$agent/skills/'
+    | '/$agent/skills/$name/$'
+    | '/$agent/skills/$name/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activity'
+    | '/agents'
     | '/$agent/memory'
     | '/$agent/new'
     | '/$agent/schedule'
+    | '/$agent/settings'
     | '/$agent'
     | '/$agent/t/$id'
+    | '/$agent/skills'
+    | '/$agent/skills/$name/$'
+    | '/$agent/skills/$name'
   id:
     | '__root__'
     | '/'
     | '/$agent'
+    | '/activity'
+    | '/agents'
     | '/$agent/memory'
     | '/$agent/new'
     | '/$agent/schedule'
+    | '/$agent/settings'
     | '/$agent/'
     | '/$agent/t/$id'
+    | '/$agent/skills/'
+    | '/$agent/skills/$name/$'
+    | '/$agent/skills/$name/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgentRoute: typeof AgentRouteWithChildren
+  ActivityRoute: typeof ActivityRoute
+  AgentsRoute: typeof AgentsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -128,6 +202,20 @@ declare module '@tanstack/react-router' {
       path: '/$agent'
       fullPath: '/$agent'
       preLoaderRoute: typeof AgentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$agent/': {
@@ -158,11 +246,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentScheduleRouteImport
       parentRoute: typeof AgentRoute
     }
+    '/$agent/settings': {
+      id: '/$agent/settings'
+      path: '/settings'
+      fullPath: '/$agent/settings'
+      preLoaderRoute: typeof AgentSettingsRouteImport
+      parentRoute: typeof AgentRoute
+    }
+    '/$agent/skills/': {
+      id: '/$agent/skills/'
+      path: '/skills'
+      fullPath: '/$agent/skills/'
+      preLoaderRoute: typeof AgentSkillsIndexRouteImport
+      parentRoute: typeof AgentRoute
+    }
     '/$agent/t/$id': {
       id: '/$agent/t/$id'
       path: '/t/$id'
       fullPath: '/$agent/t/$id'
       preLoaderRoute: typeof AgentTIdRouteImport
+      parentRoute: typeof AgentRoute
+    }
+    '/$agent/skills/$name/': {
+      id: '/$agent/skills/$name/'
+      path: '/skills/$name'
+      fullPath: '/$agent/skills/$name/'
+      preLoaderRoute: typeof AgentSkillsNameIndexRouteImport
+      parentRoute: typeof AgentRoute
+    }
+    '/$agent/skills/$name/$': {
+      id: '/$agent/skills/$name/$'
+      path: '/skills/$name/$'
+      fullPath: '/$agent/skills/$name/$'
+      preLoaderRoute: typeof AgentSkillsNameSplatRouteImport
       parentRoute: typeof AgentRoute
     }
   }
@@ -172,16 +288,24 @@ interface AgentRouteChildren {
   AgentMemoryRoute: typeof AgentMemoryRoute
   AgentNewRoute: typeof AgentNewRoute
   AgentScheduleRoute: typeof AgentScheduleRoute
+  AgentSettingsRoute: typeof AgentSettingsRoute
   AgentIndexRoute: typeof AgentIndexRoute
   AgentTIdRoute: typeof AgentTIdRoute
+  AgentSkillsIndexRoute: typeof AgentSkillsIndexRoute
+  AgentSkillsNameSplatRoute: typeof AgentSkillsNameSplatRoute
+  AgentSkillsNameIndexRoute: typeof AgentSkillsNameIndexRoute
 }
 
 const AgentRouteChildren: AgentRouteChildren = {
   AgentMemoryRoute: AgentMemoryRoute,
   AgentNewRoute: AgentNewRoute,
   AgentScheduleRoute: AgentScheduleRoute,
+  AgentSettingsRoute: AgentSettingsRoute,
   AgentIndexRoute: AgentIndexRoute,
   AgentTIdRoute: AgentTIdRoute,
+  AgentSkillsIndexRoute: AgentSkillsIndexRoute,
+  AgentSkillsNameSplatRoute: AgentSkillsNameSplatRoute,
+  AgentSkillsNameIndexRoute: AgentSkillsNameIndexRoute,
 }
 
 const AgentRouteWithChildren = AgentRoute._addFileChildren(AgentRouteChildren)
@@ -189,6 +313,8 @@ const AgentRouteWithChildren = AgentRoute._addFileChildren(AgentRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgentRoute: AgentRouteWithChildren,
+  ActivityRoute: ActivityRoute,
+  AgentsRoute: AgentsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

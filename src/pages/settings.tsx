@@ -1,0 +1,454 @@
+// Settings: the agent's roster entry (name, job, Slack channel), its model, thinking, tools and standing instructions,
+// which apply from its next request and to new threads, what it may reach (hosts, workspaces, other agents), and the
+// devices that get notifications. The settings file's values (keys, limits, Slack tokens) stay in the file.
+import { useForm } from "@tanstack/react-form";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type Agent, type Posts, post, type Settings as AgentSettings } from "../api.ts";
+import { when } from "../format.ts";
+import { subscribeHere, supported, thisDevice, unsubscribe } from "../push.ts";
+import { queries, useAgents } from "../queries.ts";
+import { Action, Confirm, Empty, Page, SectionHead, useAttempt } from "./page.tsx";
+
+const LEVELS = ["off", "low", "medium", "high"] as const;
+type Change = Partial<Posts["/api/settings"]["body"]>;
+type EntryChange = Omit<Posts["/api/agents/save"]["body"], "id">;
+
+export function Settings({ agent }: { agent: Agent }) {
+	const queryClient = useQueryClient();
+	const settings = useQuery(queries.settings(agent.id));
+	/** What the last change did, shown under the section it changed. */
+	const [done, setDone] = useState<{ section: string; text: string }>();
+
+	/** Saves `change` to the agent's settings, keeping the rest; the server takes the switched-off tools whole. */
+	async function configure(section: string, text: string, change: Change) {
+		const current = settings.data ?? (await queryClient.fetchQuery(queries.settings(agent.id)));
+		const saved = await post("/api/settings", { agent: agent.id, disabledTools: current.tools.filter((t) => !t.enabled).map((t) => t.name), ...change });
+		queryClient.setQueryData(queries.settings(agent.id).queryKey, saved);
+		setDone({ section, text: `${text} Applies from the next request.` });
+	}
+
+	/** Saves a change to the agent's roster entry. */
+	async function save(section: string, text: string, change: EntryChange) {
+		await post("/api/agents/save", { id: agent.id, ...change });
+		await queryClient.invalidateQueries({ queryKey: ["agents"] });
+		setDone({ section, text });
+	}
+
+	const saved = (section: string) => (done?.section === section ? <p className="saved">{done.text}</p> : null);
+
+	return (
+		<Page title="Settings" agent={agent}>
+			<EntrySection key={agent.id} agent={agent} save={(change) => save("agent", "Saved.", change)} saved={saved("agent")} />
+			{settings.data === undefined ? (
+				<Empty>Loading the settings…</Empty>
+			) : (
+				<>
+					<ModelSection settings={settings.data} configure={configure} saved={saved("model")} />
+					<ToolsSection settings={settings.data} configure={configure} saved={saved("tools")} />
+					<InstructionsSection key={agent.id} settings={settings.data} configure={configure} saved={saved("instructions")} />
+				</>
+			)}
+			<AccessSection agent={agent} save={save} saved={saved("access")} />
+			<NotificationsSection />
+		</Page>
+	);
+}
+
+/** A labeled row of a section. */
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+	return (
+		<div className="field">
+			<div className="field-name">
+				<span>{label}</span>
+				{hint !== undefined && <span className="hint">{hint}</span>}
+			</div>
+			<div className="field-control">{children}</div>
+		</div>
+	);
+}
+
+/** A row of buttons, one pressed. */
+function Choices({ label, options, current, choose }: { label: string; options: readonly string[]; current: string; choose: (value: string) => Promise<unknown> }) {
+	return (
+		<div className="choices" role="group" aria-label={label}>
+			{options.map((option) => (
+				<ChoiceButton key={option} on={option === current} run={() => choose(option)}>
+					{option}
+				</ChoiceButton>
+			))}
+		</div>
+	);
+}
+
+function ChoiceButton({ on, run, children }: { on: boolean; run: () => Promise<unknown>; children: ReactNode }) {
+	const attempt = useAttempt();
+	const [busy, setBusy] = useState(false);
+	return (
+		<button
+			className={`choice${on ? " on" : ""}`}
+			type="button"
+			aria-pressed={on}
+			disabled={busy}
+			onClick={async () => {
+				setBusy(true);
+				await attempt(run);
+				setBusy(false);
+			}}
+		>
+			{children}
+		</button>
+	);
+}
+
+/** A switch for something on or off. */
+function Switch({ label, on, run }: { label: string; on: boolean; run: () => Promise<unknown> }) {
+	const attempt = useAttempt();
+	const [busy, setBusy] = useState(false);
+	return (
+		<button
+			className={`switch${on ? " on" : ""}`}
+			type="button"
+			role="switch"
+			aria-checked={on}
+			disabled={busy}
+			onClick={async () => {
+				setBusy(true);
+				await attempt(run);
+				setBusy(false);
+			}}
+		>
+			<span className="track" aria-hidden="true" />
+			{label}
+		</button>
+	);
+}
+
+/** The agent's name, job and Slack channel, saved together. */
+function EntrySection({ agent, save, saved }: { agent: Agent; save: (change: EntryChange) => Promise<void>; saved: ReactNode }) {
+	const attempt = useAttempt();
+	const { fallback } = useAgents();
+	const form = useForm({
+		defaultValues: { name: agent.name, job: agent.job, channel: agent.channel ?? "" },
+		onSubmit: async ({ value, formApi }) => {
+			if (await attempt(() => save({ name: value.name, job: value.job, channel: value.channel.trim() }))) formApi.reset(value);
+		},
+	});
+	return (
+		<section>
+			<SectionHead title="Agent" count={agent.id} />
+			<form
+				className="fields"
+				onSubmit={(event) => {
+					event.preventDefault();
+					void form.handleSubmit();
+				}}
+			>
+				<form.Field name="name" validators={{ onChange: ({ value }) => (value.trim() === "" ? "An agent needs a name." : undefined) }}>
+					{(field) => (
+						<Field label="name">
+							<input aria-label="Name" value={field.state.value} onChange={(event) => field.handleChange(event.target.value)} onBlur={field.handleBlur} />
+							{field.state.meta.errors.length > 0 && <p className="field-error">{field.state.meta.errors.join(" ")}</p>}
+						</Field>
+					)}
+				</form.Field>
+				<form.Field name="job">
+					{(field) => (
+						<Field label="job" hint="one line, which you and the agents that may message it see">
+							<input aria-label="Job" value={field.state.value} placeholder="Looks after the homelab." onChange={(event) => field.handleChange(event.target.value)} onBlur={field.handleBlur} />
+						</Field>
+					)}
+				</form.Field>
+				<form.Field name="channel">
+					{(field) => (
+						<Field label="Slack channel" hint={agent.id === fallback ? "empty: the settings file's channel" : "empty: reached from the app and the command line only"}>
+							<input
+								aria-label="Slack channel"
+								value={field.state.value}
+								placeholder="C0123ABCD"
+								autoCapitalize="off"
+								spellCheck={false}
+								onChange={(event) => field.handleChange(event.target.value)}
+								onBlur={field.handleBlur}
+							/>
+						</Field>
+					)}
+				</form.Field>
+				<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting, state.isDirty] as const}>
+					{([canSubmit, submitting, dirty]) => (
+						<div className="form-bar">
+							{dirty && (
+								<button className="plain" type="button" onClick={() => form.reset()}>
+									revert
+								</button>
+							)}
+							<button className="primary" type="submit" disabled={!canSubmit || submitting || !dirty}>
+								save
+							</button>
+						</div>
+					)}
+				</form.Subscribe>
+			</form>
+			{saved}
+		</section>
+	);
+}
+
+type Configure = (section: string, text: string, change: Change) => Promise<void>;
+
+function ModelSection({ settings, configure, saved }: { settings: AgentSettings; configure: Configure; saved: ReactNode }) {
+	return (
+		<section>
+			<SectionHead title="Model" />
+			<div className="fields">
+				<Field label="model" hint={settings.models.length > 1 ? undefined : "add more in the settings file's model.choices"}>
+					<Choices label="Model" options={settings.models} current={settings.model} choose={(model) => configure("model", `Model set to ${model}.`, { model })} />
+				</Field>
+				<Field label="thinking" hint="more thinks longer and costs more">
+					<Choices
+						label="Thinking"
+						options={LEVELS}
+						current={settings.thinkingLevel}
+						choose={(level) => {
+							const thinkingLevel = LEVELS.find((l) => l === level) ?? "off";
+							return configure("model", `Thinking set to ${thinkingLevel}.`, { thinkingLevel });
+						}}
+					/>
+				</Field>
+			</div>
+			{saved}
+		</section>
+	);
+}
+
+function ToolsSection({ settings, configure, saved }: { settings: AgentSettings; configure: Configure; saved: ReactNode }) {
+	const on = settings.tools.filter((t) => t.enabled).length;
+	return (
+		<section>
+			<SectionHead title="Tools" count={`${on} of ${settings.tools.length} on`} />
+			<p className="page-note">Tools you can switch off. Reminders, jobs, memory, questions and skills are always on.</p>
+			<ul className="switches">
+				{settings.tools.map((tool) => (
+					<li key={tool.name}>
+						<Switch
+							label={tool.name}
+							on={tool.enabled}
+							run={() => {
+								const off = new Set(settings.tools.filter((t) => !t.enabled).map((t) => t.name));
+								if (tool.enabled) off.add(tool.name);
+								else off.delete(tool.name);
+								return configure("tools", `${tool.name} ${tool.enabled ? "off" : "on"}.`, { disabledTools: [...off] });
+							}}
+						/>
+					</li>
+				))}
+			</ul>
+			{saved}
+		</section>
+	);
+}
+
+function InstructionsSection({ settings, configure, saved }: { settings: AgentSettings; configure: Configure; saved: ReactNode }) {
+	const attempt = useAttempt();
+	const [draft, setDraft] = useState<string>();
+	const [busy, setBusy] = useState(false);
+	const box = useRef<HTMLTextAreaElement>(null);
+	const text = draft ?? settings.instructions;
+	const changed = draft !== undefined && draft !== settings.instructions;
+	useLayoutEffect(() => {
+		const el = box.current;
+		if (el === null) return;
+		el.style.height = "auto";
+		el.style.height = `${Math.max(el.scrollHeight, 96)}px`;
+	}, [text]);
+	return (
+		<section>
+			<SectionHead title="Standing instructions" />
+			<p className="page-note">Added to the system prompt of every conversation this agent has, its threads and job runs included.</p>
+			<textarea
+				ref={box}
+				className="instructions-box"
+				aria-label="Standing instructions"
+				value={text}
+				placeholder="Answer in British English. Keep answers under five sentences unless I ask for more."
+				onChange={(event) => setDraft(event.target.value)}
+			/>
+			<div className="form-bar">
+				{changed && (
+					<button className="plain" type="button" onClick={() => setDraft(undefined)}>
+						revert
+					</button>
+				)}
+				<button
+					className="primary"
+					type="button"
+					disabled={!changed || busy}
+					onClick={async () => {
+						setBusy(true);
+						const value = draft ?? "";
+						if (await attempt(() => configure("instructions", value.trim() === "" ? "Standing instructions cleared." : "Standing instructions saved.", { instructions: value }))) setDraft(undefined);
+						setBusy(false);
+					}}
+				>
+					save
+				</button>
+			</div>
+			{saved}
+		</section>
+	);
+}
+
+/** What the agent may reach: hosts it fetches from without asking, workspaces, and the agents it may message. */
+function AccessSection({ agent, save, saved }: { agent: Agent; save: (section: string, text: string, change: EntryChange) => Promise<void>; saved: ReactNode }) {
+	const { agents } = useAgents();
+	const names = useQuery(queries.workspaces).data?.names;
+	// No list: every workspace, as for the default agent.
+	const given = agent.workspaces ?? names ?? [];
+	const others = agents.filter((a) => a.id !== agent.id && (a.archived === undefined || agent.canMessage.includes(a.id)));
+	const toggle = (list: readonly string[], item: string) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
+	return (
+		<section>
+			<SectionHead title="Access" />
+			<div className="fields">
+				<Field label="hosts" hint="fetched without asking; added when you allow one for good">
+					{agent.hosts.length === 0 ? (
+						<p className="field-empty">None yet.</p>
+					) : (
+						<ul className="chips">
+							{agent.hosts.map((host) => (
+								<li key={host} className="chip">
+									<code>{host}</code>
+									<Action label={`Remove ${host}`} run={() => save("access", `${host} removed: ${agent.name} asks before fetching from it.`, { hosts: agent.hosts.filter((h) => h !== host) })}>
+										remove
+									</Action>
+								</li>
+							))}
+						</ul>
+					)}
+				</Field>
+				<Field label="workspaces" hint="machines it may work on, each still asking first">
+					{names === undefined ? (
+						<p className="field-empty">Loading…</p>
+					) : names.length === 0 ? (
+						<p className="field-empty">No workspaces are set up.</p>
+					) : (
+						<ul className="switches">
+							{names.map((name) => (
+								<li key={name}>
+									<Switch label={name} on={given.includes(name)} run={() => save("access", `${name} ${given.includes(name) ? "taken away" : "given"}.`, { workspaces: toggle(given, name) })} />
+								</li>
+							))}
+						</ul>
+					)}
+				</Field>
+				<Field label="may message" hint="agents it may ask and hand work to">
+					{others.length === 0 ? (
+						<p className="field-empty">No other agents.</p>
+					) : (
+						<ul className="switches">
+							{others.map((other) => (
+								<li key={other.id}>
+									<Switch
+										label={other.name}
+										on={agent.canMessage.includes(other.id)}
+										run={() => save("access", `${agent.name} ${agent.canMessage.includes(other.id) ? "may no longer" : "may now"} message ${other.name}.`, { canMessage: toggle(agent.canMessage, other.id) })}
+									/>
+								</li>
+							))}
+						</ul>
+					)}
+				</Field>
+			</div>
+			{saved}
+		</section>
+	);
+}
+
+/** The devices that get notifications, which are every agent's. */
+function NotificationsSection() {
+	const queryClient = useQueryClient();
+	const push = useQuery(queries.push);
+	const [mine, setMine] = useState<string>();
+	const [done, setDone] = useState<string>();
+	useEffect(() => {
+		void thisDevice().then(setMine);
+	}, []);
+	const refresh = async () => {
+		await queryClient.invalidateQueries({ queryKey: ["push"] });
+		setMine(await thisDevice());
+	};
+	if (push.data === undefined) {
+		return (
+			<section>
+				<SectionHead title="Notifications" />
+				<Empty>{push.isError ? "Couldn't load the devices." : "Loading…"}</Empty>
+			</section>
+		);
+	}
+	if (push.data === null) {
+		return (
+			<section>
+				<SectionHead title="Notifications" />
+				<Empty>Notifications need web.url in gaidin's settings file.</Empty>
+			</section>
+		);
+	}
+	const info = push.data;
+	const note = supported()
+		? "Reminders, job reports, and approvals and questions waiting on you, from every agent, on each device that's turned on."
+		: /iPhone|iPad/.test(navigator.userAgent)
+			? "On an iPhone or iPad, add the app to the Home Screen (Share, then Add to Home Screen) and open it from there to turn notifications on."
+			: "This browser can't get notifications.";
+	return (
+		<section>
+			<SectionHead title="Notifications" count={info.devices.length}>
+				{supported() && !info.devices.some((d) => d.endpoint === mine) && (
+					<Action
+						className="primary"
+						run={async () => {
+							await subscribeHere(info.publicKey);
+							await refresh();
+							setDone("Notifications are on for this device.");
+						}}
+					>
+						turn on here
+					</Action>
+				)}
+				{info.devices.length > 0 && (
+					<Action
+						run={async () => {
+							const { sent } = await post("/api/push/test", {});
+							setDone(`Sent to ${sent} device${sent === 1 ? "" : "s"}.`);
+						}}
+					>
+						send a test
+					</Action>
+				)}
+			</SectionHead>
+			<p className="page-note">{note}</p>
+			{info.devices.length === 0 ? (
+				<Empty>No device gets notifications yet.</Empty>
+			) : (
+				<ul className="rows">
+					{info.devices.map((device) => (
+						<li key={device.endpoint} className="device-row">
+							<span className="device">
+								{device.label}
+								{device.endpoint === mine && <span className="tag">this device</span>}
+							</span>
+							<span className="since">since {when.format(device.addedAt)}</span>
+							<Confirm
+								label="remove"
+								run={async () => {
+									await unsubscribe(device.endpoint);
+									await refresh();
+								}}
+							/>
+						</li>
+					))}
+				</ul>
+			)}
+			{done !== undefined && <p className="saved">{done}</p>}
+		</section>
+	);
+}

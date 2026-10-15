@@ -395,7 +395,7 @@ function useCommands(context: { agent: Agent; home: boolean; say: Say; setLocal:
 	const { agent, home, say } = context;
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
-	const open = (to: "/$agent/schedule" | "/$agent/memory") => void navigate({ to, params: { agent: agent.id } });
+	const open = (to: "/$agent/schedule" | "/$agent/memory" | "/$agent/settings" | "/$agent/skills" | "/activity" | "/agents") => void navigate({ to, params: { agent: agent.id } });
 	const settings = useQuery({ ...queries.settings(agent.id), enabled: home }).data;
 	const reminders = useQuery(queries.reminders(agent.id)).data ?? [];
 	const jobs = useQuery(queries.jobs(agent.id)).data ?? [];
@@ -460,6 +460,13 @@ function useCommands(context: { agent: Agent; home: boolean; say: Say; setLocal:
 		{ name: "stop", help: "Stop the current run (Esc, Ctrl+C)", run: () => context.stop() },
 		{ name: "next", help: `${agent.name}'s reminders and scheduled jobs (the schedule page)`, run: () => open("/$agent/schedule") },
 		{ name: "memory", help: `The shared notes and ${agent.name}'s work notes (the memory page)`, run: () => open("/$agent/memory") },
+		{ name: "skills", help: "The guides every agent can open (the skills page)", run: () => open("/$agent/skills") },
+		{ name: "settings", help: `${agent.name}'s settings, tools and access (the settings page)`, run: () => open("/$agent/settings") },
+		{ name: "tools", help: "Switch tools on and off (the settings page)", run: () => open("/$agent/settings") },
+		{ name: "notifications", help: "Notifications for this device and the others (the settings page)", run: () => open("/$agent/settings") },
+		{ name: "timeline", help: "What the agents did and who allowed it (the activity page)", run: () => open("/activity") },
+		{ name: "budget", help: "Spend today and this month, against the limits (the activity page)", run: () => open("/activity") },
+		{ name: "agents", help: "The roster: make, archive and restore agents (the agents page)", run: () => open("/agents") },
 		{
 			name: "cancel",
 			args: "<ref>",

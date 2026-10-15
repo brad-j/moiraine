@@ -27,6 +27,18 @@ export const queries = {
 			getNextPageParam: (page) => page.next,
 			refetchInterval: 60_000,
 		}),
+	push: queryOptions({ queryKey: ["push"], queryFn: () => load("/api/push") }),
+	workspaces: queryOptions({ queryKey: ["workspaces"], queryFn: () => load("/api/workspaces"), staleTime: 5 * 60_000 }),
+	skills: queryOptions({ queryKey: ["skills"], queryFn: () => load("/api/skills") }),
+	skillFile: (name: string, file: string) =>
+		queryOptions({ queryKey: ["skills", name, file], queryFn: () => load("/api/skills/file", `?name=${encodeURIComponent(name)}&file=${encodeURIComponent(file)}`), retry: false }),
+	/** What every agent did and who allowed it, newest first, 50 at a time. */
+	timeline: infiniteQueryOptions({
+		queryKey: ["timeline"],
+		queryFn: ({ pageParam }) => load("/api/timeline", pageParam === undefined ? "" : `?entry=${pageParam.entry}&ref=${encodeURIComponent(pageParam.ref)}`),
+		initialPageParam: undefined as { entry: number; ref: string } | undefined,
+		getNextPageParam: (page) => page.next,
+	}),
 	conversation: (id: number) => queryOptions({ queryKey: ["conversation", id], queryFn: () => load("/api/conversation", `?id=${id}`), retry: false }),
 };
 

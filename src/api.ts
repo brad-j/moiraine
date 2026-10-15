@@ -5,7 +5,7 @@ import type { Gets, Posts, PROTOCOL as ServerProtocol, StreamEvent } from "gaidi
 export type { Gets, Posts, StreamEvent };
 
 /** The protocol version this build is typed against; tsc fails here when gaidin raises it. */
-export const PROTOCOL: typeof ServerProtocol = 1;
+export const PROTOCOL: typeof ServerProtocol = 2;
 
 // The conversation's parts, as the event stream carries them.
 type EventOf<T extends StreamEvent["type"]> = Extract<StreamEvent, { type: T }>;

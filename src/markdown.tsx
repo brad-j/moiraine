@@ -1,10 +1,17 @@
-// Enough Markdown for model answers: fences, headings, lists, quotes, tables, rules, and inline code, emphasis and
-// links. gaidin's web/markdown.ts, building React elements: nothing in a message is read as markup.
+// Enough Markdown for model answers and skill files: fences, headings, lists, quotes, tables, rules, and inline code,
+// emphasis and links. gaidin's web/markdown.ts, building React elements: nothing in a message is read as markup.
 import { type CSSProperties, memo, type ReactNode } from "react";
+
+export type MarkdownOptions = {
+	/** A document rather than an answer: # is a page title (h2) and ## a section (h3), and headings get ids for anchors. */
+	document?: boolean;
+	/** A relative link drawn by the page, or undefined to show it as plain text. http(s) and mailto links are drawn here. */
+	link?: (href: string, label: ReactNode, key: number) => ReactNode | undefined;
+};
 
 const INLINE = /(`+)([\s\S]*?[^`])\1(?!`)|\*\*([^*][\s\S]*?)\*\*|__([^_][\s\S]*?)__|~~([\s\S]+?)~~|!?\[([^\]]+)\]\(<?((?:[^()\s<>]|\([^()\s]*\))+)>?\)|<?(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"\]])>?|\*([^*\s](?:[^*]*[^*\s])?)\*|(?<![\w])_([^_\s](?:[^_]*[^_\s])?)_(?![\w])/g;
 
-function inline(text: string): ReactNode[] {
+function inline(text: string, o: MarkdownOptions): ReactNode[] {
 	const out: ReactNode[] = [];
 	let last = 0;
 	for (const m of text.matchAll(INLINE)) {
@@ -13,22 +20,22 @@ function inline(text: string): ReactNode[] {
 		last = index + m[0].length;
 		const key = out.length;
 		if (m[1] !== undefined) out.push(<code key={key}>{m[2]!.replace(/^ (.*) $/, "$1")}</code>);
-		else if (m[3] !== undefined || m[4] !== undefined) out.push(<strong key={key}>{inline(m[3] ?? m[4]!)}</strong>);
-		else if (m[5] !== undefined) out.push(<s key={key}>{inline(m[5])}</s>);
-		else if (m[6] !== undefined) out.push(link(key, m[7]!, m[6]));
-		else if (m[8] !== undefined) out.push(link(key, m[8]));
-		else out.push(<em key={key}>{inline(m[9] ?? m[10]!)}</em>);
+		else if (m[3] !== undefined || m[4] !== undefined) out.push(<strong key={key}>{inline(m[3] ?? m[4]!, o)}</strong>);
+		else if (m[5] !== undefined) out.push(<s key={key}>{inline(m[5], o)}</s>);
+		else if (m[6] !== undefined) out.push(link(key, m[7]!, m[6], o));
+		else if (m[8] !== undefined) out.push(link(key, m[8], undefined, o));
+		else out.push(<em key={key}>{inline(m[9] ?? m[10]!, o)}</em>);
 	}
 	if (last < text.length) out.push(text.slice(last));
 	return out;
 }
 
 /** A link to an http(s) or mailto address; anything else is shown as its label. A label holding a URL stays plain, so links don't nest. */
-function link(key: number, href: string, label?: string): ReactNode {
-	if (!/^(https?:|mailto:)/i.test(href)) return label ?? href;
+function link(key: number, href: string, label: string | undefined, o: MarkdownOptions): ReactNode {
+	if (!/^(https?:|mailto:)/i.test(href)) return o.link?.(href, label === undefined ? href : inline(label, o), key) ?? label ?? href;
 	return (
 		<a key={key} href={href} target="_blank" rel="noopener noreferrer">
-			{label === undefined || /https?:\/\//.test(label) ? (label ?? href) : inline(label)}
+			{label === undefined || /https?:\/\//.test(label) ? (label ?? href) : inline(label, o)}
 		</a>
 	);
 }
@@ -40,10 +47,15 @@ const ITEM = /^(\s*)([-*+]|\d{1,9}[.)])\s+(.*)$/;
 const QUOTE = /^ {0,3}> ?(.*)$/;
 const TABLE_RULE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 
-/** A model's answer, parsed again only when its text changes. */
-export const Markdown = memo(function Markdown({ text }: { text: string }) {
-	return <div className="md">{blocks(text.replace(/\r\n?/g, "\n").split("\n"))}</div>;
+/** A model's answer or a document, parsed again only when its text or options change. */
+export const Markdown = memo(function Markdown({ text, ...given }: { text: string } & MarkdownOptions) {
+	return <div className="md">{blocks(text.replace(/\r\n?/g, "\n").split("\n"), given)}</div>;
 });
+
+/** A heading's anchor, as GitHub makes them: "Tools that reach outside" is "tools-that-reach-outside". */
+export function anchor(text: string): string {
+	return text.toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, "").trim().replace(/\s/g, "-");
+}
 
 function cells(row: string): string[] {
 	return row.trim().replace(/^\|/, "").replace(/\|$/, "").split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"));
@@ -58,7 +70,7 @@ function startsBlock(lines: string[], i: number): boolean {
 	return FENCE.test(line) || HEADING.test(line) || RULE.test(line) || ITEM.test(line) || QUOTE.test(line) || isTable(lines, i);
 }
 
-function blocks(lines: string[]): ReactNode[] {
+function blocks(lines: string[], o: MarkdownOptions): ReactNode[] {
 	const out: ReactNode[] = [];
 	let i = 0;
 	while (i < lines.length) {
@@ -85,8 +97,13 @@ function blocks(lines: string[]): ReactNode[] {
 		const heading = HEADING.exec(line);
 		if (heading) {
 			const level = heading[1]!.length;
-			const Tag = level <= 2 ? "h3" : level === 3 ? "h4" : "h5";
-			out.push(<Tag key={key}>{inline(heading[2]!)}</Tag>);
+			const Tag = o.document ? (level === 1 ? "h2" : level === 2 ? "h3" : "h4") : level <= 2 ? "h3" : level === 3 ? "h4" : "h5";
+			// In a document, h- keeps an anchor from taking an id the app uses, such as "approvals".
+			out.push(
+				<Tag key={key} id={o.document ? `h-${anchor(heading[2]!)}` : undefined}>
+					{inline(heading[2]!, o)}
+				</Tag>,
+			);
 			i++;
 			continue;
 		}
@@ -98,7 +115,7 @@ function blocks(lines: string[]): ReactNode[] {
 		if (QUOTE.test(line)) {
 			const body: string[] = [];
 			for (; i < lines.length && lines[i]!.trim() !== "" && QUOTE.test(lines[i]!); i++) body.push(QUOTE.exec(lines[i]!)![1]!);
-			out.push(<blockquote key={key}>{blocks(body)}</blockquote>);
+			out.push(<blockquote key={key}>{blocks(body, o)}</blockquote>);
 			continue;
 		}
 		if (isTable(lines, i)) {
@@ -113,7 +130,7 @@ function blocks(lines: string[]): ReactNode[] {
 							<tr>
 								{head.map((text, n) => (
 									<th key={n} style={align[n]}>
-										{inline(text)}
+										{inline(text, o)}
 									</th>
 								))}
 							</tr>
@@ -123,7 +140,7 @@ function blocks(lines: string[]): ReactNode[] {
 								<tr key={r}>
 									{row.map((text, n) => (
 										<td key={n} style={align[n]}>
-											{inline(text)}
+											{inline(text, o)}
 										</td>
 									))}
 								</tr>
@@ -136,7 +153,7 @@ function blocks(lines: string[]): ReactNode[] {
 		}
 		const item = ITEM.exec(line);
 		if (item) {
-			const [node, next] = list(lines, i, item[1]!.length, key);
+			const [node, next] = list(lines, i, item[1]!.length, key, o);
 			out.push(node);
 			i = next;
 			continue;
@@ -145,7 +162,7 @@ function blocks(lines: string[]): ReactNode[] {
 		const parts: ReactNode[] = [];
 		for (let first = true; i < lines.length && lines[i]!.trim() !== "" && (first || !startsBlock(lines, i)); i++, first = false) {
 			if (!first) parts.push(<br key={`br${i}`} />);
-			parts.push(...inline(lines[i]!.trim()));
+			parts.push(...inline(lines[i]!.trim(), o));
 		}
 		out.push(<p key={key}>{parts}</p>);
 	}
@@ -153,7 +170,7 @@ function blocks(lines: string[]): ReactNode[] {
 }
 
 /** A list at `indent`; lines indented further belong to the item above them. Returns the list and the next line. */
-function list(lines: string[], i: number, indent: number, key: number): [ReactNode, number] {
+function list(lines: string[], i: number, indent: number, key: number, o: MarkdownOptions): [ReactNode, number] {
 	const first = ITEM.exec(lines[i]!)!;
 	const ordered = /\d/.test(first[2]!);
 	const items: ReactNode[] = [];
@@ -176,9 +193,9 @@ function list(lines: string[], i: number, indent: number, key: number): [ReactNo
 			else body.push(line.trim());
 		}
 		let content: ReactNode[];
-		if (body.length === 1) content = inline(body[0]!);
+		if (body.length === 1) content = inline(body[0]!, o);
 		else {
-			content = blocks(body);
+			content = blocks(body, o);
 			// A tight item's first paragraph sits inline, so the bullet lines up with its text.
 			const lead = content[0];
 			if (!loose && isParagraph(lead)) content = [lead.props.children, ...content.slice(1)];

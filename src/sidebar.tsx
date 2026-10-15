@@ -64,7 +64,7 @@ export function Sidebar({ agent }: { agent: Agent }) {
 	);
 }
 
-/** The agent's pages, at the sidebar's foot. The schedule's count turns to a warning when a job is paused or failing. */
+/** The pages at the sidebar's foot: the agent's own, then those across agents. The schedule's count turns to a warning when a job is paused or failing. */
 function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 	const reminders = useQuery(queries.reminders(agent.id)).data ?? [];
 	const jobs = useQuery(queries.jobs(agent.id)).data ?? [];
@@ -82,6 +82,19 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 			</Link>
 			<Link to="/$agent/memory" params={{ agent: agent.id }} onClick={onOpen}>
 				Memory
+			</Link>
+			<Link to="/$agent/skills" params={{ agent: agent.id }} onClick={onOpen}>
+				Skills
+			</Link>
+			<Link to="/$agent/settings" params={{ agent: agent.id }} onClick={onOpen}>
+				Settings
+			</Link>
+			<span className="divider" aria-hidden="true" />
+			<Link to="/agents" onClick={onOpen}>
+				Agents
+			</Link>
+			<Link to="/activity" onClick={onOpen}>
+				Activity
 			</Link>
 		</div>
 	);

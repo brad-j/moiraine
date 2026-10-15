@@ -125,3 +125,184 @@ test("the web view's addresses open the default agent's page, and /next opens th
 	await send(page, "/next");
 	await expect(page).toHaveURL(/\/app\/gaidin\/schedule$/);
 });
+
+test("skills lists the gaidin skill and reads its files, following links between them", async ({ page }) => {
+	await page.goto("/app/");
+	await pages(page).getByRole("link", { name: "Skills" }).click();
+	await expect(page).toHaveURL(/\/app\/gaidin\/skills$/);
+	await expect(page.locator(".skill-row")).toHaveCount(1);
+	await page.locator(".skill-row", { hasText: "gaidin" }).click();
+	await expect(page).toHaveURL(/\/app\/gaidin\/skills\/gaidin$/);
+	const doc = page.locator(".skill-doc");
+	await expect(doc).toContainText("This is gaidin's documentation");
+	// The front matter is shown as the description above, not in the document.
+	await expect(doc).not.toContainText("description:");
+
+	await page.getByRole("navigation", { name: "Files" }).getByRole("link", { name: "tools.md" }).click();
+	await expect(page).toHaveURL(/\/app\/gaidin\/skills\/gaidin\/tools\.md$/);
+	await expect(doc.locator("h2")).toHaveText("Tools");
+	// A link to another doc opens it here, at the heading it names.
+	await doc.getByRole("link", { name: "Security" }).first().click();
+	await expect(page).toHaveURL(/\/app\/gaidin\/skills\/gaidin\/security\.md#[a-z-]+$/);
+	await expect(doc.locator("h2")).toHaveText("Security");
+
+	await page.reload();
+	await expect(doc.locator("h2")).toHaveText("Security");
+	await page.goBack();
+	await expect(doc.locator("h2")).toHaveText("Tools");
+});
+
+test("the owner creates a skill, adds a file and edits it, and removes the skill", async ({ page }) => {
+	await page.goto("/app/gaidin/skills");
+	await expect(page.locator(".skill-row", { hasText: "gaidin" })).toBeVisible();
+	await page.getByRole("button", { name: "+ new skill" }).click();
+	await page.locator(".skill-form input").fill("homelab-alerts");
+	await page.getByRole("textbox", { name: "Description" }).fill("What to do when a homelab alert comes in.");
+	await page.getByRole("textbox", { name: "Guide" }).fill("# Homelab alerts\n\nCheck the NAS first.");
+	await page.getByRole("button", { name: "create skill" }).click();
+	await expect(page).toHaveURL(/\/skills\/homelab-alerts$/);
+	const doc = page.locator(".skill-doc");
+	await expect(doc.locator("h2")).toHaveText("Homelab alerts");
+	await expect(page.locator(".skill-head .tag")).toHaveText("local");
+
+	await page.getByRole("button", { name: "+ file" }).click();
+	await page.getByRole("textbox", { name: "New file's path" }).fill("references/backups.md");
+	await page.getByRole("textbox", { name: "New file's path" }).press("Enter");
+	await page.getByRole("textbox", { name: "homelab-alerts/references/backups.md" }).fill("# Backups\n\nThey run at 03:00.");
+	await page.getByRole("button", { name: "create file" }).click();
+	await expect(doc.locator("h2")).toHaveText("Backups");
+
+	await page.getByRole("button", { name: "edit" }).click();
+	await page.getByRole("textbox", { name: "homelab-alerts/references/backups.md" }).fill("# Backups\n\nThey run at 04:00 now.");
+	await page.getByRole("button", { name: "save" }).click();
+	await expect(doc).toContainText("They run at 04:00 now.");
+
+	// A broken SKILL.md isn't saved, and the page says why.
+	await page.getByRole("navigation", { name: "Files" }).getByRole("link", { name: "SKILL.md" }).click();
+	await page.getByRole("button", { name: "edit" }).click();
+	await page.getByRole("textbox", { name: "homelab-alerts/SKILL.md" }).fill("no front matter");
+	await page.getByRole("button", { name: "save" }).click();
+	await expect(page.locator(".page-problem")).toHaveText("SKILL.md has no front matter between --- lines");
+	await page.getByRole("button", { name: "cancel" }).click();
+
+	await page.getByRole("button", { name: "remove skill" }).click();
+	await page.getByRole("button", { name: "Press again to remove skill for good" }).click();
+	await expect(page).toHaveURL(/\/skills$/);
+	await expect(page.locator(".skill-row")).toHaveCount(1);
+	// The built-in skill has nothing to change.
+	await page.locator(".skill-row", { hasText: "gaidin" }).click();
+	await expect(page.getByRole("button", { name: "edit" })).toHaveCount(0);
+});
+
+test("settings switch the thinking and a tool, keep the instructions, and say what notifications need", async ({ page }) => {
+	await page.goto("/app/gaidin/settings");
+	const thinking = page.getByRole("group", { name: "Thinking" });
+	await thinking.getByRole("button", { name: "high" }).click();
+	await expect(thinking.getByRole("button", { name: "high" })).toHaveAttribute("aria-pressed", "true");
+	await expect(page.locator(".page")).toContainText("Thinking set to high. Applies from the next request.");
+
+	const fetchTool = page.getByRole("switch", { name: "fetch_url" });
+	await expect(fetchTool).toHaveAttribute("aria-checked", "true");
+	await fetchTool.click();
+	await expect(fetchTool).toHaveAttribute("aria-checked", "false");
+	// Switching a tool kept the thinking level.
+	await expect(thinking.getByRole("button", { name: "high" })).toHaveAttribute("aria-pressed", "true");
+
+	const instructions = page.getByRole("textbox", { name: "Standing instructions" });
+	await instructions.fill("Answer in British English.");
+	await page.locator("section", { has: page.getByRole("heading", { name: "Standing instructions" }) }).getByRole("button", { name: "save" }).click();
+	await expect(page.locator(".page")).toContainText("Standing instructions saved.");
+	await page.reload();
+	await expect(page.getByRole("textbox", { name: "Standing instructions" })).toHaveValue("Answer in British English.");
+	await expect(page.getByRole("switch", { name: "fetch_url" })).toHaveAttribute("aria-checked", "false");
+	await expect(page.locator(".page")).toContainText("Notifications need web.url in gaidin's settings file.");
+	await page.getByRole("navigation", { name: "Conversations" }).getByRole("link", { name: "Home conversation" }).click();
+	await expect(page.locator("#statusline")).toContainText("fetch_url off");
+});
+
+test("settings rename an agent, remove a host allowed for good, and let it message another agent", async ({ page }) => {
+	expect((await page.request.post("/api/agents/save", { data: { id: "scout", name: "Scout", job: "" } })).ok()).toBe(true);
+	await page.goto("/app/");
+	await send(page, "fetch the page");
+	await page.locator("#approvals").getByRole("button", { name: /^Always/ }).click();
+	await expect(page.locator("#log")).toContainText("The page says: page text.");
+
+	await send(page, "/settings");
+	await expect(page).toHaveURL(/\/app\/gaidin\/settings$/);
+	const access = page.locator("section", { has: page.getByRole("heading", { name: "Access" }) });
+	await expect(access.locator(".chip")).toContainText("site.test");
+	await access.getByRole("button", { name: "Remove site.test" }).click();
+	await expect(access).toContainText("None yet.");
+
+	// The host is gone, so the next fetch asks again.
+	await page.getByRole("navigation", { name: "Conversations" }).getByRole("link", { name: "Home conversation" }).click();
+	await send(page, "fetch it again");
+	await expect(page.locator("#approvals")).toContainText("fetch_url");
+	await page.locator("#approvals").getByRole("button", { name: "Deny" }).click();
+	await expect(page.locator("#approvals")).toBeEmpty();
+
+	await send(page, "/settings");
+	await access.getByRole("switch", { name: "Scout" }).click();
+	await expect(access.getByRole("switch", { name: "Scout" })).toHaveAttribute("aria-checked", "true");
+
+	await page.getByRole("textbox", { name: "Job" }).fill("Looks after the house.");
+	await page.getByRole("textbox", { name: "Name" }).fill("Gaidin");
+	await page.locator("section", { has: page.getByRole("heading", { name: "Agent" }) }).getByRole("button", { name: "save" }).click();
+	await expect(page.locator(".page")).toContainText("Saved.");
+	await expect(page.locator("#sidebar .switcher .name")).toHaveText("Gaidin");
+	await expect(page.locator("#sidebar .job")).toHaveText("Looks after the house.");
+	await page.reload();
+	await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("Gaidin");
+	await expect(access.getByRole("switch", { name: "Scout" })).toHaveAttribute("aria-checked", "true");
+});
+
+test("the agents page makes an agent, archives it and restores it", async ({ page }) => {
+	await page.goto("/app/");
+	await pages(page).getByRole("link", { name: "Agents" }).click();
+	await expect(page).toHaveURL(/\/app\/agents$/);
+	// The sidebar stays the agent's shown last.
+	await expect(page.locator("#sidebar .switcher .name")).toHaveText("gaidin");
+	await expect(page.locator(".agent-row")).toHaveCount(1);
+	await expect(page.locator(".agent-row")).toContainText("default");
+	await expect(page.locator(".agent-row").getByRole("button", { name: "archive" })).toHaveCount(0);
+
+	await page.getByRole("button", { name: "+ new agent" }).click();
+	const form = page.locator(".skill-form");
+	await form.locator("input").first().fill("Scout");
+	// The id follows the name.
+	await expect(form.locator("input").nth(1)).toHaveValue("scout");
+	await form.locator("input").nth(2).fill("Looks things up.");
+	await form.getByRole("button", { name: "make agent" }).click();
+	await expect(page).toHaveURL(/\/app\/scout\/settings$/);
+	await expect(page.locator("#sidebar .switcher .name")).toHaveText("Scout");
+
+	await pages(page).getByRole("link", { name: "Agents" }).click();
+	const scout = page.locator(".agent-row", { hasText: "Scout" });
+	await expect(scout).toContainText("Looks things up.");
+	await scout.getByRole("button", { name: "archive" }).click();
+	await scout.getByRole("button", { name: "Press again to archive for good" }).click();
+	const archived = page.locator("section", { has: page.getByRole("heading", { name: "Archived" }) });
+	await expect(archived.locator(".agent-row")).toContainText("Scout");
+	await archived.getByRole("button", { name: "restore" }).click();
+	await expect(page.locator("section", { has: page.getByRole("heading", { name: "Archived" }) })).toHaveCount(0);
+
+	// An id the app's pages use is refused before it's sent.
+	await page.getByRole("button", { name: "+ new agent" }).click();
+	await form.locator("input").first().fill("Activity");
+	await expect(form).toContainText("activity is the address of one of the app's pages.");
+	await expect(form.getByRole("button", { name: "make agent" })).toBeDisabled();
+});
+
+test("activity shows spend against the limits and what each agent did", async ({ page }) => {
+	await page.goto("/app/");
+	await send(page, "fetch the page");
+	await page.locator("#approvals").getByRole("button", { name: "Allow once" }).click();
+	await expect(page.locator("#log")).toContainText("The page says: page text.");
+	await send(page, "/timeline");
+	await expect(page).toHaveURL(/\/app\/activity$/);
+	await expect(page.getByRole("meter", { name: /^today: \$0\.000 of \$5\.00$/ })).toBeVisible();
+	await expect(page.locator(".event.is-tool")).toContainText("fetch_url");
+	await expect(page.locator(".event.is-tool .agent")).toHaveText("gaidin");
+	await expect(page.locator(".event.is-tool .outcome")).toHaveText("ok");
+	await expect(page.locator(".event.is-approval")).toContainText("allowed once");
+});
