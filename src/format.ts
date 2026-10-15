@@ -70,3 +70,23 @@ export function shortStamp(stamp: string): string {
 export function initial(name: string): string {
 	return (name.trim()[0] ?? "?").toUpperCase();
 }
+
+/** "just now", "25 min ago", "3 h ago", "4 days ago". */
+export function ago(at: number): string {
+	const minutes = Math.round((Date.now() - at) / 60_000);
+	if (minutes < 1) return "just now";
+	if (minutes < 60) return `${minutes} min ago`;
+	if (minutes < 48 * 60) return `${Math.floor(minutes / 60)} h ago`;
+	return `${Math.round(minutes / 1440)} days ago`;
+}
+
+const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" });
+const date = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
+
+/** "today", "tomorrow", a weekday within the week, or "Oct 20". */
+export function day(at: number): string {
+	const start = new Date();
+	start.setHours(0, 0, 0, 0);
+	const days = Math.floor((at - start.getTime()) / 86_400_000);
+	return days === 0 ? "today" : days === 1 ? "tomorrow" : days > 1 && days < 7 ? weekday.format(at) : date.format(at);
+}

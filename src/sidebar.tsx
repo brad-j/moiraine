@@ -1,13 +1,13 @@
 // The sidebar: the agent shown, its home conversation pinned, New thread, and its threads, job runs and conversations
 // other agents started, the most recently active first, loading more as it scrolls. On a phone it's a drawer.
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { createContext, useContext, useEffect, useRef } from "react";
 import { type Agent, problem } from "./api.ts";
 import { PLACES, placeOf } from "./conversation/view.tsx";
 import { initial, since, when } from "./format.ts";
-import { queries, useAgents } from "./queries.ts";
+import { queries, troubled, useAgents } from "./queries.ts";
 
 /** Opens and closes the drawer, on a phone. */
 export const Drawer = createContext<{ open: boolean; toggle: (open?: boolean) => void }>({ open: false, toggle: () => {} });
@@ -59,7 +59,31 @@ export function Sidebar({ agent }: { agent: Agent }) {
 				</Link>
 			</div>
 			<Threads agent={agent} onOpen={close} />
+			<Pages agent={agent} onOpen={close} />
 		</nav>
+	);
+}
+
+/** The agent's pages, at the sidebar's foot. The schedule's count turns to a warning when a job is paused or failing. */
+function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
+	const reminders = useQuery(queries.reminders(agent.id)).data ?? [];
+	const jobs = useQuery(queries.jobs(agent.id)).data ?? [];
+	const scheduled = reminders.length + jobs.length;
+	const trouble = troubled(jobs);
+	return (
+		<div className="pages" role="group" aria-label="Pages">
+			<Link to="/$agent/schedule" params={{ agent: agent.id }} onClick={onOpen}>
+				Schedule
+				{scheduled > 0 && (
+					<span className={`count${trouble > 0 ? " warn" : ""}`} title={trouble > 0 ? "A job is paused or failing" : undefined}>
+						{scheduled}
+					</span>
+				)}
+			</Link>
+			<Link to="/$agent/memory" params={{ agent: agent.id }} onClick={onOpen}>
+				Memory
+			</Link>
+		</div>
 	);
 }
 

@@ -31,8 +31,9 @@ The build is `dist/client`, built for `/app/`: hashed assets and `_shell.html`, 
 - `src/transcript.ts`: a conversation rebuilt from its event stream, from gaidin's `web/transcript.ts`.
 - `src/conversation/`: the log, the dock (every agent's approvals and questions), the prompt with its commands, and the status line, as gaidin's console has them.
 - `src/sidebar.tsx`: the agent switcher, the home conversation, New thread, and the agent's threads, job runs and conversations from other agents, virtualized and loaded as it scrolls. On a phone it's a drawer.
-- `src/routes/`: `/<agent>` (home), `/<agent>/t/<id>` (a thread), `/<agent>/new` (a thread about to start), under `/app/`.
+- `src/pages/`: the pages beside the conversations, built from `page.tsx` (the frame with the dock, section heads, actions that show what went wrong, and a second press to confirm): `schedule.tsx` and `memory.tsx` so far.
+- `src/routes/`: `/<agent>` (home; `?draft=` starts the prompt with a request), `/<agent>/t/<id>` (a thread), `/<agent>/new` (a thread about to start), `/<agent>/schedule` and `/<agent>/memory`, under `/app/`. The web view's `#/schedule` and `#/memory` open the default agent's page.
 
 ## Status
 
-Step 2 of the plan: the sidebar, a conversation, the dock and the prompt. The pages (schedule, memory, skills, settings, agents, activity) are step 3, so the commands that opened them in the web view aren't here yet. There's no deploy script yet.
+Step 3 of the plan is under way: the schedule and memory pages are built, with `/next` and `/memory`. Skills, settings, agents and activity come next. Pages ask for the approvals every 5 seconds, since no conversation's event stream is open on them. There's no deploy script yet.

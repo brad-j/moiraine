@@ -24,9 +24,11 @@ type Shown = {
 	thread?: { id: number; summary?: Omit<Summary, "startedAt" | "lastAt" | "messages"> };
 	/** The header's left end: the sidebar's button on a phone. */
 	menu: ReactNode;
+	/** Text to start the prompt with, once: a request a page began, such as "Remind me to ". */
+	draft?: string;
 };
 
-export function Conversation({ agent, thread, menu }: Shown) {
+export function Conversation({ agent, thread, menu, draft }: Shown) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const id = thread?.id;
@@ -64,6 +66,13 @@ export function Conversation({ agent, thread, menu }: Shown) {
 			say("err", problem(error));
 		}
 	}
+
+	// The draft goes in the prompt once, and leaves the address so a reload doesn't put it back.
+	useEffect(() => {
+		if (draft === undefined) return;
+		prompt.current?.prefill(draft);
+		void navigate({ to: "/$agent", params: { agent: agent.id }, search: {}, replace: true });
+	}, [draft, agent.id, navigate]);
 
 	const commands = useCommands({ agent, home, say, setLocal, stop, prefill: (text) => prompt.current?.prefill(text) });
 	const summary = thread?.summary;
@@ -130,7 +139,7 @@ export function Conversation({ agent, thread, menu }: Shown) {
 }
 
 /** A thread with `agent` that starts when the first message is sent, with its home settings and none of its history. */
-export function NewThread({ agent, menu }: Omit<Shown, "thread">) {
+export function NewThread({ agent, menu }: Omit<Shown, "thread" | "draft">) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [problemText, setProblem] = useState<string>();
@@ -385,6 +394,8 @@ async function runCommand(commands: readonly Command[], line: string, say: Say) 
 function useCommands(context: { agent: Agent; home: boolean; say: Say; setLocal: (lines: Local[]) => void; stop: () => Promise<void>; prefill: (text: string) => void }): Command[] {
 	const { agent, home, say } = context;
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
+	const open = (to: "/$agent/schedule" | "/$agent/memory") => void navigate({ to, params: { agent: agent.id } });
 	const settings = useQuery({ ...queries.settings(agent.id), enabled: home }).data;
 	const reminders = useQuery(queries.reminders(agent.id)).data ?? [];
 	const jobs = useQuery(queries.jobs(agent.id)).data ?? [];
@@ -447,6 +458,8 @@ function useCommands(context: { agent: Agent; home: boolean; say: Say; setLocal:
 				),
 		},
 		{ name: "stop", help: "Stop the current run (Esc, Ctrl+C)", run: () => context.stop() },
+		{ name: "next", help: `${agent.name}'s reminders and scheduled jobs (the schedule page)`, run: () => open("/$agent/schedule") },
+		{ name: "memory", help: `The shared notes and ${agent.name}'s work notes (the memory page)`, run: () => open("/$agent/memory") },
 		{
 			name: "cancel",
 			args: "<ref>",

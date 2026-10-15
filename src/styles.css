@@ -225,6 +225,94 @@ main.page a { color: var(--color-accent); }
 .replying .label { margin-bottom: var(--space-2xs); color: var(--color-ink-3); font-size: var(--text-xs); }
 .replying .b.prose { font-size: var(--text-base); }
 
+/* --- pages: one centered column of rows ------------------------------------------------------- */
+
+.page-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--color-rule-2) transparent; }
+.page { display: flex; flex-direction: column; gap: var(--space-xl); width: 100%; max-width: var(--measure); margin: 0 auto; padding: var(--space-lg) var(--space-lg) var(--space-2xl); }
+.section-head { display: flex; align-items: center; gap: var(--space-xs); padding-bottom: var(--space-xs); border-bottom: var(--rule-hair) solid var(--color-rule-2); }
+.section-head h2 { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: var(--text-md); font-weight: 600; }
+.section-head .count { color: var(--color-ink-3); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.section-head .head-actions { display: flex; align-items: center; gap: var(--space-2xs); margin-left: auto; }
+.section-head .usage { color: var(--color-ink-3); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.section-head .usage.near { color: var(--color-warn); }
+.page-note { margin: var(--space-sm) 0 0; max-width: 72ch; color: var(--color-ink-3); font-size: var(--text-sm); }
+.page-empty { margin: var(--space-md) 0 0; color: var(--color-ink-3); font-size: var(--text-sm); }
+.rows { margin: 0; padding: 0; list-style: none; }
+
+/* The schedule: when it's due, what it is, and what can be done with it. */
+.sched-row {
+	display: grid; grid-template-columns: 15ch minmax(0, 1fr) auto; grid-template-areas: "due body actions"; column-gap: var(--space-md);
+	align-items: start; padding: var(--space-sm) 0; border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+.sched-row .due { grid-area: due; display: flex; flex-direction: column; font-variant-numeric: tabular-nums; line-height: 1.4; }
+.sched-row .due .at { color: var(--color-ink); font-size: var(--text-sm); }
+.sched-row .due .in { color: var(--color-ink-3); font-size: var(--text-xs); }
+.sched-row .due.soon .at, .sched-row .due.soon .in, .sched-row .due.warn .at { color: var(--color-warn); }
+.sched-row .body { grid-area: body; min-width: 0; }
+.sched-row .title { font-size: var(--text-md); font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.sched-row.paused .title { color: var(--color-ink-2); }
+.sched-row .toggle { display: inline; min-height: 0; padding: 0; border: 0; text-align: left; white-space: normal; background: none; color: var(--color-ink); }
+.sched-row .toggle::after {
+	content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 0 3px var(--space-xs);
+	border-right: 1.5px solid var(--color-ink-3); border-bottom: 1.5px solid var(--color-ink-3); transform: rotate(45deg);
+	transition: transform var(--dur-short) var(--ease-out);
+}
+.sched-row .toggle[aria-expanded="true"]::after { transform: rotate(-135deg); margin-bottom: 0; }
+@media (hover: hover) { .sched-row .toggle:hover:not(:disabled) { background: none; color: var(--color-accent); } }
+.sched-row .toggle:active:not(:disabled) { background: none; }
+.sched-row .meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs) var(--space-xs); margin-top: var(--space-2xs); color: var(--color-ink-3); font-size: var(--text-xs); }
+.sched-row .meta > span + span::before { content: "·"; margin-right: var(--space-xs); }
+.sched-row .meta .tag + span::before, .sched-row .meta > .tag::before { content: none; }
+.sched-row .meta .bad { color: var(--color-bad); }
+.sched-row .status { margin-top: var(--space-2xs); font-size: var(--text-sm); }
+.sched-row .status.warn { color: var(--color-warn); }
+.sched-row .status.bad { color: var(--color-bad); }
+.rows .actions { grid-area: actions; display: flex; gap: var(--space-2xs); }
+.sched-row .detail {
+	display: flex; flex-direction: column; gap: var(--space-2xs); margin-top: var(--space-sm); padding: var(--space-sm) var(--space-md);
+	background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-md);
+}
+.sched-row .detail .label { margin-top: var(--space-xs); color: var(--color-ink-3); font-size: var(--text-xs); }
+.sched-row .detail .label:first-child { margin-top: 0; }
+.sched-row .detail .instruction { margin: 0; max-width: 72ch; white-space: pre-wrap; color: var(--color-ink-2); }
+.sched-row .detail pre { color: var(--color-ink-2); font-size: var(--text-xs); }
+.sched-row .detail .report { padding-top: var(--space-xs); }
+.sched-row .detail .report + .report { margin-top: var(--space-xs); border-top: var(--rule-hair) solid var(--color-rule); }
+.sched-row .detail .report .stamp { margin-bottom: var(--space-2xs); color: var(--color-ink-3); font-size: var(--text-xs); }
+
+/* Memory: a box to add a note, then the notes, newest first. */
+.note-add { display: flex; flex-direction: column; gap: var(--space-xs); margin-top: var(--space-md); }
+.note-box {
+	display: block; width: 100%; margin: 0; padding: var(--space-xs) var(--space-sm); resize: none; overflow: hidden;
+	background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md);
+	color: var(--color-ink); font-size: var(--text-md); line-height: 1.5; outline: none; caret-color: var(--color-accent);
+	transition: border-color var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+}
+.note-box::placeholder { color: var(--color-ink-3); }
+.note-box:focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-wash); }
+.note-bar { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-xs); }
+.chars { margin-right: auto; color: var(--color-ink-3); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.chars.over { color: var(--color-bad); }
+.note-add + .rows, .note-add + .page-empty { margin-top: var(--space-md); }
+.note-row {
+	display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "text actions" "meta meta"; column-gap: var(--space-md); row-gap: var(--space-2xs);
+	padding: var(--space-sm) 0; border-bottom: var(--rule-hair) solid var(--color-rule);
+}
+.note-row .text { grid-area: text; margin: 0; max-width: 72ch; font-size: var(--text-md); line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+.note-row .meta { grid-area: meta; display: flex; gap: var(--space-xs); color: var(--color-ink-3); font-size: var(--text-xs); }
+.note-row .meta > span + span::before { content: "·"; margin-right: var(--space-xs); }
+.note-row .by.owner { color: var(--color-accent); }
+.note-row .by.agent { color: var(--color-ink-2); }
+.note-row .id { font-family: var(--font-mono); }
+.note-row.editing { grid-template-columns: minmax(0, 1fr); grid-template-areas: none; row-gap: var(--space-xs); }
+.note-row.editing > * { grid-area: auto; }
+
+/* The sidebar's foot: the agent's pages. */
+#sidebar .pages { display: flex; flex-direction: column; gap: var(--space-3xs); padding: var(--space-xs) 0 var(--space-sm); border-top: var(--rule-hair) solid var(--color-rule); }
+#sidebar .pages a { display: flex; align-items: center; gap: var(--space-xs); padding: var(--space-xs); font-size: var(--text-sm); font-weight: 500; }
+#sidebar .pages .count { margin-left: auto; color: var(--color-ink-3); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+#sidebar .pages .count.warn { color: var(--color-warn); }
+
 /* --- the dock: approvals and the composer --------------------------------------------------------- */
 
 #dock { position: relative; flex: none; }
@@ -320,6 +408,7 @@ main.page a { color: var(--color-accent); }
 	#dock-inner { padding: 0 var(--space-sm) var(--space-sm); }
 	#menu { left: var(--space-sm); right: var(--space-sm); }
 	.missing, main.page { padding: var(--space-lg) var(--space-md); }
+	.page { gap: var(--space-lg); padding: var(--space-md) var(--space-md) var(--space-xl); }
 }
 
 /* A phone: the composer is one line that grows, with Send beside it and the status below. */
@@ -337,6 +426,10 @@ main.page a { color: var(--color-accent); }
 	.help { grid-template-columns: auto minmax(0, 1fr); }
 	.help .a { display: none; }
 	#menu .item { grid-template-columns: minmax(0, 1fr); }
+	.sched-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "due actions" "body body"; row-gap: var(--space-2xs); }
+	.sched-row .due { flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-xs); }
+	.note-row { grid-template-areas: "text text" "meta actions"; align-items: center; }
+	.section-head { flex-wrap: wrap; }
 }
 
 /* Touch: targets a finger can hit, and no keyboard hints. */

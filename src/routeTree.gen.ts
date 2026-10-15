@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentRouteImport } from './routes/$agent'
 import { Route as AgentIndexRouteImport } from './routes/$agent.index'
+import { Route as AgentMemoryRouteImport } from './routes/$agent.memory'
 import { Route as AgentNewRouteImport } from './routes/$agent.new'
+import { Route as AgentScheduleRouteImport } from './routes/$agent.schedule'
 import { Route as AgentTIdRouteImport } from './routes/$agent.t.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -30,9 +32,19 @@ const AgentIndexRoute = AgentIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AgentRoute,
 } as any)
+const AgentMemoryRoute = AgentMemoryRouteImport.update({
+  id: '/memory',
+  path: '/memory',
+  getParentRoute: () => AgentRoute,
+} as any)
 const AgentNewRoute = AgentNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => AgentRoute,
+} as any)
+const AgentScheduleRoute = AgentScheduleRouteImport.update({
+  id: '/schedule',
+  path: '/schedule',
   getParentRoute: () => AgentRoute,
 } as any)
 const AgentTIdRoute = AgentTIdRouteImport.update({
@@ -44,13 +56,17 @@ const AgentTIdRoute = AgentTIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$agent': typeof AgentRouteWithChildren
+  '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
+  '/$agent/schedule': typeof AgentScheduleRoute
   '/$agent/': typeof AgentIndexRoute
   '/$agent/t/$id': typeof AgentTIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
+  '/$agent/schedule': typeof AgentScheduleRoute
   '/$agent': typeof AgentIndexRoute
   '/$agent/t/$id': typeof AgentTIdRoute
 }
@@ -58,17 +74,39 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$agent': typeof AgentRouteWithChildren
+  '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
+  '/$agent/schedule': typeof AgentScheduleRoute
   '/$agent/': typeof AgentIndexRoute
   '/$agent/t/$id': typeof AgentTIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$agent' | '/$agent/new' | '/$agent/' | '/$agent/t/$id'
+  fullPaths:
+    | '/'
+    | '/$agent'
+    | '/$agent/memory'
+    | '/$agent/new'
+    | '/$agent/schedule'
+    | '/$agent/'
+    | '/$agent/t/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$agent/new' | '/$agent' | '/$agent/t/$id'
+  to:
+    | '/'
+    | '/$agent/memory'
+    | '/$agent/new'
+    | '/$agent/schedule'
+    | '/$agent'
+    | '/$agent/t/$id'
   id:
-    '__root__' | '/' | '/$agent' | '/$agent/new' | '/$agent/' | '/$agent/t/$id'
+    | '__root__'
+    | '/'
+    | '/$agent'
+    | '/$agent/memory'
+    | '/$agent/new'
+    | '/$agent/schedule'
+    | '/$agent/'
+    | '/$agent/t/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -99,11 +137,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgentIndexRouteImport
       parentRoute: typeof AgentRoute
     }
+    '/$agent/memory': {
+      id: '/$agent/memory'
+      path: '/memory'
+      fullPath: '/$agent/memory'
+      preLoaderRoute: typeof AgentMemoryRouteImport
+      parentRoute: typeof AgentRoute
+    }
     '/$agent/new': {
       id: '/$agent/new'
       path: '/new'
       fullPath: '/$agent/new'
       preLoaderRoute: typeof AgentNewRouteImport
+      parentRoute: typeof AgentRoute
+    }
+    '/$agent/schedule': {
+      id: '/$agent/schedule'
+      path: '/schedule'
+      fullPath: '/$agent/schedule'
+      preLoaderRoute: typeof AgentScheduleRouteImport
       parentRoute: typeof AgentRoute
     }
     '/$agent/t/$id': {
@@ -117,13 +169,17 @@ declare module '@tanstack/react-router' {
 }
 
 interface AgentRouteChildren {
+  AgentMemoryRoute: typeof AgentMemoryRoute
   AgentNewRoute: typeof AgentNewRoute
+  AgentScheduleRoute: typeof AgentScheduleRoute
   AgentIndexRoute: typeof AgentIndexRoute
   AgentTIdRoute: typeof AgentTIdRoute
 }
 
 const AgentRouteChildren: AgentRouteChildren = {
+  AgentMemoryRoute: AgentMemoryRoute,
   AgentNewRoute: AgentNewRoute,
+  AgentScheduleRoute: AgentScheduleRoute,
   AgentIndexRoute: AgentIndexRoute,
   AgentTIdRoute: AgentTIdRoute,
 }
