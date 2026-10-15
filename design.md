@@ -15,6 +15,10 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 - App pages (step 3: schedule, memory, skills, settings, agents, activity): the same sidebar, a header naming the
   page, and a single centered column of rows separated by hairlines. No cards that repeat what's on the page, no
   stat strips.
+- The browser's take-over page: the same frame with a wider column (up to 1320 pixels), an address bar with Back, Go
+  and Done above the live view, which keeps the page's 16:10 shape on `--color-paper-2` with a hairline and
+  `--radius-md`, and a line under it saying the agents wait. A hand-over in the dock is a question's accent card, its
+  Take over link styled as the primary button.
 
 ## Theme
 

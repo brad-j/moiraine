@@ -1,13 +1,17 @@
 // Requests to gaidin's HTTP API, typed by its route tables in gaidin's src/web.ts. The import is types only, so
 // none of gaidin's code is in the build; a changed answer there fails tsc here.
-import type { AVATAR_PATH as ServerAvatarPath, FILE_HEADER as ServerFileHeader, Gets, Posts, PROTOCOL as ServerProtocol, StreamEvent, Uploaded } from "gaidin/src/web.ts";
+import type { AVATAR_PATH as ServerAvatarPath, FILE_HEADER as ServerFileHeader, Gets, LIVE_PATH as ServerLivePath, LiveEvent, Posts, PROTOCOL as ServerProtocol, StreamEvent, Uploaded } from "gaidin/src/web.ts";
 
-export type { Gets, Posts, StreamEvent, Uploaded };
+export type { Gets, LiveEvent, Posts, StreamEvent, Uploaded };
+/** The owner's input to a profile they've taken over. */
+export type LiveInput = Posts["/api/browser/input"]["body"]["events"][number];
 
 /** The protocol version this build is typed against; tsc fails here when gaidin raises it. */
-export const PROTOCOL: typeof ServerProtocol = 8;
+export const PROTOCOL: typeof ServerProtocol = 9;
 /** Where gaidin serves an agent's picture, with ?id= and &v=, its name. */
 export const AVATAR_PATH: typeof ServerAvatarPath = "/api/agents/avatar";
+/** Where gaidin streams a browser profile's live view, with ?profile=. */
+export const LIVE_PATH: typeof ServerLivePath = "/api/browser/live";
 /** The header that names a file sent to /api/files, as gaidin reads it. */
 const FILE_HEADER: typeof ServerFileHeader = "X-Gaidin-File";
 

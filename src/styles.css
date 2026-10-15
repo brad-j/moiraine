@@ -349,14 +349,14 @@ main.page a { color: var(--color-accent); }
 .note-row.editing > * { grid-area: auto; }
 
 /* Forms on pages: fields in rows, inputs on the raised surface. */
-.page input, .page textarea:not(.note-box) {
+.page input, .page textarea:not(.note-box, .live-keys) {
 	display: block; width: 100%; margin: 0; padding: var(--space-xs) var(--space-sm);
 	background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md);
 	color: var(--color-ink); font-size: var(--text-base); line-height: 1.5; outline: none; resize: none; caret-color: var(--color-accent);
 	transition: border-color var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
 }
 .page input::placeholder, .page textarea::placeholder { color: var(--color-ink-3); }
-.page input:focus, .page textarea:not(.note-box):focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-wash); }
+.page input:focus, .page textarea:not(.note-box, .live-keys):focus { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-wash); }
 .page textarea.editor { min-height: 240px; padding: var(--space-sm) var(--space-md); font-family: var(--font-mono); font-size: var(--text-sm); line-height: 1.6; tab-size: 4; }
 .fields { display: flex; flex-direction: column; }
 .field { display: grid; grid-template-columns: 20ch minmax(0, 1fr); column-gap: var(--space-md); align-items: start; padding: var(--space-sm) 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
@@ -458,6 +458,25 @@ button.switch:active:not(:disabled) { background: var(--color-paper-3); }
 }
 @media (hover: hover) { .button-link:hover { background: var(--color-paper-3); color: var(--color-ink); } }
 
+/* Browser: the profiles, and one taken over, live. The view keeps the page's shape and takes the column's width. */
+.page.wide { max-width: 1320px; }
+.profile-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2xs) var(--space-xs); padding: var(--space-sm) 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
+.profile-row .name { color: var(--color-ink); font-weight: 600; text-decoration: none; }
+@media (hover: hover) { .profile-row .name:hover { text-decoration: underline; text-underline-offset: 3px; } }
+.profile-row .meta { flex-basis: 100%; margin: 0; color: var(--color-ink-3); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.takeover { display: flex; flex-direction: column; gap: var(--space-sm); }
+.live-bar { display: flex; align-items: center; gap: var(--space-2xs); }
+.live-bar input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: var(--text-sm); }
+.live { position: relative; }
+.live canvas { display: block; width: 100%; height: auto; aspect-ratio: 1280 / 800; background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); touch-action: none; cursor: default; }
+.live canvas:focus-visible { outline: 2px solid var(--color-focus); }
+.live-wait { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--color-ink-3); pointer-events: none; }
+/* Typing goes through this box, out of sight; 16px keeps a phone from zooming in when it's focused. */
+.live-keys { position: absolute; top: 0; left: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; font-size: 16px; resize: none; pointer-events: none; }
+.live-released { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); padding: var(--space-md); background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); }
+.live-released p { margin: 0; color: var(--color-ink-2); }
+@media (hover: hover) and (pointer: fine) { .live-bar .keyboard { display: none; } }
+
 /* Activity: spend against the limits, by model, and the timeline. */
 .stopped { display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--color-bad-wash); border: var(--rule-hair) solid var(--color-bad); border-radius: var(--radius-md); }
 .stopped p { flex: 1; margin: 0; }
@@ -519,7 +538,9 @@ section > button { margin-top: var(--space-sm); }
 	background: linear-gradient(var(--color-warn-wash), var(--color-warn-wash)), var(--color-paper-2);
 	border: var(--rule-hair) solid var(--color-warn-line); border-radius: var(--radius-lg);
 }
-.approval.question { background: linear-gradient(var(--color-accent-wash), var(--color-accent-wash)), var(--color-paper-2); border-color: var(--color-accent-line); }
+.approval.question, .approval.handover { background: linear-gradient(var(--color-accent-wash), var(--color-accent-wash)), var(--color-paper-2); border-color: var(--color-accent-line); }
+.approval .button-link.take { background: var(--color-accent); color: var(--color-accent-ink); }
+@media (hover: hover) { .approval .button-link.take:hover { background: var(--color-accent-strong); color: var(--color-accent-ink); } }
 .ask-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); font-size: var(--text-sm); }
 .who { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-ink); font-weight: 600; text-decoration: none; }
 .ask-head .kind { display: inline-flex; align-items: center; gap: var(--space-2xs); }

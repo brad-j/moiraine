@@ -4,7 +4,7 @@
 // drawer.
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarBlankIcon, GearSixIcon, type Icon, ListIcon, MagnifyingGlassIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
+import { BrowserIcon, CalendarBlankIcon, GearSixIcon, type Icon, ListIcon, MagnifyingGlassIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { type Agent, type Gets, problem } from "./api.ts";
 import { Avatar } from "./avatar.tsx";
@@ -169,6 +169,7 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 	const jobs = useQuery(queries.jobs(agent.id)).data ?? [];
 	const scheduled = reminders.length + jobs.length;
 	const trouble = troubled(jobs);
+	const browsers = useQuery(queries.profiles).data?.names.length ?? 0;
 	return (
 		<div className="pages" role="group" aria-label="Pages">
 			<Page to="/$agent/schedule" agent={agent} icon={CalendarBlankIcon} onOpen={onOpen}>
@@ -192,6 +193,11 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 			<Page to="/agents" agent={agent} icon={UsersThreeIcon} onOpen={onOpen}>
 				Agents
 			</Page>
+			{browsers > 0 && (
+				<Page to="/browser" agent={agent} icon={BrowserIcon} onOpen={onOpen}>
+					Browser
+				</Page>
+			)}
 			<Page to="/activity" agent={agent} icon={PulseIcon} onOpen={onOpen}>
 				Activity
 			</Page>
@@ -200,7 +206,7 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 }
 
 /** A link at the sidebar's foot, with its icon. */
-function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {
+function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/browser" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {
 	return (
 		<Link to={to} params={{ agent: agent.id }} onClick={onOpen}>
 			<Glyph aria-hidden="true" />

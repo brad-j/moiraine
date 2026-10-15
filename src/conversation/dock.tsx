@@ -1,10 +1,10 @@
 // Requests waiting on the owner, from every agent, as cards above the composer: a call to allow, like sudo asking
-// first, or a question from ask_owner. Alt+Y, Alt+A and Alt+N answer the oldest call.
+// first, a question from ask_owner, or a browser profile to take over. Alt+Y, Alt+A and Alt+N answer the oldest call.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type Approval, post, problem } from "../api.ts";
-import { QuestionIcon, ShieldWarningIcon } from "@phosphor-icons/react";
+import { BrowserIcon, QuestionIcon, ShieldWarningIcon } from "@phosphor-icons/react";
 import { Avatar } from "../avatar.tsx";
 import { clock, when } from "../format.ts";
 import { queries, useAgents } from "../queries.ts";
@@ -18,8 +18,8 @@ export function useApprovals() {
 	const queryClient = useQueryClient();
 	const { data: approvals = [] } = useQuery(queries.approvals);
 	const [busy, setBusy] = useState(false);
-	/** The oldest request to allow a call; questions are answered, not allowed. */
-	const first = approvals.find((a) => a.kind !== "question");
+	/** The oldest request to allow a call; questions are answered and hand-overs done, not allowed. */
+	const first = approvals.find((a) => a.kind === undefined);
 
 	async function settle(send: () => Promise<unknown>) {
 		setBusy(true);
@@ -107,6 +107,36 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 									{typed && <span className="typed">or type your answer below · </span>}
 									waits until {when.format(request.expiresAt)}
 								</span>
+							</div>
+						</div>
+					);
+				}
+				if (request.kind === "handover") {
+					const profile = request.profile ?? "";
+					return (
+						<div key={request.id} className="approval handover">
+							<div className="ask">
+								<div className="ask-head">
+									{from}
+									<span className="kind">
+										<BrowserIcon aria-hidden="true" />
+										asks you to take over
+									</span>
+									<code className="tool">{profile}</code>
+								</div>
+								<p className="what">{request.summary}</p>
+							</div>
+							<div className="buttons">
+								<Link className="button-link take" to="/browser/$profile" params={{ profile }}>
+									Take over
+								</Link>
+								<button type="button" disabled={busy} onClick={() => attempt(() => decide("once", request))}>
+									Done
+								</button>
+								<button className="danger" type="button" disabled={busy} onClick={() => attempt(() => decide("deny", request))}>
+									Can't
+								</button>
+								<span className="expires">waits until {when.format(request.expiresAt)}</span>
 							</div>
 						</div>
 					);

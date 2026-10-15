@@ -32,6 +32,8 @@ export const queries = {
 	push: queryOptions({ queryKey: ["push"], queryFn: () => load("/api/push") }),
 	workspaces: queryOptions({ queryKey: ["workspaces"], queryFn: () => load("/api/workspaces"), staleTime: 5 * 60_000 }),
 	profiles: queryOptions({ queryKey: ["profiles"], queryFn: () => load("/api/profiles"), staleTime: 5 * 60_000 }),
+	/** Each browser profile, where it was left, and whether it's taken over. */
+	browser: queryOptions({ queryKey: ["browser"], queryFn: () => load("/api/browser") }),
 	skills: queryOptions({ queryKey: ["skills"], queryFn: () => load("/api/skills") }),
 	skillFile: (name: string, file: string) =>
 		queryOptions({ queryKey: ["skills", name, file], queryFn: () => load("/api/skills/file", `?name=${encodeURIComponent(name)}&file=${encodeURIComponent(file)}`), retry: false }),

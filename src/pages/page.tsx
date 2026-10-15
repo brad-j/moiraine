@@ -16,7 +16,8 @@ const Attempts = createContext<Attempt>(async (run) => {
 	return true;
 });
 
-export function Page({ title, agent, children }: { title: string; agent?: Agent; children: ReactNode }) {
+/** `wide`: the column takes the window's width, for the browser's live view. */
+export function Page({ title, agent, wide = false, children }: { title: string; agent?: Agent; wide?: boolean; children: ReactNode }) {
 	const [failed, setFailed] = useState<string>();
 	const attempt: Attempt = async (run) => {
 		setFailed(undefined);
@@ -46,7 +47,7 @@ export function Page({ title, agent, children }: { title: string; agent?: Agent;
 				)}
 			</header>
 			<main className="page-scroll">
-				<div className="page">
+				<div className={wide ? "page wide" : "page"}>
 					{failed !== undefined && <p className="page-problem">{failed}</p>}
 					{children}
 				</div>
