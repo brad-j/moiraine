@@ -12,7 +12,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 			{ name: "theme-color", content: "#0a0d10" },
 			{ title: "gaidin" },
 		],
-		links: [{ rel: "stylesheet", href: styles }],
+		links: [
+			{ rel: "stylesheet", href: styles },
+			{ rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+		],
 	}),
 	shellComponent: Document,
 	component: Root,

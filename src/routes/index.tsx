@@ -1,22 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { load } from "../api.ts";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { problem } from "../api.ts";
+import { queries } from "../queries.ts";
 
-export const Route = createFileRoute("/")({ component: Home });
+/** The app's start: the default agent's home conversation, which gaidin lists first. */
+export const Route = createFileRoute("/")({ component: Start });
 
-/** A stand-in until the sidebar and conversation exist: shows that the API answers. */
-function Home() {
-	const settings = useQuery({ queryKey: ["settings"], queryFn: () => load("/api/settings") });
+function Start() {
+	const agents = useQuery(queries.agents);
+	if (agents.data?.[0] !== undefined) return <Navigate to="/$agent" params={{ agent: agents.data[0].id }} replace />;
 	return (
-		<main className="placeholder">
-			<h1>gaidin</h1>
-			{settings.isPending && <p>Connecting…</p>}
-			{settings.isError && <p className="problem">{settings.error.message}</p>}
-			{settings.data && (
-				<p>
-					Connected. Model <code>{settings.data.model}</code>, thinking {settings.data.thinkingLevel}.
-				</p>
-			)}
+		<main className="page">
+			<p className={agents.isError ? "page-problem" : undefined}>{agents.isError ? `Can't reach gaidin: ${problem(agents.error)}. Trying again.` : "Connecting…"}</p>
 		</main>
 	);
 }

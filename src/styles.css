@@ -1,8 +1,7 @@
 /* gaidin's web view tokens: cool-neutral dark at hue 250, a steel-blue accent, a humanist sans for prose and
- * system mono for the console. */
+ * system mono for the console. The log, dock, prompt and status line are the web view's console, in a column beside
+ * the sidebar. */
 :root {
-	color-scheme: dark;
-
 	--color-paper: oklch(15.5% 0.008 250);
 	--color-paper-2: oklch(18.5% 0.009 250);
 	--color-paper-3: oklch(22.5% 0.011 250);
@@ -41,19 +40,319 @@
 
 	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 	--dur-short: 120ms;
-}
 
-*, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; }
-body {
-	background: var(--color-paper);
-	color: var(--color-ink);
-	font-family: var(--font-body);
+	/* The log's columns: time, label, body. The prompt and approvals use the same grid. */
+	--col-time: 6ch;
+	--col-label: 7ch;
+	--col-gap: 2ch;
+	--measure: 1080px;
+
+	color-scheme: dark;
+	font-family: var(--font-mono);
 	font-size: var(--text-sm);
-	-webkit-font-smoothing: antialiased;
+	line-height: 1.55;
 }
-code { font-family: var(--font-mono); font-size: 0.9em; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: clip; }
+body { background: var(--color-paper); color: var(--color-ink); -webkit-font-smoothing: antialiased; }
+button, textarea, input { font: inherit; color: inherit; }
+pre { margin: 0; font-family: var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+:focus-visible { outline: 1px solid var(--color-focus-quiet); outline-offset: 1px; }
 
-.placeholder { max-width: 720px; margin: 0 auto; padding: var(--space-lg) var(--space-md); }
-.placeholder h1 { margin: 0 0 var(--space-sm); font-size: var(--text-md); font-weight: 600; }
-.problem { color: var(--color-bad); }
+button {
+	display: inline-flex; align-items: center; gap: var(--space-2xs); min-height: 26px; padding: 0 var(--space-xs);
+	white-space: nowrap; cursor: pointer; background: var(--color-paper-2); border: 1px solid var(--color-rule-2); border-radius: var(--radius-sm);
+	transition: background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
+}
+@media (hover: hover) { button:hover:not(:disabled) { background: var(--color-paper-3); border-color: var(--color-ink-3); } }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); font-weight: 600; }
+@media (hover: hover) { button.primary:hover:not(:disabled) { background: var(--color-focus); border-color: var(--color-focus); } }
+button.danger { color: var(--color-bad); }
+@media (hover: hover) { button.danger:hover:not(:disabled) { background: var(--color-bad-wash); border-color: var(--color-bad); } }
+button.plain { background: transparent; border-color: transparent; color: var(--color-ink-3); }
+@media (hover: hover) { button.plain:hover:not(:disabled) { background: var(--color-paper-3); border-color: transparent; color: var(--color-ink); } }
+kbd { font-family: var(--font-mono); font-size: var(--text-2xs); color: inherit; opacity: 0.75; }
+/* --- the sidebar and the column beside it ------------------------------------------------------ */
+
+/* Installed as an app, the page runs under the notch and the home bar; the insets keep it clear of both. */
+#app {
+	display: grid; grid-template-columns: 260px minmax(0, 1fr); height: 100dvh;
+	padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+#column { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.tag { padding: 0 var(--space-xs); border: 1px solid var(--color-rule-2); border-radius: 999px; color: var(--color-ink-3); font-size: var(--text-2xs); line-height: 1.6; white-space: nowrap; }
+.tag.slack, .tag.app { color: var(--color-accent); }
+.tag.job { color: var(--color-voice); }
+.tag.agent { color: var(--color-warn); }
+.page-problem { margin: 0; padding: var(--space-xs) var(--space-sm); background: var(--color-bad-wash); border: 1px solid var(--color-bad); border-radius: var(--radius-sm); color: var(--color-bad); }
+.missing, main.page { display: flex; flex-direction: column; align-items: start; gap: var(--space-sm); max-width: var(--measure); padding: var(--space-lg) var(--space-md); }
+main.page a { color: var(--color-accent); }
+.version-notice { margin: 0; padding: var(--space-xs) var(--space-md); background: var(--color-warn-wash); border-bottom: 1px solid var(--color-warn); color: var(--color-warn); font-family: var(--font-body); }
+
+#sidebar {
+	display: flex; flex-direction: column; min-height: 0; padding: var(--space-sm) var(--space-xs) 0;
+	background: var(--color-paper-2); border-right: 1px solid var(--color-rule); font-family: var(--font-body);
+}
+.switcher select {
+	width: 100%; height: 32px; padding: 0 var(--space-xs); background: var(--color-paper-3); border: 1px solid var(--color-rule-2); border-radius: var(--radius-md);
+	color: var(--color-ink); font: inherit; font-size: var(--text-md); font-weight: 600; cursor: pointer;
+}
+#sidebar .job { margin: var(--space-2xs) var(--space-xs) 0; color: var(--color-ink-3); font-size: var(--text-xs); line-height: 1.4; }
+#sidebar a { display: block; color: var(--color-ink-2); text-decoration: none; border-radius: var(--radius-sm); transition: background-color var(--dur-short) var(--ease-out); }
+@media (hover: hover) { #sidebar a:hover { background: var(--color-paper-3); color: var(--color-ink); } }
+#sidebar a[aria-current="page"] { background: var(--color-paper-3); color: var(--color-ink); box-shadow: inset 2px 0 var(--color-accent); }
+#sidebar .pinned { margin-top: var(--space-sm); padding: var(--space-xs); font-weight: 600; }
+#sidebar .new-thread { padding: var(--space-xs); color: var(--color-accent); }
+#sidebar h2 { margin: var(--space-md) var(--space-xs) var(--space-2xs); color: var(--color-ink-3); font-size: var(--text-2xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+#sidebar .quiet { margin: var(--space-2xs) var(--space-xs); color: var(--color-ink-3); font-size: var(--text-xs); }
+#sidebar .quiet.problem { color: var(--color-bad); }
+.threads { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--color-rule-2) transparent; }
+.threads ol { position: relative; margin: 0; padding: 0; list-style: none; }
+.threads li { position: absolute; top: 0; left: 0; width: 100%; }
+#sidebar .thread { display: flex; flex-direction: column; justify-content: center; gap: 2px; height: 100%; padding: 0 var(--space-xs); }
+.thread .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thread .meta { display: flex; align-items: baseline; gap: var(--space-xs); color: var(--color-ink-3); font-size: var(--text-2xs); }
+
+.convo-head { display: flex; flex: none; align-items: center; gap: var(--space-xs); height: 44px; padding: 0 var(--space-md); border-bottom: 1px solid var(--color-rule); }
+.convo-head h1 { min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-body); font-size: var(--text-md); font-weight: 600; }
+#menu-button { display: none; }
+.scrim { display: none; }
+.replying { margin-bottom: var(--space-md); padding: var(--space-xs) var(--space-sm); background: var(--color-paper-2); border-left: 2px solid var(--color-rule-2); border-radius: var(--radius-sm); opacity: 0.85; }
+.replying .label { margin-bottom: var(--space-2xs); color: var(--color-ink-3); font-size: var(--text-2xs); }
+.replying .row.start { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* --- the log ----------------------------------------------------------------------------------- */
+
+/* A short log sits against the prompt, as in a terminal. */
+#scroll { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; scrollbar-color: var(--color-rule-2) transparent; }
+#log { width: 100%; max-width: var(--measure); margin: auto auto 0; padding: var(--space-md) var(--space-md) var(--space-lg); }
+.row {
+	display: grid; grid-template-columns: var(--col-time) var(--col-label) minmax(0, 1fr); column-gap: var(--col-gap);
+	align-items: baseline; padding: var(--space-3xs) 0;
+}
+.row.start { margin-top: var(--space-md); padding-top: var(--space-sm); border-top: 1px solid var(--color-rule); }
+#log > .row.start:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+.row .t { color: var(--color-ink-3); font-size: var(--text-xs); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
+.row .k { color: var(--color-ink-3); text-align: right; white-space: nowrap; }
+.row .b { min-width: 0; overflow-wrap: anywhere; }
+
+.row.you .k, .row.cmd .k { color: var(--color-accent); }
+.row.you .b { color: var(--color-ink); font-weight: 600; white-space: pre-wrap; }
+.row.cmd .b { color: var(--color-ink-2); white-space: pre-wrap; }
+.row.prompt .k { color: var(--color-voice); }
+.row.prompt .b { color: var(--color-ink-2); font-size: var(--text-xs); white-space: pre-wrap; }
+.row.gaidin .k { color: var(--color-voice); }
+.row.remind .k, .row.job .k { color: var(--color-warn); }
+.row.remind .b, .row.job .b { color: var(--color-ink); font-weight: 600; }
+.row .why { margin-left: 1ch; color: var(--color-bad); font-weight: 400; }
+.row .snooze { margin-left: 2ch; display: inline-flex; gap: var(--space-2xs); }
+.row.err .k, .row.err .b { color: var(--color-bad); }
+.row.sys .b { color: var(--color-ink-2); }
+
+/* Thinking and tool calls: one line each, opened for the full text. */
+.row details summary { display: flex; gap: 1ch; align-items: baseline; cursor: pointer; list-style: none; border-radius: var(--radius-sm); }
+.row details summary::-webkit-details-marker { display: none; }
+@media (hover: hover) { .row details summary:hover { background: var(--color-paper-2); } }
+.row details summary::after { content: "+"; flex: none; color: var(--color-ink-3); }
+.row details[open] summary::after { content: "−"; }
+.row .name { flex: none; color: var(--color-accent); }
+.row.think .name { color: var(--color-ink-3); }
+.row .args { flex: 1; min-width: 0; color: var(--color-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row.think .args { font-family: var(--font-body); font-size: var(--text-sm); }
+.row .state { flex: none; color: var(--color-ink-3); font-size: var(--text-xs); }
+.row.s-running .state, .row.s-running .k { color: var(--color-accent); }
+.row.s-running .state::before { content: "● "; animation: pulse 1.2s var(--ease-out) infinite; }
+.row.s-waiting .state { color: var(--color-warn); }
+.row.s-error .state, .row.s-error .name, .row.s-no-result .state { color: var(--color-bad); }
+@keyframes pulse { 50% { opacity: 0.2; } }
+.fold { display: flex; flex-direction: column; gap: var(--space-2xs); margin: var(--space-2xs) 0 var(--space-xs); }
+.fold .label { color: var(--color-ink-3); font-size: var(--text-xs); }
+.fold pre, .tail { padding: var(--space-xs) var(--space-sm); max-height: 420px; overflow: auto; background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: var(--radius-sm); color: var(--color-ink-2); font-size: var(--text-xs); }
+.row.think .fold pre { font-family: var(--font-body); font-size: var(--text-sm); }
+.tail { margin-top: var(--space-2xs); max-height: none; color: var(--color-ink-3); }
+
+/* gaidin's own words, in the humanist face. */
+.b.prose { font-family: var(--font-body); font-size: var(--text-md); line-height: 1.55; }
+.md { max-width: 76ch; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p, .md ul, .md ol, .md blockquote, .md pre, .md .table { margin: 0 0 var(--space-sm); }
+.md h3, .md h4, .md h5 { margin: var(--space-md) 0 var(--space-xs); font-size: var(--text-md); font-weight: 600; }
+.md ul, .md ol { padding-left: var(--space-lg); }
+.md ul { list-style-type: disc; }
+.md ul ul { list-style-type: circle; }
+.md li { margin: var(--space-3xs) 0; }
+.md li > ul, .md li > ol { margin: var(--space-3xs) 0 0; }
+.md li::marker { color: var(--color-ink-3); }
+.md strong { font-weight: 600; }
+.md a { color: var(--color-accent); text-decoration: underline; text-decoration-color: var(--color-rule-2); text-underline-offset: 2px; }
+@media (hover: hover) { .md a:hover { text-decoration-color: currentColor; } }
+.md code { padding: 1px 5px; background: var(--color-paper-3); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.85em; }
+.md pre { padding: var(--space-sm) var(--space-md); overflow-x: auto; white-space: pre; overflow-wrap: normal; background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: var(--radius-sm); }
+.md pre code { padding: 0; background: none; font-size: var(--text-xs); }
+.md blockquote { padding-left: var(--space-sm); border-left: 2px solid var(--color-rule-2); color: var(--color-ink-2); }
+.md hr { border: 0; border-top: 1px solid var(--color-rule); margin: var(--space-md) 0; }
+.md .table { overflow-x: auto; }
+.md table { border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.md th, .md td { padding: var(--space-2xs) var(--space-md) var(--space-2xs) 0; border-bottom: 1px solid var(--color-rule); text-align: left; vertical-align: top; }
+.md th { color: var(--color-ink-2); font-weight: 600; border-bottom-color: var(--color-rule-2); }
+.md td:last-child, .md th:last-child { padding-right: 0; }
+
+.help { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 0 2ch; }
+.help .c { color: var(--color-accent); }
+.help .a, .help .h { color: var(--color-ink-3); }
+.keys { margin-top: var(--space-xs); color: var(--color-ink-3); }
+
+/* --- the dock: approvals, prompt, status line ------------------------------------------------- */
+
+#dock { position: relative; flex: none; background: var(--color-paper); }
+#approvals .who { margin-right: 1ch; color: var(--color-ink-2); font-family: var(--font-body); font-weight: 600; text-decoration: none; }
+@media (hover: hover) { #approvals .who:hover { color: var(--color-ink); text-decoration: underline; text-underline-offset: 3px; } }
+.dock-problem { margin: 0; color: var(--color-bad); font-size: var(--text-xs); }
+#statusline .fixed { padding: 0 var(--space-xs); color: var(--color-ink-3); }
+#jump { position: absolute; bottom: calc(100% + var(--space-sm)); left: 50%; transform: translateX(-50%); background: var(--color-paper-3); }
+#jump[hidden] { display: none; }
+#dock-inner { position: relative; max-width: var(--measure); margin: 0 auto; padding: var(--space-sm) var(--space-md) var(--space-md); }
+
+#approvals:empty { display: none; }
+#approvals { display: flex; flex-direction: column; gap: var(--space-xs); margin-bottom: var(--space-xs); }
+.approval { padding: var(--space-xs) 0; background: var(--color-warn-wash); border: 1px solid var(--color-warn); border-radius: var(--radius-md); }
+.approval .k { color: var(--color-warn); font-weight: 600; }
+/* A question waits on the owner too, but asks rather than warns. */
+.approval.question { background: var(--color-paper-2); border-color: var(--color-accent); }
+.approval.question .k { color: var(--color-accent); }
+.approval.question .ask .what { font-weight: 600; }
+.approval .t { padding-left: var(--space-xs); }
+.approval .ask .tool { color: var(--color-warn); }
+.approval .ask .what { font-family: var(--font-body); font-size: var(--text-md); }
+.approval .detail { margin-top: var(--space-2xs); }
+.approval .detail summary { cursor: pointer; color: var(--color-ink-2); }
+.approval .detail pre { margin-top: var(--space-2xs); padding: var(--space-xs) var(--space-sm); max-height: 50vh; overflow: auto; white-space: pre; background: var(--color-paper-2); border: 1px solid var(--color-rule); border-radius: var(--radius-sm); font-size: var(--text-xs); }
+.approval .buttons { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); margin: var(--space-xs) var(--space-sm) 0 0; }
+.approval .expires { color: var(--color-ink-3); font-size: var(--text-xs); margin-left: auto; }
+
+/* The composer: a roomy text area, with the status line as its bottom bar. */
+#prompt {
+	display: flex; flex-direction: column; background: var(--color-paper-2); border: 1px solid var(--color-rule-2); border-radius: 10px;
+	transition: border-color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+}
+#prompt:focus-within { border-color: var(--color-focus-quiet); background: oklch(19.5% 0.01 250); }
+#message {
+	display: block; width: 100%; min-height: calc(3 * 1.55em + 2 * var(--space-md)); max-height: 45vh; margin: 0; resize: none; overflow-y: auto;
+	padding: var(--space-md) var(--space-md) var(--space-xs); background: transparent; border: 0; outline: none;
+	color: var(--color-ink); font-size: var(--text-md); line-height: 1.55;
+}
+#message:focus-visible { outline: none; }
+#message::placeholder { color: var(--color-ink-3); }
+#bar { display: flex; align-items: center; gap: var(--space-xs); padding: var(--space-2xs) var(--space-xs) var(--space-xs); }
+#send { flex: none; min-height: 30px; padding: 0 var(--space-sm); border-radius: var(--radius-md); }
+#send kbd { opacity: 0.7; }
+
+#menu {
+	position: absolute; left: var(--space-md); right: var(--space-md); bottom: calc(100% - var(--space-xs)); z-index: 3;
+	max-height: 50vh; overflow-y: auto; padding: var(--space-2xs) 0; background: var(--color-paper-3); border: 1px solid var(--color-rule-2); border-radius: var(--radius-md);
+}
+#menu[hidden] { display: none; }
+#menu .item { display: grid; grid-template-columns: minmax(10ch, auto) minmax(0, 1fr); gap: 0 2ch; padding: var(--space-2xs) var(--space-sm); cursor: pointer; }
+#menu .item .v { color: var(--color-ink); white-space: nowrap; }
+#menu .item .v .a { color: var(--color-ink-3); }
+#menu .item .h { color: var(--color-ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#menu .item.active { background: var(--color-accent); }
+#menu .item.active .v, #menu .item.active .h, #menu .item.active .a { color: var(--color-accent-ink); }
+
+#statusline {
+	display: flex; flex: 1; min-width: 0; align-items: center; gap: var(--space-2xs);
+	font-size: var(--text-xs); color: var(--color-ink-3); overflow-x: auto; white-space: nowrap; scrollbar-width: none;
+}
+#statusline .seg { min-height: 26px; padding: 0 var(--space-xs); border-radius: 999px; color: var(--color-ink-2); background: var(--color-paper-3); }
+@media (hover: hover) { #statusline .seg:hover:not(:disabled) { background: var(--color-rule-2); color: var(--color-ink); } }
+#statusline .seg.hint { background: transparent; color: var(--color-ink-3); }
+#statusline .status { display: inline-flex; align-items: center; gap: var(--space-xs); padding: 0 var(--space-xs); }
+#statusline .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--color-ink-3); }
+#statusline .status.running { color: var(--color-accent); }
+#statusline .status.running::before { background: var(--color-accent); animation: pulse 1.2s var(--ease-out) infinite; }
+#statusline .status.page-problem { color: var(--color-warn); }
+#statusline .status.problem::before { background: var(--color-warn); }
+#statusline .seg.danger { color: var(--color-bad); }
+#statusline .seg kbd { opacity: 0.7; }
+#statusline .spend { padding: 0 var(--space-xs); font-variant-numeric: tabular-nums; }
+#statusline .spend > span + span::before { content: " · "; }
+#statusline .spend.near { color: var(--color-warn); }
+#statusline .spend.stopped { color: var(--color-bad); }
+#statusline .spacer { flex: 1; }
+
+/* --- phones ---------------------------------------------------------------------------------- */
+/* A phone gets the full width for text: no label column in the log, and the prompt is one line with Send beside it. */
+
+@media (max-width: 600px) {
+	:root { --text-xs: 0.875rem; --text-2xs: 0.8125rem; }
+
+	/* The log: the body takes the row, and the time sits to its right on the first row of an exchange. */
+	#log { padding: var(--space-sm) var(--space-sm) var(--space-md); }
+	.row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "b t"; column-gap: var(--space-sm); padding: var(--space-2xs) 0; }
+	.row .k, .row .t { display: none; }
+	.row .b { grid-area: b; }
+	.row.start .t { display: block; grid-area: t; padding-top: 3px; }
+	.row.start { margin-top: var(--space-sm); padding-top: var(--space-sm); }
+	.row.you .b { padding-left: var(--space-sm); border-left: 2px solid var(--color-accent); font-family: var(--font-body); font-size: var(--text-md); line-height: 1.45; }
+	.row.cmd .b, .row.prompt .b { padding-left: var(--space-sm); border-left: 2px solid var(--color-rule-2); }
+	.row.prompt .b { border-left-color: var(--color-voice); }
+	.row.tool .b, .row.think .b { font-size: var(--text-xs); }
+	.row.think summary::before { content: "thinking"; flex: none; color: var(--color-ink-3); font-family: var(--font-mono); }
+	.row.think .args { font-size: var(--text-xs); }
+	.row.remind .b::before, .row.job .b::before { margin-right: 1ch; padding: 0 var(--space-xs); border: 1px solid var(--color-warn); border-radius: 999px; color: var(--color-warn); font-size: var(--text-2xs); font-weight: 400; }
+	.row.remind .b::before { content: "reminder"; }
+	.row.job .b::before { content: "job"; }
+	.row .snooze { display: flex; margin: var(--space-2xs) 0 0; }
+	.help { grid-template-columns: auto minmax(0, 1fr); }
+	.help .a { display: none; }
+
+	/* The dock: approvals as cards, then the prompt as one line that grows, with Send beside it and the status below. */
+	#dock-inner { padding: var(--space-xs) var(--space-sm) var(--space-sm); }
+	#approvals { gap: var(--space-xs); }
+	.approval { padding: var(--space-sm); }
+	.approval .b { grid-column: 1 / -1; }
+	.approval .buttons { margin: var(--space-sm) 0 0; }
+	.approval .expires { flex-basis: 100%; margin-left: 0; }
+	#prompt { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "message send" "status status"; border-radius: 14px; }
+	#bar { display: contents; }
+	#message { grid-area: message; align-self: center; min-height: calc(1.45em + 2 * var(--space-sm)); padding: var(--space-sm) var(--space-sm); font-family: var(--font-body); line-height: 1.45; }
+	#send { grid-area: send; align-self: end; margin: var(--space-xs) var(--space-xs) var(--space-xs) 0; padding: 0 var(--space-md); border-radius: 10px; }
+	#statusline { grid-area: status; padding: var(--space-2xs) var(--space-xs); border-top: 1px solid var(--color-rule); }
+	#statusline .seg.thinking, #statusline .seg.tools, #statusline .seg.instructions, #statusline .seg.hint, #statusline .fixed.thinking, #statusline .spend .here { display: none; }
+	#statusline .spend .here + span::before { content: none; }
+	#message::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	#menu { left: var(--space-sm); right: var(--space-sm); max-height: 45vh; }
+	#menu .item { grid-template-columns: minmax(0, 1fr); padding: var(--space-xs) var(--space-sm); }
+}
+/* The sidebar as a drawer, on screens too narrow for it beside the conversation. */
+@media (max-width: 760px) {
+	#app { grid-template-columns: minmax(0, 1fr); }
+	#sidebar {
+		position: fixed; inset: 0 auto 0 0; z-index: 10; width: min(84vw, 320px);
+		padding-top: calc(env(safe-area-inset-top) + var(--space-sm)); padding-bottom: env(safe-area-inset-bottom); padding-left: calc(env(safe-area-inset-left) + var(--space-xs));
+		transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-short) var(--ease-out), visibility var(--dur-short);
+	}
+	.drawer-open #sidebar { transform: none; visibility: visible; box-shadow: 0 0 32px oklch(0% 0 0 / 0.5); }
+	.drawer-open .scrim { display: block; position: fixed; inset: 0; z-index: 9; min-height: 0; padding: 0; background: oklch(0% 0 0 / 0.4); border: 0; border-radius: 0; }
+	#menu-button { display: inline-flex; min-height: 36px; margin-left: calc(-1 * var(--space-xs)); font-size: 1.125rem; }
+	.convo-head { padding: 0 var(--space-sm); }
+}
+/* Touch: targets a finger can hit, and no keyboard hints. */
+@media (pointer: coarse) {
+	#send { min-height: 38px; }
+	#send kbd, #statusline .seg kbd { display: none; }
+	#statusline .seg { min-height: 32px; }
+	#message { font-size: max(16px, var(--text-md)); }
+	.approval .buttons button { min-height: 40px; padding: 0 var(--space-md); }
+	.row .snooze button {
+		min-height: 36px; padding: 0 var(--space-sm); background: var(--color-paper-2); border-color: var(--color-rule-2); color: var(--color-ink-2);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	*, *::before { transition-duration: 0s !important; animation: none !important; }
+	button:active:not(:disabled) { transform: none; }
+}

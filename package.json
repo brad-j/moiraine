@@ -9,8 +9,10 @@
     "dev": "vite dev",
     "dev:faux": "node --no-warnings scripts/dev-faux.ts",
     "build": "vite build",
-    "check": "vite build && tsc && pnpm lint",
-    "lint": "oxlint --deny-warnings src scripts vite.config.ts"
+    "check": "vite build && tsc && pnpm lint && pnpm test",
+    "lint": "oxlint --deny-warnings src scripts test e2e vite.config.ts playwright.config.ts",
+    "test": "node --no-warnings --test test/*.test.ts",
+    "e2e": "vite build && playwright test"
   },
   "dependencies": {
     "@tanstack/react-form": "^1.33.5",
