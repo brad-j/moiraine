@@ -56,19 +56,30 @@ kbd { font-size: var(--text-2xs); font-weight: 400; opacity: 0.7; }
 .scrim, #menu-button { display: none; }
 
 #sidebar {
+	/* Its own stacking context, clipped at its edges: the agent's backdrop sits behind its content and runs off it. */
+	position: relative; isolation: isolate; overflow: hidden;
 	display: flex; flex-direction: column; min-height: 0; padding: var(--space-sm) var(--space-xs) 0;
 	background: var(--color-paper-2); border-right: var(--rule-hair) solid var(--color-rule);
 }
 
-/* The agent: its badge and name, with the select laid over them. */
+/* The agent's picture, large and faded behind the top of the sidebar, off its top and left edges. It fades out before
+ * the name and links, so any picture reads behind them; on gaidin's own, whose ground is the sidebar's, it has no edge. */
+.agent-backdrop {
+	position: absolute; top: -48px; left: -56px; z-index: -1; width: 260px; height: 260px; pointer-events: none; opacity: 0.55;
+	mask-image: radial-gradient(circle at 46% 42%, black 26%, transparent 66%);
+}
+.avatar.backdrop { width: 100%; height: 100%; border-radius: 0; background: none; }
+.avatar.monogram.backdrop { color: var(--color-accent); font-size: var(--text-mark); font-weight: 600; opacity: 0.4; }
+
+/* The agent: its name, below its backdrop's face, with the select laid over it. */
 .switcher {
-	position: relative; display: flex; align-items: center; gap: var(--space-xs); height: 40px; padding: 0 var(--space-xs);
+	position: relative; display: flex; align-items: center; gap: var(--space-xs); height: 40px; margin-top: 112px; padding: 0 var(--space-xs);
 	border-radius: var(--radius-sm); transition: background-color var(--dur-short) var(--ease-out);
 }
 @media (hover: hover) { .switcher:hover { background: var(--color-paper-3); } }
 .switcher:focus-within { outline: 2px solid var(--color-focus); outline-offset: -2px; }
 .switcher select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
-.switcher .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.switcher .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.01em; }
 .switcher .chevron { flex: none; color: var(--color-ink-3); }
 
 /* Icons sit on the text's line, the size the root's IconContext gives them, in the color of what they're in. */

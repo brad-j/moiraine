@@ -312,13 +312,13 @@ test("an agent's picture is chosen in settings, shown wherever the agent is, and
 	await page.locator("#message").fill("hi");
 	await page.locator("#message").press("Enter");
 	await expect(page.locator("#log .speaker")).toHaveText("gaidin");
-	await expect(page.locator("#sidebar .switcher .avatar.monogram")).toHaveCount(1);
+	await expect(page.locator("#sidebar .agent-backdrop .avatar.monogram")).toHaveCount(1);
 
 	await page.goto("/gaidin/settings");
 	// A 1×1 PNG, which the page makes a square WebP before sending.
 	const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 	await page.getByLabel("Picture file").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: pixel });
-	const shown = page.locator("#sidebar .switcher img.avatar");
+	const shown = page.locator("#sidebar .agent-backdrop img.avatar");
 	await expect(shown).toHaveAttribute("src", /^\/api\/agents\/avatar\?id=gaidin&v=gaidin-[0-9a-f]{12}\.(webp|png)$/);
 	expect(await shown.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
 	await page.goto("/agents");
@@ -326,5 +326,5 @@ test("an agent's picture is chosen in settings, shown wherever the agent is, and
 
 	await page.goto("/gaidin/settings");
 	await page.getByRole("button", { name: "remove" }).click();
-	await expect(page.locator("#sidebar .switcher .avatar.monogram")).toHaveCount(1);
+	await expect(page.locator("#sidebar .agent-backdrop .avatar.monogram")).toHaveCount(1);
 });
