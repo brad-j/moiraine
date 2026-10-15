@@ -118,7 +118,8 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 					<Dock typed />
 					<Prompt
 						ref={prompt}
-						placeholder={`Message ${agent.name}, or type / for commands`}
+						// gaidin posts what's sent here in the Slack thread too, then the answer.
+						placeholder={summary !== undefined && placeOf(summary) === "slack" ? `Message ${agent.name}; it's posted in the Slack thread too` : `Message ${agent.name}, or type / for commands`}
 						commands={commands}
 						history={() => ownerMessages(transcript, mine)}
 						send={(content, files) => {
