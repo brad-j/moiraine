@@ -32,12 +32,9 @@ export function Sidebar({ agent }: { agent: Agent }) {
 	const shown = agents.filter((a) => a.archived === undefined || a.id === agent.id);
 	return (
 		<nav id="sidebar" aria-label="Conversations">
-			{/* The agent's picture, large and faded behind the top of the sidebar, running off its edge. */}
-			<div className="agent-backdrop" aria-hidden="true">
-				<Avatar agent={agent} size="backdrop" />
-			</div>
-			{/* The agent's name, with the native select over it, unseen, to pick another. */}
+			{/* The agent's picture and name, with the native select over it, unseen, to pick another. */}
 			<label className="switcher">
+				<Avatar agent={agent} />
 				<span className="name" aria-hidden="true">
 					{agent.name}
 				</span>

@@ -44,9 +44,6 @@
 	--text-base: 0.9375rem;
 	--text-md: 1rem;
 	--text-lg: 1.125rem;
-	--text-xl: 1.375rem;
-	/* An agent's initial as its sidebar backdrop, when it has no picture. */
-	--text-mark: 11rem;
 
 	--space-3xs: 2px;
 	--space-2xs: 4px;
