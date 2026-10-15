@@ -4,7 +4,7 @@
 import { type Agent, AVATAR_PATH } from "./api.ts";
 import { initial } from "./format.ts";
 
-export function Avatar({ agent, size = "md" }: { agent: Pick<Agent, "id" | "name" | "avatar">; size?: "sm" | "md" | "lg" | "xl" }) {
+export function Avatar({ agent, size = "md" }: { agent: Pick<Agent, "id" | "name" | "avatar">; size?: "sm" | "md" | "lg" | "xl" | "backdrop" }) {
 	if (agent.avatar !== undefined) {
 		return <img className={`avatar ${size}`} src={`${AVATAR_PATH}?id=${encodeURIComponent(agent.id)}&v=${encodeURIComponent(agent.avatar)}`} alt="" draggable={false} />;
 	}
