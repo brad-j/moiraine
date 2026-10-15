@@ -14,6 +14,7 @@ test("the app installs: its manifest, icons and service worker are its own, at t
 		expect(icon.headers.get("content-type"), path).toBe("image/png");
 	}
 	expect((await get(server, "/favicon.svg")).headers.get("content-type")).toBe("image/svg+xml");
+	expect((await get(server, "/favicon.ico")).headers.get("content-type")).toBe("image/x-icon");
 	const worker = await get(server, "/sw.js");
 	expect(worker.headers.get("content-type")).toMatch(/^text\/javascript/);
 	expect(worker.headers.get("cache-control")).toBe("no-store");
