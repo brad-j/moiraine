@@ -6,7 +6,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { createContext, useContext, useEffect, useRef } from "react";
 import { type Agent, problem } from "./api.ts";
 import { PLACES, placeOf } from "./conversation/view.tsx";
-import { since, when } from "./format.ts";
+import { initial, since, when } from "./format.ts";
 import { queries, useAgents } from "./queries.ts";
 
 /** Opens and closes the drawer, on a phone. */
@@ -30,7 +30,15 @@ export function Sidebar({ agent }: { agent: Agent }) {
 	const shown = agents.filter((a) => a.archived === undefined || a.id === agent.id);
 	return (
 		<nav id="sidebar" aria-label="Conversations">
+			{/* The agent's badge and name, with the native select over it, unseen, to pick another. */}
 			<label className="switcher">
+				<span className="badge" aria-hidden="true">
+					{initial(agent.name)}
+				</span>
+				<span className="name" aria-hidden="true">
+					{agent.name}
+				</span>
+				<span className="chevron" aria-hidden="true" />
 				<span className="visually-hidden">Agent</span>
 				<select value={agent.id} onChange={(event) => void navigate({ to: "/$agent", params: { agent: event.target.value } }).then(close)}>
 					{shown.map((a) => (
@@ -42,12 +50,14 @@ export function Sidebar({ agent }: { agent: Agent }) {
 				</select>
 			</label>
 			{agent.job !== "" && <p className="job">{agent.job}</p>}
-			<Link className="pinned" to="/$agent" params={{ agent: agent.id }} activeOptions={{ exact: true }} onClick={close}>
-				<span className="title">Home conversation</span>
-			</Link>
-			<Link className="new-thread" to="/$agent/new" params={{ agent: agent.id }} onClick={close}>
-				+ New thread
-			</Link>
+			<div className="sidebar-actions">
+				<Link className="pinned" to="/$agent" params={{ agent: agent.id }} activeOptions={{ exact: true }} onClick={close}>
+					Home conversation
+				</Link>
+				<Link className="new-thread" to="/$agent/new" params={{ agent: agent.id }} onClick={close}>
+					+ New thread
+				</Link>
+			</div>
 			<Threads agent={agent} onOpen={close} />
 		</nav>
 	);
@@ -84,7 +94,7 @@ function Threads({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 								<Link className="thread" to="/$agent/t/$id" params={{ agent: agent.id, id: String(item.id) }} onClick={onOpen}>
 									<span className="title">{item.title || "(no message)"}</span>
 									<span className="meta">
-										<span className={`tag ${place}`}>{PLACES[place]}</span>
+										<span className={`origin ${place}`}>{PLACES[place]}</span>
 										<span title={when.format(item.lastAt)}>{since(item.lastAt)}</span>
 									</span>
 								</Link>

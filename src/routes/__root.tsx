@@ -1,5 +1,5 @@
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { ClientOnly, createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import styles from "../styles.css?url";
 
@@ -25,7 +25,10 @@ function Root() {
 	const { queryClient } = Route.useRouteContext();
 	return (
 		<QueryClientProvider client={queryClient}>
-			<Outlet />
+			{/* The shell is built ahead with no route in it; the routes render once it's hydrated, so the two always match. */}
+			<ClientOnly>
+				<Outlet />
+			</ClientOnly>
 		</QueryClientProvider>
 	);
 }

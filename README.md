@@ -20,6 +20,10 @@ pnpm e2e         # build, then the Playwright tests, each against its own gaidin
 
 The build is `dist/client`, built for `/app/`: hashed assets and `_shell.html`, the page gaidin serves for every path under `/app/` that isn't a file. gaidin serves it from the directory its `web.app` setting names. `dist/server` is a by-product of Start's build and isn't deployed.
 
+## Design
+
+`design.md` is the design system (a dark, cool, clean tool: Fira Sans for reading, Fira Code only for technical text, one ice-blue accent), and `tokens.css` holds its tokens, which `src/styles.css` imports. Change the system there rather than on one screen.
+
 ## Layout
 
 - `src/api.ts`: the only import from gaidin, types only, and the requests. `PROTOCOL` fails `tsc` when gaidin raises its protocol version, and the app says so when the gaidin it talks to speaks another.

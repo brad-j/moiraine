@@ -1,10 +1,10 @@
-// Requests waiting on the owner, from every agent, docked above the prompt as in gaidin's console: a call to allow,
-// like sudo asking first, or a question from ask_owner. Alt+Y, Alt+A and Alt+N answer the oldest call.
+// Requests waiting on the owner, from every agent, as cards above the composer: a call to allow, like sudo asking
+// first, or a question from ask_owner. Alt+Y, Alt+A and Alt+N answer the oldest call.
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type Approval, post, problem } from "../api.ts";
-import { clock, when } from "../format.ts";
+import { clock, initial, when } from "../format.ts";
 import { queries, useAgents } from "../queries.ts";
 
 type Decision = "once" | "always" | "deny";
@@ -72,35 +72,34 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 				// Where it came from: the agent's home, or one of its threads.
 				const from =
 					agent === undefined ? undefined : request.conversationId === agent.home ? (
-						<Link className="who" to="/$agent" params={{ agent: agent.id }} title={`${agent.name}'s home conversation`}>
+						<Link className="who" data-initial={initial(agent.name)} to="/$agent" params={{ agent: agent.id }} title={`${agent.name}'s home conversation`}>
 							{agent.name}
 						</Link>
 					) : (
-						<Link className="who" to="/$agent/t/$id" params={{ agent: agent.id, id: String(request.conversationId) }} title={`${agent.name}'s thread`}>
+						<Link className="who" data-initial={initial(agent.name)} to="/$agent/t/$id" params={{ agent: agent.id, id: String(request.conversationId) }} title={`${agent.name}'s thread`}>
 							{agent.name}
 						</Link>
 					);
 				if (request.kind === "question") {
 					return (
-						<div key={request.id} className="row approval question">
-							<span className="t">{clock.format(request.createdAt)}</span>
-							<span className="k">asks?</span>
-							<div className="b">
-								<div className="ask">
+						<div key={request.id} className="approval question">
+							<div className="ask">
+								<div className="ask-head">
 									{from}
-									<span className="what">{request.summary}</span>
+									<span className="kind">asks</span>
 								</div>
-								<div className="buttons">
-									{(request.choices ?? []).map((choice) => (
-										<button key={choice} type="button" disabled={busy} onClick={() => attempt(() => answer(request, choice))}>
-											{choice}
-										</button>
-									))}
-									<span className="expires">
-										{typed && <span className="typed">type your answer below · </span>}
-										waits until {when.format(request.expiresAt)}
-									</span>
-								</div>
+								<p className="what">{request.summary}</p>
+							</div>
+							<div className="buttons">
+								{(request.choices ?? []).map((choice) => (
+									<button key={choice} type="button" disabled={busy} onClick={() => attempt(() => answer(request, choice))}>
+										{choice}
+									</button>
+								))}
+								<span className="expires">
+									{typed && <span className="typed">or type your answer below · </span>}
+									waits until {when.format(request.expiresAt)}
+								</span>
 							</div>
 						</div>
 					);
@@ -109,29 +108,29 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 				if (request.always !== undefined) choices.push(["always", request.always.label, "", "A"]);
 				choices.push(["deny", "Deny", "danger", "N"]);
 				return (
-					<div key={request.id} className="row approval">
-						<span className="t">{clock.format(request.createdAt)}</span>
-						<span className="k">allow?</span>
-						<div className="b">
-							<div className="ask">
+					<div key={request.id} className="approval">
+						<div className="ask">
+							<div className="ask-head">
 								{from}
-								<span className="tool">{request.tool}</span> <span className="what">{request.summary}</span>
-								{request.detail !== undefined && (
-									<details className="detail">
-										<summary>all of it</summary>
-										<pre>{request.detail}</pre>
-									</details>
-								)}
+								<span className="kind">wants to use</span>
+								<code className="tool">{request.tool}</code>
 							</div>
-							<div className="buttons">
-								{choices.map(([decision, label, className, letter]) => (
-									<button key={decision} className={className} type="button" disabled={busy} onClick={() => attempt(() => decide(decision, request))}>
-										{label}
-										{request === first && <kbd>{`${alt}${letter}`}</kbd>}
-									</button>
-								))}
-								<span className="expires">waits until {clock.format(request.expiresAt)}</span>
-							</div>
+							<p className="what">{request.summary}</p>
+							{request.detail !== undefined && (
+								<details className="detail">
+									<summary>all of it</summary>
+									<pre>{request.detail}</pre>
+								</details>
+							)}
+						</div>
+						<div className="buttons">
+							{choices.map(([decision, label, className, letter]) => (
+								<button key={decision} className={className} type="button" disabled={busy} onClick={() => attempt(() => decide(decision, request))}>
+									{label}
+									{request === first && <kbd>{`${alt}${letter}`}</kbd>}
+								</button>
+							))}
+							<span className="expires">waits until {clock.format(request.expiresAt)}</span>
 						</div>
 					</div>
 				);

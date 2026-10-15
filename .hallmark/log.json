@@ -1,0 +1,12 @@
+[
+  {
+    "date": "2026-10-15",
+    "scope": "app",
+    "macrostructure": "app: sidebar + reading column + docked composer",
+    "theme": "custom",
+    "theme_axes": "dark / humanist-sans / cool",
+    "vibe": "clean, cool, after-dark tool",
+    "enrichment": "none",
+    "brief": "moiraine, the app for gaidin: agents' conversations, approvals and composer"
+  }
+]

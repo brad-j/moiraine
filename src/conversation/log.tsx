@@ -1,13 +1,13 @@
-// A conversation drawn as gaidin's console draws it (web/log.ts). Everything is a row: the time on the first row of an
-// exchange, a label saying what kind of line it is, and the body. Thinking and tool calls fold to one line each.
+// A conversation as gaidin's console has it (web/log.ts): your messages, the answers, and each tool call and stretch of
+// thinking folded to a line. Two or more such steps in a row fold together into one line, open while one is running.
 import { createContext, type ReactNode, useContext, useState } from "react";
 import type { Block, Entry, ToolResult } from "../api.ts";
 import { argsSummary, isFields, isNumber, isText, shortStamp, splitStamp, textOf } from "../format.ts";
 import { Markdown } from "../markdown.tsx";
 import type { Transcript } from "../transcript.ts";
 
-/** A line of the log. */
-export type Line = { key: string; kind: string; label: string; body: ReactNode; start?: boolean; time?: string; title?: string };
+/** A line of the log. A tool call or thinking is a `step`, which gathers with the steps beside it. */
+export type Line = { key: string; kind: string; label: string; body: ReactNode; start?: boolean; time?: string; title?: string; step?: { name: string; status: string } };
 /** Command output and errors, shown after the entry they followed. */
 export type Local = Line & { after: number };
 
@@ -24,10 +24,62 @@ const Opened = createContext<Set<string>>(new Set());
 export function Log(props: { transcript: Transcript; include: (entry: Entry) => boolean; local?: readonly Local[]; options?: LogOptions; empty?: ReactNode }) {
 	const [opened] = useState(() => new Set<string>());
 	const lines = linesOf(props.transcript, props.include, props.local ?? [], props.options ?? {});
+	const shown: ReactNode[] = [];
+	for (let i = 0; i < lines.length; ) {
+		let end = i;
+		while (end < lines.length && lines[end]!.step !== undefined) end++;
+		if (end - i >= 2) {
+			const run = lines.slice(i, end);
+			shown.push(<Steps key={`steps:${run[0]!.key}`} id={`steps:${run[0]!.key}`} lines={run} />);
+			i = end;
+		} else {
+			const { key, ...line } = lines[i]!;
+			shown.push(<Row key={key} {...line} />);
+			i++;
+		}
+	}
+	return <Opened.Provider value={opened}>{lines.length === 0 ? props.empty : shown}</Opened.Provider>;
+}
+
+/** Steps in a row, as one line naming them; open by itself while one is running or waiting, until the owner toggles it. */
+function Steps({ id, lines }: { id: string; lines: Line[] }) {
+	const opened = useContext(Opened);
+	const [toggled, setToggled] = useState<boolean | undefined>(opened.has(id) ? true : undefined);
+	const statuses = lines.map((line) => line.step!.status);
+	const live = statuses.includes("running") ? "running" : statuses.includes("waiting") ? "waiting" : undefined;
+	const failed = statuses.filter((s) => s === "error" || s === "no result").length;
+	const open = toggled ?? live !== undefined;
+	const names = [...new Set(lines.map((line) => line.step!.name))];
 	return (
-		<Opened.Provider value={opened}>
-			{lines.length === 0 ? props.empty : lines.map(({ key, ...line }) => <Row key={key} {...line} />)}
-		</Opened.Provider>
+		<div className={`row steps${live === undefined ? "" : ` s-${live}`}${failed > 0 ? " s-error" : ""}`}>
+			<span className="t" />
+			<span className="k">steps</span>
+			<div className="b">
+				<details
+					open={open}
+					onToggle={(event) => {
+						const now = event.currentTarget.open;
+						if (now === open) return;
+						if (now) opened.add(id);
+						else opened.delete(id);
+						setToggled(now);
+					}}
+				>
+					<summary>
+						<span className="count">{lines.length} steps</span>
+						<span className="args">{names.join(", ")}</span>
+						<span className="state">{live ?? (failed > 0 ? `${failed} failed` : "done")}</span>
+					</summary>
+					{open && (
+						<div className="step-list">
+							{lines.map(({ key, ...line }) => (
+								<Row key={key} {...line} />
+							))}
+						</div>
+					)}
+				</details>
+			</div>
+		</div>
 	);
 }
 
@@ -91,7 +143,7 @@ function blockLines(transcript: Transcript, blocks: readonly Block[], key: strin
 			if (!block.redacted && block.thinking.trim() === "") return;
 			const preview = block.redacted ? "redacted" : block.thinking.replace(/\s+/g, " ").trim();
 			const body = <Fold id={id} summary={<span className="args">{preview}</span>} sections={[[undefined, block.redacted ? "Redacted by the provider." : block.thinking]]} />;
-			out.push({ key: id, kind: "think", label: "think", body });
+			out.push({ key: id, kind: "think", label: "think", body, step: { name: "thinking", status: "done" } });
 		} else if (block.type === "toolCall") {
 			const result = results.get(block.id);
 			const slot = transcript.tools.get(block.id);
@@ -109,7 +161,7 @@ function blockLines(transcript: Transcript, blocks: readonly Block[], key: strin
 			);
 			const tail = status === "running" && output.trim() !== "" ? lastLines(output, 6) : undefined;
 			// Keyed by the call, so it stays open when the answer being written becomes an entry.
-			out.push({ key: block.id, kind: `tool s-${status.replace(" ", "-")}`, label: "tool", body: <Fold id={block.id} summary={summary} sections={sections} tail={tail} /> });
+			out.push({ key: block.id, kind: `tool s-${status.replace(" ", "-")}`, label: "tool", body: <Fold id={block.id} summary={summary} sections={sections} tail={tail} />, step: { name: block.name, status } });
 		}
 	});
 	return out;

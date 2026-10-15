@@ -65,3 +65,8 @@ export function shortStamp(stamp: string): string {
 	if (Number(year) === now.getFullYear() && Number(month) === now.getMonth() + 1 && Number(day) === now.getDate()) return time!;
 	return new Date(Number(year), Number(month) - 1, Number(day)).toLocaleString(undefined, { month: "short", day: "numeric" });
 }
+
+/** An agent's badge letter: the first of its name. */
+export function initial(name: string): string {
+	return (name.trim()[0] ?? "?").toUpperCase();
+}
