@@ -1,9 +1,10 @@
-// The sidebar: the agent shown, its home conversation pinned, New thread, and its threads, job runs and conversations
-// other agents started, the most recently active first, loading more as it scrolls. On a phone it's a drawer.
+// The sidebar: the agents, the one shown marked, then its home conversation pinned, New thread, and its threads, job
+// runs and conversations other agents started, the most recently active first, loading more as it scrolls. On a phone
+// it's a drawer.
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { CalendarBlankIcon, CaretUpDownIcon, ChatCircleIcon, GearSixIcon, type Icon, ListIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
+import { CalendarBlankIcon, ChatCircleIcon, GearSixIcon, type Icon, ListIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
 import { createContext, type ReactNode, useContext, useEffect, useRef } from "react";
 import { type Agent, problem } from "./api.ts";
 import { Avatar } from "./avatar.tsx";
@@ -25,34 +26,15 @@ export function MenuButton() {
 }
 
 export function Sidebar({ agent }: { agent: Agent }) {
-	const navigate = useNavigate();
-	const { agents } = useAgents();
 	const { toggle } = useContext(Drawer);
 	const close = () => toggle(false);
-	const shown = agents.filter((a) => a.archived === undefined || a.id === agent.id);
 	return (
 		<nav id="sidebar" aria-label="Conversations">
 			{/* The agent's picture, large and faint, cut off by the sidebar's top and right edges. */}
 			<div className="agent-backdrop" aria-hidden="true">
 				<Avatar agent={agent} size="backdrop" />
 			</div>
-			{/* The agent's name, with the native select over it, unseen, to pick another. */}
-			<label className="switcher">
-				<span className="name" aria-hidden="true">
-					{agent.name}
-				</span>
-				<CaretUpDownIcon className="chevron" aria-hidden="true" />
-				<span className="visually-hidden">Agent</span>
-				<select value={agent.id} onChange={(event) => void navigate({ to: "/$agent", params: { agent: event.target.value } }).then(close)}>
-					{shown.map((a) => (
-						<option key={a.id} value={a.id}>
-							{a.name}
-							{a.archived === undefined ? "" : " (archived)"}
-						</option>
-					))}
-				</select>
-			</label>
-			{agent.job !== "" && <p className="job">{agent.job}</p>}
+			<Agents current={agent} onOpen={close} />
 			<div className="sidebar-actions">
 				<Link className="pinned" to="/$agent" params={{ agent: agent.id }} activeOptions={{ exact: true }} onClick={close}>
 					<ChatCircleIcon aria-hidden="true" />
@@ -106,6 +88,41 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 }
 
 const ROW = 52;
+
+/**
+ * Every agent but the archived ones, each going to its home conversation, the one the sidebar is for marked and with its
+ * job, and each with how many of its requests are waiting on the owner.
+ */
+function Agents({ current, onOpen }: { current: Agent; onOpen: () => void }) {
+	const { agents, fallback } = useAgents();
+	const { data: approvals = [] } = useQuery(queries.approvals);
+	const shown = agents.filter((a) => a.archived === undefined || a.id === current.id);
+	const waiting = (id: string) => approvals.filter((r) => (r.agent ?? fallback) === id).length;
+	return (
+		<div className="agents" role="group" aria-label="Agents">
+			<h2>Agents</h2>
+			<ul>
+				{shown.map((a) => {
+					const count = waiting(a.id);
+					return (
+						<li key={a.id} className={a.id === current.id ? "current" : undefined}>
+							<Link className="agent" to="/$agent" params={{ agent: a.id }} activeOptions={{ exact: true }} onClick={onOpen}>
+								<Avatar agent={a} />
+								<span className="name">{a.name}</span>
+								{count > 0 && (
+									<span className="waiting" title={`${count} waiting on you`}>
+										{count}
+									</span>
+								)}
+							</Link>
+							{a.id === current.id && a.job !== "" && <p className="job">{a.job}</p>}
+						</li>
+					);
+				})}
+			</ul>
+		</div>
+	);
+}
 
 /** A link at the sidebar's foot, with its icon. */
 function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {

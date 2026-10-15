@@ -249,7 +249,7 @@ test("settings rename an agent, remove a host allowed for good, and let it messa
 	await page.getByRole("textbox", { name: "Name" }).fill("Gaidin");
 	await page.locator("section", { has: page.getByRole("heading", { name: "Agent" }) }).getByRole("button", { name: "save" }).click();
 	await expect(page.locator(".page")).toContainText("Saved.");
-	await expect(page.locator("#sidebar .switcher .name")).toHaveText("Gaidin");
+	await expect(page.locator("#sidebar .agents .current .name")).toHaveText("Gaidin");
 	await expect(page.locator("#sidebar .job")).toHaveText("Looks after the house.");
 	await page.reload();
 	await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("Gaidin");
@@ -261,7 +261,7 @@ test("the agents page makes an agent, archives it and restores it", async ({ pag
 	await pages(page).getByRole("link", { name: "Agents" }).click();
 	await expect(page).toHaveURL(/\/agents$/);
 	// The sidebar stays the agent's shown last.
-	await expect(page.locator("#sidebar .switcher .name")).toHaveText("gaidin");
+	await expect(page.locator("#sidebar .agents .current .name")).toHaveText("gaidin");
 	await expect(page.locator(".agent-row")).toHaveCount(1);
 	await expect(page.locator(".agent-row")).toContainText("default");
 	await expect(page.locator(".agent-row").getByRole("button", { name: "archive" })).toHaveCount(0);
@@ -274,7 +274,7 @@ test("the agents page makes an agent, archives it and restores it", async ({ pag
 	await form.locator("input").nth(2).fill("Looks things up.");
 	await form.getByRole("button", { name: "make agent" }).click();
 	await expect(page).toHaveURL(/\/scout\/settings$/);
-	await expect(page.locator("#sidebar .switcher .name")).toHaveText("Scout");
+	await expect(page.locator("#sidebar .agents .current .name")).toHaveText("Scout");
 
 	await pages(page).getByRole("link", { name: "Agents" }).click();
 	const scout = page.locator(".agent-row", { hasText: "Scout" });

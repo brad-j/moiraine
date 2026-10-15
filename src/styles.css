@@ -70,16 +70,18 @@ kbd { font-size: var(--text-2xs); font-weight: 400; opacity: 0.7; }
 .avatar.backdrop { width: 100%; height: 100%; border-radius: 0; background: none; }
 .avatar.monogram.backdrop { color: var(--color-accent); font-size: var(--text-mark); font-weight: 600; }
 
-/* The agent: its name, with the select laid over it. */
-.switcher {
-	position: relative; display: flex; align-items: center; gap: var(--space-xs); height: 64px; padding: 0 var(--space-xs);
-	border-radius: var(--radius-sm); transition: background-color var(--dur-short) var(--ease-out);
+/* The agents, each going to its home; the one the sidebar is for is marked, with its job under its name. */
+#sidebar .agents h2 { margin-top: var(--space-xs); }
+#sidebar .agents ul { display: flex; flex-direction: column; gap: var(--space-3xs); margin: 0; padding: 0; list-style: none; }
+#sidebar .agent { display: flex; align-items: center; gap: var(--space-xs); padding: var(--space-2xs) var(--space-xs); font-size: var(--text-sm); font-weight: 500; }
+#sidebar .agents li.current > .agent { background: var(--color-paper-4); color: var(--color-ink); }
+#sidebar .agent .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sidebar .agents .job { margin: var(--space-2xs) var(--space-xs) var(--space-xs) calc(28px + 2 * var(--space-xs)); }
+/* Requests from an agent waiting on the owner. */
+.waiting {
+	display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 var(--space-2xs); border-radius: var(--radius-pill);
+	background: var(--color-warn); color: var(--color-paper); font-size: var(--text-2xs); font-weight: 600; font-variant-numeric: tabular-nums;
 }
-@media (hover: hover) { .switcher:hover { background: var(--color-paper-3); } }
-.switcher:focus-within { outline: 2px solid var(--color-focus); outline-offset: -2px; }
-.switcher select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
-.switcher .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.01em; }
-.switcher .chevron { flex: none; color: var(--color-ink-3); }
 
 /* Icons sit on the text's line, the size the root's IconContext gives them, in the color of what they're in. */
 svg { flex: none; }
@@ -94,7 +96,7 @@ svg { flex: none; }
 .avatar.monogram.sm { font-size: var(--text-2xs); }
 .avatar.monogram.lg { font-size: var(--text-md); }
 .avatar.monogram.xl { font-size: var(--text-lg); }
-#sidebar .job { margin: 0 var(--space-xs) var(--space-xs); color: var(--color-ink-3); font-size: var(--text-xs); line-height: 1.4; }
+#sidebar .job { color: var(--color-ink-3); font-size: var(--text-xs); line-height: 1.4; }
 
 #sidebar a { display: block; color: var(--color-ink-2); text-decoration: none; border-radius: var(--radius-sm); transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out); }
 @media (hover: hover) { #sidebar a:hover { background: var(--color-paper-3); color: var(--color-ink); } }

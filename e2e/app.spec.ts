@@ -200,8 +200,8 @@ test("the dock shows another agent's request, labeled with that agent, whichever
 	const made = await page.request.post("/api/agents/save", { data: { id: "scout", name: "Scout", job: "Looks things up." } });
 	expect(made.ok()).toBe(true);
 	await page.goto("/");
-	const switcher = page.getByRole("combobox", { name: "Agent" });
-	await switcher.selectOption("scout");
+	const agents = page.getByRole("group", { name: "Agents" });
+	await agents.getByRole("link", { name: "Scout" }).click();
 	await expect(page).toHaveURL(/\/scout$/);
 	await expect(page.locator(".convo-head h1")).toHaveText("Scout");
 	await expect(page.locator("#sidebar .job")).toHaveText("Looks things up.");
@@ -209,15 +209,18 @@ test("the dock shows another agent's request, labeled with that agent, whichever
 	await send(page, "fetch the page");
 	const dock = page.locator("#approvals");
 	await expect(dock).toContainText("fetch_url");
-	await switcher.selectOption("gaidin");
+	await agents.getByRole("link", { name: "gaidin" }).click();
 	await expect(page).toHaveURL(/\/gaidin$/);
 	await expect(dock.locator(".who")).toHaveText("Scout");
+	// Scout's row says a request of its is waiting.
+	await expect(agents.locator("li", { hasText: "Scout" }).locator(".waiting")).toHaveText("1");
+	await expect(agents.locator("li", { hasText: "gaidin" }).locator(".waiting")).toHaveCount(0);
 	await dock.getByRole("link", { name: "Scout" }).click();
 	await expect(page).toHaveURL(/\/scout$/);
 	await dock.getByRole("button", { name: "Allow once" }).click();
 	await expect(page.locator("#log")).toContainText("The page says: page text.");
 	// gaidin's home has none of Scout's conversation.
-	await switcher.selectOption("gaidin");
+	await agents.getByRole("link", { name: "gaidin" }).click();
 	await expect(page.locator("#log")).not.toContainText("The page says");
 });
 
