@@ -1,16 +1,18 @@
-// The sidebar: the agents, the one shown marked, then its home conversation pinned, New thread, and its threads, job
-// runs and conversations other agents started, the most recently active first, loading more as it scrolls. On a phone
-// it's a drawer.
+// The sidebar: a search, then the agents as a list, each with when it was last active and its newest message, or that
+// it's working, and how many of its requests wait on the owner. The agent shown opens to its threads, job runs and
+// conversations other agents started, the most recently active first. The pages are at the foot. On a phone it's a
+// drawer.
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { CalendarBlankIcon, ChatCircleIcon, GearSixIcon, type Icon, ListIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
-import { createContext, type ReactNode, useContext, useEffect, useRef } from "react";
-import { type Agent, problem } from "./api.ts";
+import { CalendarBlankIcon, GearSixIcon, type Icon, ListIcon, MagnifyingGlassIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
+import { createContext, type ReactNode, useContext, useState } from "react";
+import { type Agent, type Gets, problem } from "./api.ts";
 import { Avatar } from "./avatar.tsx";
 import { Origin, PLACES, placeOf } from "./conversation/view.tsx";
-import { since, when } from "./format.ts";
+import { lastSeen, oneLine, since, when } from "./format.ts";
 import { queries, troubled, useAgents } from "./queries.ts";
+
+type Activity = Gets["/api/agents/activity"][number];
 
 /** Opens and closes the drawer, on a phone. */
 export const Drawer = createContext<{ open: boolean; toggle: (open?: boolean) => void }>({ open: false, toggle: () => {} });
@@ -28,26 +30,136 @@ export function MenuButton() {
 export function Sidebar({ agent }: { agent: Agent }) {
 	const { toggle } = useContext(Drawer);
 	const close = () => toggle(false);
+	const [search, setSearch] = useState("");
 	return (
 		<nav id="sidebar" aria-label="Conversations">
-			{/* The agent's picture, large and faint, cut off by the sidebar's top and right edges. */}
-			<div className="agent-backdrop" aria-hidden="true">
-				<Avatar agent={agent} size="backdrop" />
-			</div>
-			<Agents current={agent} onOpen={close} />
-			<div className="sidebar-actions">
-				<Link className="pinned" to="/$agent" params={{ agent: agent.id }} activeOptions={{ exact: true }} onClick={close}>
-					<ChatCircleIcon aria-hidden="true" />
-					Home conversation
-				</Link>
-				<Link className="new-thread" to="/$agent/new" params={{ agent: agent.id }} onClick={close}>
-					<NotePencilIcon aria-hidden="true" />
-					New thread
+			<div className="sidebar-head">
+				<label className="search">
+					<MagnifyingGlassIcon aria-hidden="true" />
+					<input type="search" value={search} placeholder="Search" aria-label="Search agents and threads" onChange={(event) => setSearch(event.target.value)} />
+				</label>
+				<Link className="new-thread" to="/$agent/new" params={{ agent: agent.id }} aria-label="New thread" title={`New thread with ${agent.name}`} onClick={close}>
+					<NotePencilIcon size={18} aria-hidden="true" />
 				</Link>
 			</div>
-			<Threads agent={agent} onOpen={close} />
+			<Agents current={agent} search={search.trim().toLowerCase()} onOpen={close} />
 			<Pages agent={agent} onOpen={close} />
 		</nav>
+	);
+}
+
+/**
+ * Every agent but the archived ones, each going to its home conversation; the one the sidebar is for is marked and opens
+ * to its threads. A search keeps the agents whose name or job has it, and always the one shown, whose threads it narrows.
+ */
+function Agents({ current, search, onOpen }: { current: Agent; search: string; onOpen: () => void }) {
+	const { agents, fallback } = useAgents();
+	const { data: approvals = [] } = useQuery(queries.approvals);
+	const { data: activity = [] } = useQuery(queries.activity);
+	const byAgent = new Map(activity.map((a) => [a.agent, a]));
+	const matches = (a: Agent) => search === "" || a.name.toLowerCase().includes(search) || a.job.toLowerCase().includes(search);
+	const shown = agents.filter((a) => (a.archived === undefined || a.id === current.id) && (matches(a) || a.id === current.id));
+	return (
+		<div className="agent-list">
+			<ul className="agents" role="group" aria-label="Agents">
+				{shown.map((a) => (
+					<li key={a.id} className={a.id === current.id ? "current" : undefined}>
+						<AgentRow agent={a} activity={byAgent.get(a.id)} waiting={approvals.filter((r) => (r.agent ?? fallback) === a.id).length} onOpen={onOpen} />
+						{a.id === current.id && <Threads agent={a} search={search} onOpen={onOpen} />}
+					</li>
+				))}
+			</ul>
+		</div>
+	);
+}
+
+/** An agent: its picture, name and when it was last active, then its newest message, or that it's working. */
+function AgentRow({ agent, activity, waiting, onOpen }: { agent: Agent; activity: Activity | undefined; waiting: number; onOpen: () => void }) {
+	const last = activity?.last;
+	// The owner's words, in the agent's home or a thread, start with "You:"; a job's prompt or another agent's are as they are.
+	const yours = last?.role === "user" && (last.place === "main" || last.place === "thread");
+	const preview = last === undefined ? agent.job || "No messages yet" : `${yours ? "You: " : ""}${oneLine(last.text)}`;
+	return (
+		<Link className="agent" to="/$agent" params={{ agent: agent.id }} activeOptions={{ exact: true }} onClick={onOpen}>
+			<Avatar agent={agent} size="lg" />
+			<span className="lines">
+				<span className="top">
+					<span className="name">{agent.name}</span>
+					{last !== undefined && (
+						<span className="when" title={when.format(last.at)}>
+							{lastSeen(last.at)}
+						</span>
+					)}
+				</span>
+				<span className="bottom">
+					{activity?.running ? (
+						<span className="working">
+							<span className="live" aria-hidden="true" />
+							working…
+						</span>
+					) : (
+						<span className="preview">{preview}</span>
+					)}
+					{waiting > 0 && (
+						<span className="waiting" title={`${waiting} waiting on you`}>
+							{waiting}
+						</span>
+					)}
+				</span>
+			</span>
+		</Link>
+	);
+}
+
+/** How many of an agent's threads show before "show all". */
+const FIRST = 5;
+
+/** The agent's threads, job runs and conversations other agents started, beneath it: the newest few, or all of them. */
+function Threads({ agent, search, onOpen }: { agent: Agent; search: string; onOpen: () => void }) {
+	const list = useInfiniteQuery(queries.conversations(agent.id));
+	const [all, setAll] = useState(false);
+	const items = (list.data?.pages.flatMap((page) => page.items) ?? []).filter((item) => search === "" || item.title.toLowerCase().includes(search));
+	const shown = all || search !== "" ? items : items.slice(0, FIRST);
+	return (
+		<div className="threads">
+			{list.isPending && <p className="quiet">Loading…</p>}
+			{list.isError && <p className="quiet problem">{problem(list.error)}</p>}
+			{list.isSuccess && items.length === 0 && <p className="quiet">{search === "" ? "No threads yet." : "No thread has that."}</p>}
+			{shown.length > 0 && (
+				<ol>
+					{shown.map((item) => {
+						const place = placeOf(item);
+						return (
+							<li key={item.id}>
+								<Link className="thread" to="/$agent/t/$id" params={{ agent: agent.id, id: String(item.id) }} onClick={onOpen}>
+									<span className="title">{item.title || "(no message)"}</span>
+									<span className="meta">
+										<span className={`origin ${place}`}>
+											<Origin place={place} />
+											{PLACES[place]}
+										</span>
+										<span title={when.format(item.lastAt)}>{since(item.lastAt)}</span>
+									</span>
+								</Link>
+							</li>
+						);
+					})}
+				</ol>
+			)}
+			{search === "" && (items.length > FIRST || list.hasNextPage) && (
+				<button
+					className="plain more"
+					type="button"
+					disabled={list.isFetchingNextPage}
+					onClick={() => {
+						if (!all) setAll(true);
+						else void list.fetchNextPage();
+					}}
+				>
+					{!all ? `show all${list.hasNextPage ? "" : ` ${items.length}`}` : "older"}
+				</button>
+			)}
+		</div>
 	);
 }
 
@@ -87,43 +199,6 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 	);
 }
 
-const ROW = 52;
-
-/**
- * Every agent but the archived ones, each going to its home conversation, the one the sidebar is for marked and with its
- * job, and each with how many of its requests are waiting on the owner.
- */
-function Agents({ current, onOpen }: { current: Agent; onOpen: () => void }) {
-	const { agents, fallback } = useAgents();
-	const { data: approvals = [] } = useQuery(queries.approvals);
-	const shown = agents.filter((a) => a.archived === undefined || a.id === current.id);
-	const waiting = (id: string) => approvals.filter((r) => (r.agent ?? fallback) === id).length;
-	return (
-		<div className="agents" role="group" aria-label="Agents">
-			<h2>Agents</h2>
-			<ul>
-				{shown.map((a) => {
-					const count = waiting(a.id);
-					return (
-						<li key={a.id} className={a.id === current.id ? "current" : undefined}>
-							<Link className="agent" to="/$agent" params={{ agent: a.id }} activeOptions={{ exact: true }} onClick={onOpen}>
-								<Avatar agent={a} />
-								<span className="name">{a.name}</span>
-								{count > 0 && (
-									<span className="waiting" title={`${count} waiting on you`}>
-										{count}
-									</span>
-								)}
-							</Link>
-							{a.id === current.id && a.job !== "" && <p className="job">{a.job}</p>}
-						</li>
-					);
-				})}
-			</ul>
-		</div>
-	);
-}
-
 /** A link at the sidebar's foot, with its icon. */
 function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {
 	return (
@@ -131,50 +206,5 @@ function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/sched
 			<Glyph aria-hidden="true" />
 			{children}
 		</Link>
-	);
-}
-
-function Threads({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
-	const list = useInfiniteQuery(queries.conversations(agent.id));
-	const items = list.data?.pages.flatMap((page) => page.items) ?? [];
-	const scroller = useRef<HTMLDivElement>(null);
-	// oxlint-disable-next-line react/incompatible-library -- the React Compiler can't memoize around it, and the app doesn't use the compiler
-	const virtual = useVirtualizer({ count: items.length, getScrollElement: () => scroller.current, estimateSize: () => ROW, overscan: 8 });
-	const shown = virtual.getVirtualItems();
-	const last = shown.at(-1)?.index ?? -1;
-
-	useEffect(() => {
-		if (last >= items.length - 1 && list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
-	}, [last, items.length, list]);
-
-	return (
-		<>
-			<h2>Threads</h2>
-			<div className="threads" ref={scroller}>
-				{list.isPending && <p className="quiet">Loading…</p>}
-				{list.isError && <p className="quiet problem">{problem(list.error)}</p>}
-				{list.isSuccess && items.length === 0 && <p className="quiet">No threads yet.</p>}
-				<ol style={{ height: virtual.getTotalSize() }}>
-					{shown.map((row) => {
-						const item = items[row.index]!;
-						const place = placeOf(item);
-						return (
-							<li key={item.id} style={{ transform: `translateY(${row.start}px)`, height: ROW }}>
-								<Link className="thread" to="/$agent/t/$id" params={{ agent: agent.id, id: String(item.id) }} onClick={onOpen}>
-									<span className="title">{item.title || "(no message)"}</span>
-									<span className="meta">
-										<span className={`origin ${place}`}>
-											<Origin place={place} />
-											{PLACES[place]}
-										</span>
-										<span title={when.format(item.lastAt)}>{since(item.lastAt)}</span>
-									</span>
-								</Link>
-							</li>
-						);
-					})}
-				</ol>
-			</div>
-		</>
 	);
 }

@@ -8,6 +8,8 @@ const agentQuery = (agent: string) => `?agent=${encodeURIComponent(agent)}`;
 export const queries = {
 	version: queryOptions({ queryKey: ["version"], queryFn: () => load("/api/version"), staleTime: Infinity }),
 	// Asked again until it's had, since nothing else can be shown right without it.
+	/** What each agent is up to, for the sidebar; asked often, since it says when one is working. */
+	activity: queryOptions({ queryKey: ["activity-by-agent"], queryFn: () => load("/api/agents/activity"), refetchInterval: 4_000 }),
 	agents: queryOptions({ queryKey: ["agents"], queryFn: () => load("/api/agents"), refetchInterval: (query) => (query.state.status === "error" ? 10_000 : false) }),
 	// Every agent's, so the dock shows them all.
 	approvals: queryOptions({ queryKey: ["approvals"], queryFn: () => load("/api/approvals"), refetchInterval: 60_000 }),

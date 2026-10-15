@@ -108,7 +108,7 @@ test("Esc in a text box on a page leaves the run going; in the conversation it s
 	// The question still waits in the dock on the page.
 	await expect(page.locator("#approvals")).toContainText("Keep the old branch?");
 
-	await page.getByRole("navigation", { name: "Conversations" }).getByRole("link", { name: "Home conversation" }).click();
+	await page.locator("#sidebar .agents li.current > .agent").click();
 	await expect(page.locator("#statusline .status")).toHaveText("working");
 	await page.locator("#message").press("Escape");
 	await expect(page.locator("#log .row.stopped")).toHaveCount(1);
@@ -216,7 +216,7 @@ test("settings switch the thinking and a tool, keep the instructions, and say wh
 	await expect(page.getByRole("textbox", { name: "Standing instructions" })).toHaveValue("Answer in British English.");
 	await expect(page.getByRole("switch", { name: "fetch_url" })).toHaveAttribute("aria-checked", "false");
 	await expect(page.locator(".page")).toContainText("Notifications need web.url in gaidin's settings file.");
-	await page.getByRole("navigation", { name: "Conversations" }).getByRole("link", { name: "Home conversation" }).click();
+	await page.locator("#sidebar .agents li.current > .agent").click();
 	await expect(page.locator("#statusline")).toContainText("fetch_url off");
 });
 
@@ -235,7 +235,7 @@ test("settings rename an agent, remove a host allowed for good, and let it messa
 	await expect(access).toContainText("None yet.");
 
 	// The host is gone, so the next fetch asks again.
-	await page.getByRole("navigation", { name: "Conversations" }).getByRole("link", { name: "Home conversation" }).click();
+	await page.locator("#sidebar .agents li.current > .agent").click();
 	await send(page, "fetch it again");
 	await expect(page.locator("#approvals")).toContainText("fetch_url");
 	await page.locator("#approvals").getByRole("button", { name: "Deny" }).click();
@@ -250,7 +250,7 @@ test("settings rename an agent, remove a host allowed for good, and let it messa
 	await page.locator("section", { has: page.getByRole("heading", { name: "Agent" }) }).getByRole("button", { name: "save" }).click();
 	await expect(page.locator(".page")).toContainText("Saved.");
 	await expect(page.locator("#sidebar .agents .current .name")).toHaveText("Gaidin");
-	await expect(page.locator("#sidebar .job")).toHaveText("Looks after the house.");
+	await expect(page.getByRole("textbox", { name: "Job" })).toHaveValue("Looks after the house.");
 	await page.reload();
 	await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("Gaidin");
 	await expect(access.getByRole("switch", { name: "Scout" })).toHaveAttribute("aria-checked", "true");
@@ -312,13 +312,13 @@ test("an agent's picture is chosen in settings, shown wherever the agent is, and
 	await page.locator("#message").fill("hi");
 	await page.locator("#message").press("Enter");
 	await expect(page.locator("#log .speaker")).toHaveText("gaidin");
-	await expect(page.locator("#sidebar .agent-backdrop .avatar.monogram")).toHaveCount(1);
+	await expect(page.locator("#sidebar .agents li.current .avatar.monogram")).toHaveCount(1);
 
 	await page.goto("/gaidin/settings");
 	// A 1×1 PNG, which the page makes a square WebP before sending.
 	const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 	await page.getByLabel("Picture file").setInputFiles({ name: "me.png", mimeType: "image/png", buffer: pixel });
-	const shown = page.locator("#sidebar .agent-backdrop img.avatar");
+	const shown = page.locator("#sidebar .agents li.current img.avatar");
 	await expect(shown).toHaveAttribute("src", /^\/api\/agents\/avatar\?id=gaidin&v=gaidin-[0-9a-f]{12}\.(webp|png)$/);
 	expect(await shown.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
 	await page.goto("/agents");
@@ -326,5 +326,5 @@ test("an agent's picture is chosen in settings, shown wherever the agent is, and
 
 	await page.goto("/gaidin/settings");
 	await page.getByRole("button", { name: "remove" }).click();
-	await expect(page.locator("#sidebar .agent-backdrop .avatar.monogram")).toHaveCount(1);
+	await expect(page.locator("#sidebar .agents li.current .avatar.monogram")).toHaveCount(1);
 });

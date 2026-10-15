@@ -105,3 +105,23 @@ export function ownerMessage(content: Said): { time?: string; text: string; imag
 	const { time, text } = splitStamp(note === null ? whole : whole.slice(0, note.index));
 	return { time, text: text.trim(), images, files: note === null ? [] : note[1]!.split("; ") };
 }
+
+const yesterday = (at: number) => {
+	const start = new Date();
+	start.setHours(0, 0, 0, 0);
+	return at < start.getTime() && at >= start.getTime() - 86_400_000;
+};
+
+/** When something last happened, short: the time today, "Yesterday", a weekday this week, or a date. */
+export function lastSeen(at: number): string {
+	const start = new Date();
+	start.setHours(0, 0, 0, 0);
+	if (at >= start.getTime()) return clock.format(at);
+	if (yesterday(at)) return "Yesterday";
+	return at >= start.getTime() - 6 * 86_400_000 ? weekday.format(at) : date.format(at);
+}
+
+/** A message on one line: no time stamp, no note of files, no runs of space. */
+export function oneLine(text: string): string {
+	return splitStamp(text).text.replace(/\n\n\[Files from [\s\S]*\]$/, "").replace(/\s+/g, " ").trim();
+}

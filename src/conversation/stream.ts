@@ -48,8 +48,11 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 					// A (re)connection may have missed changes.
 					invalidate(["approvals"]);
 					break;
+				case "run_start":
+					invalidate(["activity-by-agent"]);
+					break;
 				case "run_end":
-					invalidate(["usage"], ["budget"], ["reminders", agent], ["jobs", agent], ["conversations", agent]);
+					invalidate(["activity-by-agent"], ["usage"], ["budget"], ["reminders", agent], ["jobs", agent], ["conversations", agent]);
 					// A thread's title and preview come from gaidin's index of its messages.
 					if (conversation !== undefined) invalidate(["conversation", conversation]);
 					break;

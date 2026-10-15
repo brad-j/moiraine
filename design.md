@@ -39,11 +39,13 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 - Icons are Phosphor (`@phosphor-icons/react`), regular weight, 16 pixels, in the color of the text beside them (the root's
   IconContext). Every icon sits beside a word that says the same; none stands alone except the menu, attach and
   remove buttons, which have labels for screen readers. Fill weight only for Send and Stop.
-- An agent's avatar is a circle: its picture, from its settings page, or its initial on the accent's wash. Sizes: 16 in a
-  tag, 20 in the dock and above its answers, 24 in headers, 40 on the agents page, 72 on its settings.
-- The sidebar's top is the agent's picture at 420 pixels and 16% opacity, cut off by the panel's top and right edges and
-  fading out downward, behind its name in --text-xl; without a picture, its initial as a large faint mark. It's the one
-  decorative image in the app.
+- An agent's avatar is a rounded square (28% corners): its picture, from its settings page, or its initial on the
+  accent's wash. Sizes: 16 in a tag, 20 in the dock and above its answers, 24 in headers, 36 in the sidebar, 40 on the
+  agents page, 72 on its settings.
+- The sidebar is the agents as a list: a search and a new-thread button above; each agent its avatar, name and when it
+  was last active, then its newest message on one line, or a pulsing dot and "working…", with an amber count of what
+  waits on the owner. The agent shown has the current background and opens to its newest five threads, indented on a
+  hairline, then "show all". The pages are at the foot. No decorative imagery.
 - Each of the agent's answers opens with its avatar and name, once per answer.
 
 ## Spacing
