@@ -282,3 +282,37 @@ test("the agent shown opens to its newest threads, and the search narrows them t
 	await expect(threads).toHaveCount(1);
 	await expect(threads).toContainText("plan the garden");
 });
+
+/** How far the log is from its end, in pixels. */
+const fromEnd = (page: Page) => page.locator("#scroll").evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
+
+test("the log stays at its end when the dock grows under it, and after a reload", async ({ page }) => {
+	await page.goto("/");
+	await send(page, "markdown");
+	await send(page, "markdown");
+	await expect(page.locator("#log .row").last()).toBeVisible();
+	await expect.poll(() => fromEnd(page)).toBeLessThan(2);
+
+	// A request's card in the dock takes height from the log.
+	await send(page, "fetch the page");
+	await expect(page.locator("#approvals .approval")).toBeVisible();
+	await expect.poll(() => fromEnd(page)).toBeLessThan(2);
+	await page.locator("#approvals").getByRole("button", { name: "Allow once" }).click();
+	await expect(page.locator("#log")).toContainText("The page says: page text.");
+	await expect.poll(() => fromEnd(page)).toBeLessThan(2);
+
+	await page.reload();
+	await expect(page.locator("#log")).toContainText("The page says: page text.");
+	await expect.poll(() => fromEnd(page)).toBeLessThan(2);
+
+	// Scrolled up, the answer doesn't move it; the jump button offers the end instead.
+	await send(page, "fetch the page");
+	await expect(page.locator("#approvals .approval")).toBeVisible();
+	await page.locator("#scroll").evaluate((el) => (el.scrollTop = 0));
+	await page.locator("#approvals").getByRole("button", { name: "Allow once" }).click();
+	await expect(page.locator("#log .row").last()).toContainText("The page says: page text.");
+	await expect(page.getByRole("button", { name: "new activity" })).toBeVisible();
+	expect(await page.locator("#scroll").evaluate((el) => el.scrollTop)).toBeLessThan(2);
+	await page.getByRole("button", { name: "new activity" }).click();
+	await expect.poll(() => fromEnd(page)).toBeLessThan(2);
+});

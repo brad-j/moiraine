@@ -3,7 +3,7 @@
 import { ArrowDownIcon, ChatCircleIcon, ClockIcon, RobotIcon, SlackLogoIcon, StopIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type Agent, type Entry, post, problem, requestId, type Summary } from "../api.ts";
 import { fromNow, money, ownerMessage, when } from "../format.ts";
 import { queries } from "../queries.ts";
@@ -255,20 +255,24 @@ function ownerMessages(transcript: Transcript, include: (entry: Entry) => boolea
 
 /**
  * Keeps the log at its end while it's there, as a terminal does; scrolled up, new rows show the jump button instead.
- * `stick` keeps it there through the next draw, as after sending.
+ * `stick` keeps it there through the next draw, as after sending. It follows the log's size as well as the transcript,
+ * so a card in the dock taking height from it, an image or font loading, or an answer wrapping anew doesn't leave the
+ * end out of sight.
  */
 function useStick(transcript: Transcript, local: readonly Local[]) {
 	const scroller = useRef<HTMLElement>(null);
 	const atEnd = useRef(true);
 	const height = useRef(0);
 	const [jump, setJump] = useState(false);
-	useLayoutEffect(() => {
+	/** After the log or its window changed size: to the end if it was there, or the jump button if there's more. */
+	const follow = useCallback(() => {
 		const el = scroller.current;
 		if (el === null) return;
 		if (atEnd.current) el.scrollTop = el.scrollHeight;
 		else if (el.scrollHeight > height.current) setJump(true);
 		height.current = el.scrollHeight;
-	}, [transcript, local]);
+	}, []);
+	useLayoutEffect(follow, [transcript, local, follow]);
 	useEffect(() => {
 		const el = scroller.current;
 		if (el === null) return;
@@ -277,8 +281,14 @@ function useStick(transcript: Transcript, local: readonly Local[]) {
 			if (atEnd.current) setJump(false);
 		};
 		el.addEventListener("scroll", scrolled, { passive: true });
-		return () => el.removeEventListener("scroll", scrolled);
-	}, []);
+		const resized = new ResizeObserver(follow);
+		resized.observe(el);
+		for (const child of el.children) resized.observe(child);
+		return () => {
+			el.removeEventListener("scroll", scrolled);
+			resized.disconnect();
+		};
+	}, [follow]);
 	return {
 		scroller,
 		jump,
