@@ -18,14 +18,14 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 
 ## Theme
 
-- Canvas `--color-paper` oklch(14.5% 0.010 255); raised panels `--color-paper-2` (sidebar, composer, approval
+- Neutral greys with no tint, so nothing reads as slate or blue. Canvas `--color-paper` oklch(14.5% 0 0); raised panels `--color-paper-2` (sidebar, composer, approval
   cards); fills `--color-paper-3` (your messages, hover); current `--color-paper-4`.
 - Ink in three steps: `--color-ink` (reading), `--color-ink-2` (secondary), `--color-ink-3` (meta).
 - One accent, ice blue `--color-accent` oklch(80% 0.11 225): live state (running), the current item, focus rings,
   the primary button. Kept to small surfaces.
 - Status colors, used only for status: `--color-ok` (a tool call that worked), `--color-warn` (waiting on you,
   near a limit), `--color-bad` (errors, deny).
-- One faint glow, `--color-glow`, at the top of the conversation column. Nothing else is decorative.
+- One faint neutral light, `--color-glow`, at the top of the conversation column. Nothing else is decorative.
 
 ## Typography
 

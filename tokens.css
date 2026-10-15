@@ -1,20 +1,20 @@
 /* Hallmark · tokens · genre: modern-minimal · theme: custom ("cool, clean, after-dark tool")
- * paper oklch(14.5% 0.010 255) · accent oklch(80% 0.11 225) ice blue · Fira Sans + Fira Code
- * axes: dark / humanist-sans / cool */
+ * paper oklch(14.5% 0 0), neutral · accent oklch(80% 0.11 225) ice blue · Fira Sans + Fira Code
+ * axes: dark / humanist-sans / cool accent on neutral */
 :root {
 	color-scheme: dark;
 
-	/* Surfaces, darkest first: the canvas, raised panels (sidebar, composer, cards), fills, and pressed or current. */
-	--color-paper: oklch(14.5% 0.010 255);
-	--color-paper-2: oklch(17.5% 0.012 255);
-	--color-paper-3: oklch(21% 0.014 255);
-	--color-paper-4: oklch(25% 0.016 255);
-	--color-rule: oklch(25% 0.013 255);
-	--color-rule-2: oklch(32% 0.016 255);
+	/* Neutral greys, without a tint. Surfaces, darkest first: the canvas, raised panels (sidebar, composer, cards), fills, and pressed or current. */
+	--color-paper: oklch(14.5% 0 0);
+	--color-paper-2: oklch(17.5% 0 0);
+	--color-paper-3: oklch(21% 0 0);
+	--color-paper-4: oklch(25% 0 0);
+	--color-rule: oklch(25% 0 0);
+	--color-rule-2: oklch(32% 0 0);
 
-	--color-ink: oklch(94% 0.006 255);
-	--color-ink-2: oklch(77% 0.014 255);
-	--color-ink-3: oklch(63% 0.016 255);
+	--color-ink: oklch(94% 0 0);
+	--color-ink-2: oklch(77% 0 0);
+	--color-ink-3: oklch(63% 0 0);
 
 	/* One accent: live state, the current item, focus, the primary action. */
 	--color-accent: oklch(80% 0.11 225);
@@ -24,7 +24,7 @@
 	--color-accent-line: oklch(80% 0.11 225 / 0.45);
 	--color-focus: oklch(80% 0.11 225);
 	/* The faint light at the top of the conversation. */
-	--color-glow: oklch(60% 0.12 235 / 0.13);
+	--color-glow: oklch(100% 0 0 / 0.035);
 
 	--color-ok: oklch(78% 0.11 165);
 	--color-warn: oklch(83% 0.12 85);
@@ -32,8 +32,8 @@
 	--color-warn-line: oklch(83% 0.12 85 / 0.45);
 	--color-bad: oklch(71% 0.15 22);
 	--color-bad-wash: oklch(71% 0.15 22 / 0.1);
-	--color-scrim: oklch(8% 0.01 255 / 0.6);
-	--color-shadow: oklch(5% 0.01 255 / 0.5);
+	--color-scrim: oklch(8% 0 0 / 0.6);
+	--color-shadow: oklch(5% 0 0 / 0.5);
 
 	--font-body: "Fira Sans", Ubuntu, "Noto Sans", "Open Sans", "DejaVu Sans", sans-serif;
 	--font-mono: "Fira Code Variable", "Fira Code", ui-monospace, "JetBrains Mono", "DejaVu Sans Mono", monospace;
