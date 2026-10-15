@@ -5,7 +5,7 @@ import type { AVATAR_PATH as ServerAvatarPath, FILE_HEADER as ServerFileHeader, 
 export type { Gets, Posts, StreamEvent, Uploaded };
 
 /** The protocol version this build is typed against; tsc fails here when gaidin raises it. */
-export const PROTOCOL: typeof ServerProtocol = 6;
+export const PROTOCOL: typeof ServerProtocol = 7;
 /** Where gaidin serves an agent's picture, with ?id= and &v=, its name. */
 export const AVATAR_PATH: typeof ServerAvatarPath = "/api/agents/avatar";
 /** The header that names a file sent to /api/files, as gaidin reads it. */

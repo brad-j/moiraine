@@ -244,6 +244,9 @@ test("settings rename an agent, remove a host allowed for good, and let it messa
 	await send(page, "/settings");
 	await access.getByRole("switch", { name: "Scout" }).click();
 	await expect(access.getByRole("switch", { name: "Scout" })).toHaveAttribute("aria-checked", "true");
+	await access.getByRole("switch", { name: "personal" }).click();
+	await expect(access.getByRole("switch", { name: "personal" })).toHaveAttribute("aria-checked", "true");
+	await expect(access).toContainText("personal given.");
 
 	await page.getByRole("textbox", { name: "Job" }).fill("Looks after the house.");
 	await page.getByRole("textbox", { name: "Name" }).fill("Gaidin");
@@ -254,6 +257,9 @@ test("settings rename an agent, remove a host allowed for good, and let it messa
 	await page.reload();
 	await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("Gaidin");
 	await expect(access.getByRole("switch", { name: "Scout" })).toHaveAttribute("aria-checked", "true");
+	await expect(access.getByRole("switch", { name: "personal" })).toHaveAttribute("aria-checked", "true");
+	await access.getByRole("switch", { name: "personal" }).click();
+	await expect(access.getByRole("switch", { name: "personal" })).toHaveAttribute("aria-checked", "false");
 });
 
 test("the agents page makes an agent, archives it and restores it", async ({ page }) => {

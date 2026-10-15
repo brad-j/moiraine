@@ -1,6 +1,7 @@
 // Settings: the agent's roster entry (name, job, Slack channel), its model, thinking, tools and standing instructions,
-// which apply from its next request and to new threads, what it may reach (hosts, workspaces, other agents), and the
-// devices that get notifications. The settings file's values (keys, limits, Slack tokens) stay in the file.
+// which apply from its next request and to new threads, what it may reach (hosts, workspaces, browser profiles, other
+// agents), and the devices that get notifications. The settings file's values (keys, limits, Slack tokens) stay in the
+// file.
 import { useForm } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -363,12 +364,15 @@ function InstructionsSection({ settings, configure, saved }: { settings: AgentSe
 	);
 }
 
-/** What the agent may reach: hosts it fetches from without asking, workspaces, and the agents it may message. */
+/** What the agent may reach: hosts it fetches from without asking, workspaces, browser profiles, and the agents it may message. */
 function AccessSection({ agent, save, saved }: { agent: Agent; save: (section: string, text: string, change: EntryChange) => Promise<void>; saved: ReactNode }) {
 	const { agents } = useAgents();
 	const names = useQuery(queries.workspaces).data?.names;
 	// No list: every workspace, as for the default agent.
 	const given = agent.workspaces ?? names ?? [];
+	const profiles = useQuery(queries.profiles).data?.names;
+	// No list: no profiles, the default agent's included.
+	const browsers = agent.profiles ?? [];
 	const others = agents.filter((a) => a.id !== agent.id && (a.archived === undefined || agent.canMessage.includes(a.id)));
 	const toggle = (list: readonly string[], item: string) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 	return (
@@ -401,6 +405,21 @@ function AccessSection({ agent, save, saved }: { agent: Agent; save: (section: s
 							{names.map((name) => (
 								<li key={name}>
 									<Switch label={name} on={given.includes(name)} run={() => save("access", `${name} ${given.includes(name) ? "taken away" : "given"}.`, { workspaces: toggle(given, name) })} />
+								</li>
+							))}
+						</ul>
+					)}
+				</Field>
+				<Field label="browser" hint="profiles it may use, with their sign-ins; a new host still asks">
+					{profiles === undefined ? (
+						<p className="field-empty">Loading…</p>
+					) : profiles.length === 0 ? (
+						<p className="field-empty">No browser profiles are set up.</p>
+					) : (
+						<ul className="switches">
+							{profiles.map((name) => (
+								<li key={name}>
+									<Switch label={name} on={browsers.includes(name)} run={() => save("access", `${name} ${browsers.includes(name) ? "taken away" : "given"}.`, { profiles: toggle(browsers, name) })} />
 								</li>
 							))}
 						</ul>
