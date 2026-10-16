@@ -687,10 +687,8 @@ section > button { margin-top: var(--space-sm); }
 .attachment button { flex: none; min-height: 26px; padding: 0 var(--space-xs); font-size: var(--text-md); }
 #bar { grid-area: bar; display: flex; align-items: center; gap: var(--space-xs); min-width: 0; padding: var(--space-2xs) 0 0 calc(var(--space-md) - var(--space-xs)); }
 #bar .attach { flex: none; min-height: 26px; padding: 0 var(--space-xs); }
-/* Send: quiet, in the accent; the accent's wash under a pointer. */
-#send { flex: none; min-height: 26px; padding: 0 var(--space-xs); background: transparent; border-color: transparent; color: var(--color-accent); font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 400; }
-@media (hover: hover) { #send:hover:not(:disabled) { background: var(--color-accent-wash); border-color: transparent; color: var(--color-accent-strong); } }
-#send:active:not(:disabled) { background: var(--color-accent-wash); }
+/* Send: the primary button, accent filled. */
+#send { flex: none; justify-content: center; gap: var(--space-2xs); min-height: 28px; padding: 0 var(--space-sm); }
 
 #menu {
 	position: absolute; left: var(--space-lg); right: var(--space-lg); bottom: calc(100% - var(--space-md)); z-index: 3;
@@ -771,7 +769,11 @@ section > button { margin-top: var(--space-sm); }
 	#prompt:focus-within #message { border-color: var(--color-accent); }
 	#prompt.dropping #message { border-style: dashed; border-color: var(--color-accent); }
 	.attachments { padding: 0 0 var(--space-xs); border-left: 0; }
-	#bar { padding: var(--space-2xs) 0 0; }
+	/* Send takes a row of its own across the composer, a thumb's height, with attach and the status line under it. */
+	#bar { flex-wrap: wrap; row-gap: var(--space-2xs); padding: var(--space-xs) 0 0; }
+	#bar #send { order: 1; flex: 1 0 100%; min-height: 44px; font-size: var(--text-base); }
+	#bar .attach { order: 2; }
+	#statusline { order: 3; }
 	#statusline .seg.thinking, #statusline .seg.tools, #statusline .seg.instructions, #statusline .fixed.thinking { display: none; }
 	.approval { margin-left: calc(var(--gutter-who) + var(--space-xs)); padding: var(--space-xs) var(--space-sm); }
 	.approval .expires { flex-basis: 100%; margin-left: 0; }

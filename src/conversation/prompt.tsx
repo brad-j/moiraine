@@ -3,7 +3,7 @@
 // through earlier messages, and Esc or Ctrl+C stops a run. Files go with a message: attached, dropped on it or
 // pasted, shown as chips above the text.
 import { type ReactNode, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
-import { PaperclipIcon, XIcon } from "@phosphor-icons/react";
+import { PaperclipIcon, PaperPlaneRightIcon, XIcon } from "@phosphor-icons/react";
 import { type Attachment, useAttachments } from "../attachments.ts";
 
 export type Choice = { value: string; hint?: string };
@@ -286,6 +286,7 @@ export function Prompt({ ref, ...props }: {
 					</button>
 					<div id="statusline">{props.children}</div>
 					<button id="send" className="primary" type="submit" disabled={held} title={held ? (attachments.sending ? "Sending the files…" : "Remove the files that couldn't be sent") : undefined}>
+						<PaperPlaneRightIcon weight="fill" aria-hidden="true" />
 						Send <kbd>↵</kbd>
 					</button>
 				</div>

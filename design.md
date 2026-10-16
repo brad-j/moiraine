@@ -44,7 +44,7 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 
 - Body and interface: Fira Sans 400, 500 for labels and buttons, 600 for titles. Humanist, served from the app.
 - Mono: Fira Code for technical text and the console's chrome: tool names and arguments, code, model ids, times,
-  key hints, the log's gutter, the status line, the thread's origin and the day groups, Send and New thread.
+  key hints, the log's gutter, the status line, the thread's origin and the day groups, and New thread.
 - Headings are small (1rem to 1.125rem). No display type in the app.
 - Prose in answers: `--text-md` at line-height 1.65, measure ~72ch.
 
@@ -129,7 +129,9 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 ## Button voice
 
 - Primary: accent fill, accent-ink text, `--radius-sm`, 500 weight ("Allow once", "Take over").
-- Send: quiet, mono, in the accent, the accent's wash under a pointer ("Send ↵").
+- Send: the primary button, with a filled paper plane ("Send ↵"). On a phone it takes a row of its own across the
+  composer under the field, 44 pixels tall, with attach and the status line under it (changed with the owner on
+  2026-10-16: quiet accent text didn't read as a button).
 - Secondary: transparent with a `--color-rule-2` border.
 - Danger: transparent, `--color-bad` text, bad-wash on hover ("Deny").
 - Quiet: text-only, ink-3, fill on hover (status chips, snooze).
