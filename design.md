@@ -12,7 +12,7 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 
 - App pages (conversations): sidebar + centered reading column + composer docked at the bottom. The conversation is
   the page; nothing decorates it.
-- App pages (step 3: schedule, memory, skills, settings, agents, activity): the same sidebar, a header naming the
+- App pages (step 3: schedule, memory, skills, settings, agents, activity; later connectors and browser): the same sidebar, a header naming the
   page, and a single centered column of rows separated by hairlines. No cards that repeat what's on the page, no
   stat strips.
 - The browser's take-over page: the same frame with a wider column (up to 1320 pixels), an address bar with Back, Go

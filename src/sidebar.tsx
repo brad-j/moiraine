@@ -4,12 +4,13 @@
 // drawer.
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BrowserIcon, CalendarBlankIcon, GearSixIcon, type Icon, ListIcon, MagnifyingGlassIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
+import { BrowserIcon, CalendarBlankIcon, GearSixIcon, type Icon, PlugsConnectedIcon, ListIcon, MagnifyingGlassIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { type Agent, type Gets, problem } from "./api.ts";
 import { Avatar } from "./avatar.tsx";
 import { Origin, PLACES, placeOf } from "./conversation/view.tsx";
 import { lastSeen, oneLine, since, when } from "./format.ts";
+import { waiting } from "./pages/connectors.tsx";
 import { queries, troubled, useAgents } from "./queries.ts";
 
 type Activity = Gets["/api/agents/activity"][number];
@@ -170,6 +171,8 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 	const scheduled = reminders.length + jobs.length;
 	const trouble = troubled(jobs);
 	const browsers = useQuery(queries.profiles).data?.names.length ?? 0;
+	// What waits on the owner there: a sign-in, or tools to look at.
+	const plugged = waiting(useQuery({ ...queries.connectors, refetchInterval: 60_000 }).data ?? []);
 	return (
 		<div className="pages" role="group" aria-label="Pages">
 			<Page to="/$agent/schedule" agent={agent} icon={CalendarBlankIcon} onOpen={onOpen}>
@@ -193,6 +196,14 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 			<Page to="/agents" agent={agent} icon={UsersThreeIcon} onOpen={onOpen}>
 				Agents
 			</Page>
+			<Page to="/connectors" agent={agent} icon={PlugsConnectedIcon} onOpen={onOpen}>
+				Connectors
+				{plugged > 0 && (
+					<span className="count warn" title="A connector needs signing in, or has tools to look at">
+						{plugged}
+					</span>
+				)}
+			</Page>
 			{browsers > 0 && (
 				<Page to="/browser" agent={agent} icon={BrowserIcon} onOpen={onOpen}>
 					Browser
@@ -206,7 +217,7 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 }
 
 /** A link at the sidebar's foot, with its icon. */
-function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/browser" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {
+function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/connectors" | "/browser" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {
 	return (
 		<Link to={to} params={{ agent: agent.id }} onClick={onOpen}>
 			<Glyph aria-hidden="true" />

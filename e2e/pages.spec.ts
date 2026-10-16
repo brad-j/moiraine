@@ -27,10 +27,10 @@ test("the schedule lists reminders and jobs, and pauses, opens and cancels them"
 
 	await job.getByRole("button", { name: "pause" }).click();
 	await expect(job.locator(".due")).toHaveText("paused");
-	await expect(pages(page).locator(".count")).toHaveClass(/warn/);
+	await expect(pages(page).getByRole("link", { name: /Schedule/ }).locator(".count")).toHaveClass(/warn/);
 	await job.getByRole("button", { name: "resume" }).click();
 	await expect(job.getByRole("button", { name: "pause" })).toBeVisible();
-	await expect(pages(page).locator(".count")).not.toHaveClass(/warn/);
+	await expect(pages(page).getByRole("link", { name: /Schedule/ }).locator(".count")).not.toHaveClass(/warn/);
 
 	await job.getByRole("button", { name: "Morning briefing" }).click();
 	await expect(job).toContainText("Summarise the weather and today's calendar.");
@@ -40,7 +40,7 @@ test("the schedule lists reminders and jobs, and pauses, opens and cancels them"
 	await reminder.getByRole("button", { name: "cancel" }).click();
 	await reminder.getByRole("button", { name: "Press again to cancel for good" }).click();
 	await expect(page.locator(".page")).toContainText("No reminders.");
-	await expect(pages(page).locator(".count")).toHaveText("1");
+	await expect(pages(page).getByRole("link", { name: /Schedule/ }).locator(".count")).toHaveText("1");
 });
 
 test("+ new reminder starts the request in the home conversation's prompt, on a phone too", async ({ page }) => {

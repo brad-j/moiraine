@@ -477,6 +477,27 @@ button.switch:active:not(:disabled) { background: var(--color-paper-3); }
 .live-released p { margin: 0; color: var(--color-ink-2); }
 @media (hover: hover) and (pointer: fine) { .live-bar .keyboard { display: none; } }
 
+/* Connectors: each with its state, actions and tools, a tool to look at marked in amber. */
+.connector-row { display: flex; flex-direction: column; gap: var(--space-xs); padding: var(--space-md) 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
+.connector-row .title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-xs); }
+.connector-row .name { font-weight: 600; }
+.connector-row .meta { margin: 0; color: var(--color-ink-3); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.connector-row .problem { margin: 0; color: var(--color-warn); font-size: var(--text-sm); }
+.connector-row .actions { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+.tag.connected { color: var(--color-ok); }
+.tag.needs-owner, .tag.unreachable { color: var(--color-warn); }
+.token-form { display: flex; gap: var(--space-xs); align-items: center; }
+.token-form input { flex: 1; min-width: 0; }
+.connector-row .tools { display: flex; flex-direction: column; margin: var(--space-xs) 0 0; padding: 0; list-style: none; }
+.tool-row { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: var(--space-xs) var(--space-md); padding: var(--space-xs) 0; border-top: var(--rule-hair) solid var(--color-rule); }
+.tool-row.review { padding-left: var(--space-xs); border-left: 2px solid var(--color-warn-line); }
+.tool-row .about { flex: 1 1 24ch; min-width: 0; }
+.tool-row .tool { font-size: var(--text-sm); }
+.tool-row .hint { margin-left: var(--space-xs); color: var(--color-ink-3); font-size: var(--text-xs); }
+.tool-row .tag { margin-left: var(--space-xs); }
+.tool-row .description { margin: var(--space-3xs) 0 0; color: var(--color-ink-2); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.page-note.done { color: var(--color-ok); }
+
 /* Activity: spend against the limits, by model, and the timeline. */
 .stopped { display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--color-bad-wash); border: var(--rule-hair) solid var(--color-bad); border-radius: var(--radius-md); }
 .stopped p { flex: 1; margin: 0; }

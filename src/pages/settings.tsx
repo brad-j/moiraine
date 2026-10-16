@@ -59,7 +59,7 @@ export function Settings({ agent }: { agent: Agent }) {
 }
 
 /** A labeled row of a section. */
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
 	return (
 		<div className="field">
 			<div className="field-name">
@@ -72,7 +72,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 /** A row of buttons, one pressed. */
-function Choices({ label, options, current, choose }: { label: string; options: readonly string[]; current: string; choose: (value: string) => Promise<unknown> }) {
+export function Choices({ label, options, current, choose }: { label: string; options: readonly string[]; current: string; choose: (value: string) => Promise<unknown> }) {
 	return (
 		<div className="choices" role="group" aria-label={label}>
 			{options.map((option) => (
@@ -105,7 +105,7 @@ function ChoiceButton({ on, run, children }: { on: boolean; run: () => Promise<u
 }
 
 /** A switch for something on or off. */
-function Switch({ label, on, run }: { label: string; on: boolean; run: () => Promise<unknown> }) {
+export function Switch({ label, on, run }: { label: string; on: boolean; run: () => Promise<unknown> }) {
 	const attempt = useAttempt();
 	const [busy, setBusy] = useState(false);
 	return (
@@ -377,6 +377,8 @@ function AccessSection({ agent, save, saved }: { agent: Agent; save: (section: s
 	// No list: no profiles, the default agent's included.
 	const browsers = agent.profiles ?? [];
 	const acting = Object.entries(agent.actHosts ?? {}).flatMap(([profile, hosts]) => hosts.map((host) => ({ profile, host })));
+	const connectors = useQuery(queries.connectors).data;
+	const plugged = agent.connectors ?? [];
 	const others = agents.filter((a) => a.id !== agent.id && (a.archived === undefined || agent.canMessage.includes(a.id)));
 	const toggle = (list: readonly string[], item: string) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 	return (
@@ -450,6 +452,21 @@ function AccessSection({ agent, save, saved }: { agent: Agent; save: (section: s
 						)}
 					</Field>
 				)}
+				<Field label="connectors" hint="services whose tools it gets, as each tool is set">
+					{connectors === undefined ? (
+						<p className="field-empty">Loading…</p>
+					) : connectors.length === 0 ? (
+						<p className="field-empty">No connectors yet; add them on the Connectors page.</p>
+					) : (
+						<ul className="switches">
+							{connectors.map(({ name }) => (
+								<li key={name}>
+									<Switch label={name} on={plugged.includes(name)} run={() => save("access", `${name} ${plugged.includes(name) ? "taken away" : "given"}.`, { connectors: toggle(plugged, name) })} />
+								</li>
+							))}
+						</ul>
+					)}
+				</Field>
 				<Field label="may message" hint="agents it may ask and hand work to">
 					{others.length === 0 ? (
 						<p className="field-empty">No other agents.</p>

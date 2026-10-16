@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgentRouteImport } from './routes/$agent'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AgentsRouteImport } from './routes/agents'
+import { Route as ConnectorsRouteImport } from './routes/connectors'
 import { Route as AgentIndexRouteImport } from './routes/$agent.index'
 import { Route as AgentMemoryRouteImport } from './routes/$agent.memory'
 import { Route as AgentNewRouteImport } from './routes/$agent.new'
@@ -43,6 +44,11 @@ const ActivityRoute = ActivityRouteImport.update({
 const AgentsRoute = AgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConnectorsRoute = ConnectorsRouteImport.update({
+  id: '/connectors',
+  path: '/connectors',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentIndexRoute = AgentIndexRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/$agent': typeof AgentRouteWithChildren
   '/activity': typeof ActivityRoute
   '/agents': typeof AgentsRoute
+  '/connectors': typeof ConnectorsRoute
   '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
   '/$agent/schedule': typeof AgentScheduleRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
   '/agents': typeof AgentsRoute
+  '/connectors': typeof ConnectorsRoute
   '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
   '/$agent/schedule': typeof AgentScheduleRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/$agent': typeof AgentRouteWithChildren
   '/activity': typeof ActivityRoute
   '/agents': typeof AgentsRoute
+  '/connectors': typeof ConnectorsRoute
   '/$agent/memory': typeof AgentMemoryRoute
   '/$agent/new': typeof AgentNewRoute
   '/$agent/schedule': typeof AgentScheduleRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/$agent'
     | '/activity'
     | '/agents'
+    | '/connectors'
     | '/$agent/memory'
     | '/$agent/new'
     | '/$agent/schedule'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/'
     | '/activity'
     | '/agents'
+    | '/connectors'
     | '/$agent/memory'
     | '/$agent/new'
     | '/$agent/schedule'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/$agent'
     | '/activity'
     | '/agents'
+    | '/connectors'
     | '/$agent/memory'
     | '/$agent/new'
     | '/$agent/schedule'
@@ -210,6 +222,7 @@ export interface RootRouteChildren {
   AgentRoute: typeof AgentRouteWithChildren
   ActivityRoute: typeof ActivityRoute
   AgentsRoute: typeof AgentsRoute
+  ConnectorsRoute: typeof ConnectorsRoute
   BrowserProfileRoute: typeof BrowserProfileRoute
   BrowserIndexRoute: typeof BrowserIndexRoute
 }
@@ -242,6 +255,13 @@ declare module '@tanstack/react-router' {
       path: '/agents'
       fullPath: '/agents'
       preLoaderRoute: typeof AgentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/connectors': {
+      id: '/connectors'
+      path: '/connectors'
+      fullPath: '/connectors'
+      preLoaderRoute: typeof ConnectorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$agent/': {
@@ -355,6 +375,7 @@ const rootRouteChildren: RootRouteChildren = {
   AgentRoute: AgentRouteWithChildren,
   ActivityRoute: ActivityRoute,
   AgentsRoute: AgentsRoute,
+  ConnectorsRoute: ConnectorsRoute,
   BrowserProfileRoute: BrowserProfileRoute,
   BrowserIndexRoute: BrowserIndexRoute,
 }
