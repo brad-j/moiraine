@@ -755,11 +755,18 @@ section > button { margin-top: var(--space-sm); }
 	.row .t { display: none; }
 	.row .b { padding-left: var(--space-sm); }
 	.replying .label { margin-left: calc(var(--gutter-who) + var(--space-xs) + var(--space-sm)); }
-	#prompt { grid-template-columns: var(--gutter-who) minmax(0, 1fr); grid-template-areas: ". files" "k message" ". bar"; column-gap: var(--space-xs); }
-	#message { min-height: calc(1.55em + 2 * var(--space-2xs)); padding-left: var(--space-sm); }
-	#message::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.attachments { padding-left: var(--space-sm); }
-	#bar { padding-left: calc(var(--space-sm) - var(--space-xs)); }
+	/* The composer leaves the gutter for a field across the screen, two lines tall to start, with even margins. */
+	#dock-inner { padding: 0 var(--space-sm) var(--space-sm); }
+	#prompt { grid-template-columns: minmax(0, 1fr); grid-template-areas: "files" "message" "bar"; padding-top: var(--space-xs); border-top: 0; }
+	#prompt > .k { display: none; }
+	#message {
+		min-height: calc(2 * 1.55em + 2 * var(--space-sm)); padding: var(--space-sm);
+		background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md);
+	}
+	#prompt:focus-within #message { border-color: var(--color-accent); }
+	#prompt.dropping #message { border-style: dashed; border-color: var(--color-accent); }
+	.attachments { padding: 0 0 var(--space-xs); border-left: 0; }
+	#bar { padding: var(--space-2xs) 0 0; }
 	#statusline .seg.thinking, #statusline .seg.tools, #statusline .seg.instructions, #statusline .fixed.thinking { display: none; }
 	.approval { margin-left: calc(var(--gutter-who) + var(--space-xs)); padding: var(--space-xs) var(--space-sm); }
 	.approval .expires { flex-basis: 100%; margin-left: 0; }

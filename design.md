@@ -17,7 +17,9 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
   the line (mono, right-aligned, `--gutter-who`): `you`, the agent's name in the accent, a tool call by the tool's
   name, `think`, `job`, `error`. The line sits beside a hairline that runs the log's length. The dock and the composer
   sit on the same gutter, so a request reads as the next line and the composer as the owner's, `you ›`. On a phone
-  the gutter keeps who and leaves out the time.
+  the gutter keeps who and leaves out the time, and the composer leaves the gutter for a field across the screen, on
+  `--color-paper-2` with a `--color-rule-2` hairline and `--radius-md`, two lines tall to start, with even margins
+  (changed with the owner on 2026-10-16: the line beside the gutter was a narrow one-line target for a thumb).
 - App pages (step 3: schedule, memory, skills, settings, agents, activity; later connectors and browser): the same sidebar, a header naming the
   page, and a single centered column of rows separated by hairlines. No cards that repeat what's on the page, no
   stat strips.
@@ -79,7 +81,7 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 ## Shape
 
 - Sharp: `--radius-sm` 4px (buttons, chips, rows), `--radius-md` 6px (menus, code), `--radius-lg` 8px (forms on
-  pages). Requests in the dock and the composer have no corners: they're lines. Pills only for counts. A status chip
+  pages). Requests in the dock and the composer have no corners: they're lines, but for the composer on a phone. Pills only for counts. A status chip
   (`.tag`) is mono in a hairline box.
 - Borders are hairlines (`--rule-hair`) in `--color-rule`; fields add `--color-rule-2`. Focus on the composer turns
   its hairline and its gutter to the accent: no ring, glow or shadow. One soft shadow, for things that float over
