@@ -17,10 +17,13 @@ const SAVE_MS = 2_000;
 /** Which conversation: an agent's home, or `conversation` by id. */
 export type Target = { agent: string; conversation?: number };
 
-/** `onEvent` hears each event after the transcript has it. */
-export function useConversation(target: Target, onEvent?: (event: StreamEvent, transcript: Transcript) => void): { transcript: Transcript; connected: boolean } {
+/**
+ * `onEvent` hears each event after the transcript has it. `ready` once there's a transcript to show: gaidin's, or the
+ * one kept from last time, which shows at once while gaidin's is on its way.
+ */
+export function useConversation(target: Target, onEvent?: (event: StreamEvent, transcript: Transcript) => void): { transcript: Transcript; connected: boolean; ready: boolean } {
 	const queryClient = useQueryClient();
-	const [state, setState] = useState(() => ({ transcript: newTranscript(), connected: false }));
+	const [state, setState] = useState(() => ({ transcript: newTranscript(), connected: false, ready: false }));
 	const { agent, conversation } = target;
 	// The transcript is changed in place, many times a frame while text streams in; a new state object draws it.
 	const live = useRef(state);
@@ -30,7 +33,7 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 	});
 
 	useEffect(() => {
-		live.current = { transcript: newTranscript(), connected: false };
+		live.current = { transcript: newTranscript(), connected: false, ready: false };
 		setState(live.current);
 		const invalidate = (...keys: unknown[][]) => {
 			for (const queryKey of keys) void queryClient.invalidateQueries({ queryKey });
@@ -44,7 +47,7 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			});
 		};
 		const address = `/events?${conversation === undefined ? `agent=${encodeURIComponent(agent)}` : `conversation=${conversation}`}`;
-		// Kept once gaidin has sent the transcript, and shown when the stream can't connect before it has.
+		// Kept once gaidin has sent the transcript, and shown until gaidin sends it again, or while the stream can't connect.
 		const key = address.slice("/events?".length);
 		const transcript = live.current.transcript;
 		let current = false;
@@ -63,6 +66,7 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			const saved = await savedTranscript(key).catch(() => undefined);
 			if (saved === undefined || current || closed) return;
 			Object.assign(transcript, { entries: new Map(saved.entries.map((entry) => [entry.id, entry])), usage: saved.usage, agent: saved.agent });
+			live.current.ready = true;
 			draw();
 		};
 		let closed = false;
@@ -93,7 +97,7 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			// SAFETY: gaidin sends each event as JSON (web.ts events()).
 			const event = JSON.parse(message.data) as StreamEvent;
 			applyEvent(live.current.transcript, event);
-			if (event.type === "snapshot") current = true;
+			if (event.type === "snapshot") current = live.current.ready = true;
 			save();
 			switch (event.type) {
 				case "snapshot":
@@ -145,6 +149,7 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			if (source.readyState !== EventSource.OPEN) reopen();
 		};
 		open();
+		void restore();
 		document.addEventListener("visibilitychange", shown);
 		window.addEventListener("online", online);
 		return () => {

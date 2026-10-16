@@ -47,9 +47,9 @@ const ITEM = /^(\s*)([-*+]|\d{1,9}[.)])\s+(.*)$/;
 const QUOTE = /^ {0,3}> ?(.*)$/;
 const TABLE_RULE = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/;
 
-/** A model's answer or a document, parsed again only when its text or options change. */
-export const Markdown = memo(function Markdown({ text, ...given }: { text: string } & MarkdownOptions) {
-	return <div className="md">{blocks(text.replace(/\r\n?/g, "\n").split("\n"), given)}</div>;
+/** A model's answer or a document, parsed again only when its text or options change. `writing`: still coming in. */
+export const Markdown = memo(function Markdown({ text, writing = false, ...given }: { text: string; writing?: boolean } & MarkdownOptions) {
+	return <div className={writing ? "md writing" : "md"}>{blocks(text.replace(/\r\n?/g, "\n").split("\n"), given)}</div>;
 });
 
 /** A heading's anchor, as GitHub makes them: "Tools that reach outside" is "tools-that-reach-outside". */

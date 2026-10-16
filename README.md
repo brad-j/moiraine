@@ -17,6 +17,8 @@ pnpm ship        # build and copy to gaidin's VM (GAIDIN_HOST, default ubuntu@ga
 pnpm e2e         # build, then the Playwright tests, each against its own gaidin e2e server serving the build
 ```
 
+With `FAUX_TOKENS_PER_SECOND=60 pnpm dev:faux` the scripted model streams its answers at about that pace, as a real one does, to see how the log draws them; "markdown" gets a long one.
+
 `pnpm dev` passes `/api` and `/events` to gaidin with `Tailscale-User-Login` set to `GAIDIN_WEB_USER` (default `brad@example.com`, which the e2e server lets in), as `tailscale serve` would. It needs to match `web.user` in that gaidin's settings.
 
 The build is `dist/client`: hashed assets, `_shell.html`, the page gaidin serves for every path that isn't the API or a file, `precache.json`, the list of those assets the service worker keeps, and what's in `public/`: the service worker (`sw.js`), the manifest and the icons, at the paths gaidin's web view had them. gaidin serves it from the directory its `web.app` setting names. `dist/server` is a by-product of Start's build and isn't deployed.

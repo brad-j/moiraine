@@ -8,8 +8,8 @@ export type Slot = { callId: string; name: string; output: string };
 
 export type Transcript = {
 	entries: Map<number, Entry>;
-	/** The assistant message being generated. */
-	partial: { content: Block[] } | undefined;
+	/** The assistant message being generated, and when its request started, which its entry keeps. */
+	partial: { content: Block[]; timestamp?: number } | undefined;
 	/** Running tool calls, by tool call id. */
 	tools: Map<string, Slot>;
 	running: boolean;

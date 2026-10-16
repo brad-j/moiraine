@@ -43,9 +43,10 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 	const id = thread?.id;
 	const [local, setLocal] = useState<Local[]>([]);
 	const sayAfter = useSay(setLocal);
-	const { transcript, connected } = useConversation({ agent: agent.id, conversation: id }, (event, now) => {
+	const conversation = useConversation({ agent: agent.id, conversation: id }, (event, now) => {
 		if (event.type === "task_failed") sayAfter(lastEntry(now), "err", `${event.kind} failed: ${event.message}`);
 	});
+	const { transcript, connected, ready } = conversation;
 	const say: Say = (kind, body) => sayAfter(lastEntry(transcript), kind, body);
 	const prompt = useRef<PromptHandle>(null);
 	const home = id === undefined;
@@ -92,14 +93,15 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 	};
 	const forkedAt = summary?.forkedAt;
 	const mine = (entry: Entry) => id === undefined || entry.conversationId === id;
-	const { scroller, jump, toEnd, stick } = useStick(transcript, local);
+	const { scroller, jump, toEnd, stick } = useStick(conversation, local);
 
 	return (
 		<>
 			<header className="convo-head">
 				{menu}
 				{home && <Avatar agent={agent} />}
-				<h1>{home ? agent.name : summary?.title || "(no message)"}</h1>
+				{/* Blank while the thread's summary loads, rather than saying it has no message. */}
+				<h1>{home ? agent.name : summary === undefined ? "" : summary.title || "(no message)"}</h1>
 				{home ? (
 					<span className="tag">home</span>
 				) : (
@@ -124,7 +126,9 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 						include={mine}
 						local={local}
 						options={options}
-						empty={<Row kind="sys" label={agent.name} body={home ? "No messages yet. Type below, or / for commands." : "Nothing in it yet."} />}
+						live
+						// Said once there's a transcript, so a conversation being opened doesn't flash it.
+						empty={ready && <Row kind="sys" label={agent.name} body={home ? "No messages yet. Type below, or / for commands." : "Nothing in it yet."} />}
 					/>
 				</div>
 			</main>
@@ -256,28 +260,35 @@ function ownerMessages(transcript: Transcript, include: (entry: Entry) => boolea
 /**
  * Keeps the log at its end while it's there, as a terminal does; scrolled up, new rows show the jump button instead.
  * `stick` keeps it there through the next draw, as after sending. It follows the log's size as well as the transcript,
- * so a card in the dock taking height from it, an image or font loading, or an answer wrapping anew doesn't leave the
- * end out of sight.
+ * so a card in the dock taking height from it, an image or font loading, an answer wrapping anew or being revealed
+ * doesn't leave the end out of sight. A log that grew as it got narrower, as when the sidebar's column comes back, only
+ * wrapped anew, so it doesn't show the jump button.
  */
-function useStick(transcript: Transcript, local: readonly Local[]) {
+function useStick(drawn: { transcript: Transcript }, local: readonly Local[]) {
 	const scroller = useRef<HTMLElement>(null);
 	const atEnd = useRef(true);
-	const height = useRef(0);
+	const size = useRef({ height: 0, width: 0 });
 	const [jump, setJump] = useState(false);
 	/** After the log or its window changed size: to the end if it was there, or the jump button if there's more. */
 	const follow = useCallback(() => {
 		const el = scroller.current;
 		if (el === null) return;
 		if (atEnd.current) el.scrollTop = el.scrollHeight;
-		else if (el.scrollHeight > height.current) setJump(true);
-		height.current = el.scrollHeight;
+		else if (el.scrollHeight > size.current.height && el.clientWidth === size.current.width) setJump(true);
+		size.current = { height: el.scrollHeight, width: el.clientWidth };
 	}, []);
-	useLayoutEffect(follow, [transcript, local, follow]);
+	// The transcript is changed in place, so it's each drawing of it that may have new rows.
+	useLayoutEffect(follow, [drawn, local, follow]);
 	useEffect(() => {
 		const el = scroller.current;
 		if (el === null) return;
+		// Only scrolling up leaves the end. The log can grow between following it to the end and hearing that scroll, as
+		// when an answer being revealed reaches a code block, and that isn't the owner scrolling away.
+		let top = el.scrollTop;
 		const scrolled = () => {
-			atEnd.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+			if (el.scrollHeight - el.scrollTop - el.clientHeight < 48) atEnd.current = true;
+			else if (el.scrollTop < top) atEnd.current = false;
+			top = el.scrollTop;
 			if (atEnd.current) setJump(false);
 		};
 		el.addEventListener("scroll", scrolled, { passive: true });

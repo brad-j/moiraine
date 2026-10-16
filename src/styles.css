@@ -58,10 +58,12 @@ kbd { font-size: var(--text-2xs); font-weight: 400; opacity: 0.7; }
 .scrim, #menu-button { display: none; }
 #collapse-button { justify-content: center; width: 30px; min-height: 30px; padding: 0; margin-left: calc(-1 * var(--space-xs)); }
 
-/* The sidebar: the agents' rail, and the agent's column beside it, which collapses to the rail. */
-#sidebar { display: grid; grid-template-columns: var(--rail) var(--sidebar); min-height: 0; }
-.collapsed #sidebar { grid-template-columns: var(--rail); }
-.collapsed #sidebar-column { display: none; }
+/* The sidebar: the agents' rail, and the agent's column beside it, which collapses to the rail. Collapsing, the column
+ * keeps its width and slides under the rail as its track closes, so nothing in it wraps anew on the way. */
+#sidebar { display: grid; grid-template-columns: var(--rail) var(--sidebar); min-height: 0; overflow: clip; transition: grid-template-columns var(--dur-med) var(--ease-out); }
+#sidebar-column { width: var(--sidebar); transition: transform var(--dur-med) var(--ease-out), visibility var(--dur-med); }
+.collapsed #sidebar { grid-template-columns: var(--rail) 0px; }
+.collapsed #sidebar-column { transform: translateX(-100%); visibility: hidden; }
 
 /* Icons sit on the text's line, the size the root's IconContext gives them, in the color of what they're in. */
 svg { flex: none; }
@@ -83,7 +85,7 @@ svg { flex: none; }
 
 /* The rail: each agent's picture and name, with its working dot and what waits on the owner, and System at the foot.
  * The one shown has the accent's bar at the rail's edge, or System has it while it's open. */
-.rail { display: flex; flex-direction: column; align-items: center; min-height: 0; padding: var(--space-sm) 0; background: var(--color-paper-0); border-right: var(--rule-hair) solid var(--color-rule); }
+.rail { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; min-height: 0; padding: var(--space-sm) 0; background: var(--color-paper-0); border-right: var(--rule-hair) solid var(--color-rule); }
 .rail .agents { display: flex; flex-direction: column; gap: var(--space-2xs); flex: 1; min-height: 0; margin: 0; padding: var(--space-2xs) 0 0; list-style: none; overflow-y: auto; scrollbar-width: none; }
 #sidebar .rail .agent, .rail .system {
 	position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--space-3xs); width: 56px; min-height: 0; padding: var(--space-2xs) 0;
@@ -278,6 +280,12 @@ main.page a { color: var(--color-accent); }
 /* A cell breaks between words, not inside one: too wide for the line, the table scrolls sideways instead. */
 .md th, .md td { overflow-wrap: break-word; padding: var(--space-2xs) var(--space-md) var(--space-2xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); text-align: left; vertical-align: top; }
 .md th { color: var(--color-ink-2); font-weight: 600; border-bottom-color: var(--color-rule-2); }
+/* While an answer is being written: a caret at its end, or alone before its first word. Still, not blinking. */
+.md.writing > :is(p, h3, h4, h5):last-child::after, .md.writing > :is(ul, ol):last-child > li:last-child::after,
+.md.writing > blockquote:last-child > :last-child::after, .md.writing > pre:last-child > code::after, .md.writing:empty::before {
+	content: ""; display: inline-block; width: 0.5em; height: 1.1em; margin-left: 0.15em; vertical-align: -0.2em; background: var(--color-accent); opacity: 0.6;
+}
+.md.writing:empty::before { margin-left: 0; }
 
 .help { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: var(--space-3xs) var(--space-md); }
 .help .c { color: var(--color-accent); font-family: var(--font-mono); font-size: var(--text-xs); }
@@ -596,7 +604,10 @@ section > button { margin-top: var(--space-sm); }
 #jump {
 	position: absolute; bottom: calc(100% + var(--space-sm)); left: 50%; transform: translateX(-50%); z-index: 2;
 	background: var(--color-paper-3); border-color: var(--color-rule-2); border-radius: var(--radius-pill); box-shadow: 0 4px 16px var(--color-shadow);
+	transition: opacity var(--dur-med) var(--ease-out), transform var(--dur-med) var(--ease-out), background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
 }
+/* It rises into place when it's offered, rather than appearing. */
+@starting-style { #jump { opacity: 0; transform: translate(-50%, var(--space-xs)); } }
 /* The dock lines up with the log, so a request reads as its next line and the composer as the owner's. */
 #dock-inner { position: relative; max-width: var(--log-width); margin: 0; padding: 0 var(--space-lg) var(--space-md) var(--space-md); }
 
@@ -713,14 +724,19 @@ section > button { margin-top: var(--space-sm); }
 	#sidebar, .collapsed #sidebar {
 		position: fixed; inset: 0 auto 0 0; z-index: 10; width: min(88vw, calc(var(--rail) + var(--sidebar))); grid-template-columns: var(--rail) minmax(0, 1fr);
 		padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); background: var(--color-paper-0);
-		transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-med) var(--ease-out), visibility var(--dur-med);
+		box-shadow: 0 0 40px var(--color-shadow); transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-med) var(--ease-out), visibility var(--dur-med);
 	}
-	.collapsed #sidebar-column { display: flex; }
+	#sidebar-column, .collapsed #sidebar-column { width: auto; transform: none; visibility: inherit; transition: none; }
 	#collapse-button { display: none; }
-	.drawer-open #sidebar { transform: none; visibility: visible; box-shadow: 0 0 40px var(--color-shadow); }
-	/* Under a finger (src/swipe.ts) the sidebar follows it at once, the scrim darkening as it comes. */
-	.swiping #sidebar { visibility: visible; transition: none; }
-	.drawer-open .scrim, .swiping .scrim { display: block; position: fixed; inset: 0; z-index: 9; min-height: 0; padding: 0; background: var(--color-scrim); border: 0; border-radius: 0; }
+	.drawer-open #sidebar { transform: none; visibility: visible; }
+	/* The scrim darkens as the drawer comes and lightens as it goes. Under a finger (src/swipe.ts) the sidebar follows
+	 * it at once, the scrim darkening as it comes. */
+	#app > .scrim {
+		display: block; position: fixed; inset: 0; z-index: 9; min-height: 0; padding: 0; background: var(--color-scrim); border: 0; border-radius: 0;
+		opacity: 0; visibility: hidden; transition: opacity var(--dur-med) var(--ease-out), visibility var(--dur-med);
+	}
+	#app.drawer-open > .scrim { opacity: 1; visibility: visible; }
+	.swiping #sidebar, #app.swiping > .scrim { visibility: visible; transition: none; }
 	#menu-button { display: inline-flex; justify-content: center; width: 36px; min-height: 36px; padding: 0; margin-left: calc(-1 * var(--space-xs)); font-size: var(--text-lg); }
 	.convo-head { height: 48px; padding: 0 var(--space-md); gap: var(--space-xs); }
 	#log { padding: var(--space-md) var(--space-md) var(--space-sm) var(--space-sm); }

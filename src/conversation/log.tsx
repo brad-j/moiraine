@@ -8,6 +8,7 @@ import { CaretRightIcon, CheckIcon, HourglassIcon, XIcon } from "@phosphor-icons
 import { argsSummary, isFields, isNumber, isText, ownerMessage, shortStamp, splitStamp, textOf } from "../format.ts";
 import { Markdown } from "../markdown.tsx";
 import type { Transcript } from "../transcript.ts";
+import { settled, useReveal } from "./reveal.ts";
 
 /** A line of the log. A tool call or thinking is a `step`, which gathers with the steps beside it. */
 export type Line = { key: string; kind: string; label: string; body: ReactNode; start?: boolean; time?: string; title?: string; step?: { name: string; status: string } };
@@ -26,9 +27,10 @@ export type LogOptions = {
 /** The folds the owner has opened, by key, so they stay open as the log is drawn again. */
 const Opened = createContext<Set<string>>(new Set());
 
-export function Log(props: { transcript: Transcript; include: (entry: Entry) => boolean; local?: readonly Local[]; options?: LogOptions; empty?: ReactNode }) {
+/** `live`: with the answer being written at the end, or a line saying one's coming while the agent hasn't begun it. */
+export function Log(props: { transcript: Transcript; include: (entry: Entry) => boolean; local?: readonly Local[]; options?: LogOptions; empty?: ReactNode; live?: boolean }) {
 	const [opened] = useState(() => new Set<string>());
-	const lines = linesOf(props.transcript, props.include, props.local ?? [], props.options ?? {});
+	const lines = linesOf(props.transcript, props.include, props.local ?? [], props.options ?? {}, props.live ?? false);
 	const shown: ReactNode[] = [];
 	const speaker = props.options?.speaker;
 	for (let i = 0; i < lines.length; ) {
@@ -135,6 +137,13 @@ function Said({ text, images, files }: ReturnType<typeof ownerMessage>) {
 	);
 }
 
+/** An answer's text. While it streams in it's shown at an even pace, a word at a time, rather than in the bursts it arrives in. */
+function Answer({ text, live }: { text: string; live: boolean }) {
+	const shown = useReveal(text, live);
+	const writing = live || shown < text.length;
+	return <Markdown text={writing ? settled(text, shown) : text} writing={writing} />;
+}
+
 /** Thinking or a tool call in a line, opened for all of it. The body is built only when it's open. */
 function Fold({ id, summary, sections, tail }: { id: string; summary: ReactNode; sections: [string | undefined, string][]; tail?: string }) {
 	const opened = useContext(Opened);
@@ -175,12 +184,13 @@ function lastLines(text: string, count: number): string {
 	return text.replace(/\s+$/, "").split("\n").slice(-count).join("\n");
 }
 
-function blockLines(transcript: Transcript, blocks: readonly Block[], key: string, results: Map<string, ToolResult>): Line[] {
+/** The lines for an answer's blocks; `live` while it's being written. */
+function blockLines(transcript: Transcript, blocks: readonly Block[], key: string, results: Map<string, ToolResult>, live: boolean): Line[] {
 	const out: Line[] = [];
 	blocks.forEach((block, index) => {
 		const id = `${key}:${index}`;
 		if (block.type === "text" && block.text.trim() !== "") {
-			out.push({ key: id, kind: "gaidin", label: "gaidin", body: <Markdown text={block.text} /> });
+			out.push({ key: id, kind: "gaidin", label: "gaidin", body: <Answer text={block.text} live={live} /> });
 		} else if (block.type === "thinking") {
 			// A model with thinking off can still send an empty block.
 			if (!block.redacted && block.thinking.trim() === "") return;
@@ -213,6 +223,12 @@ function blockLines(transcript: Transcript, blocks: readonly Block[], key: strin
 }
 
 const PROMPTS = { job: "job", agent: "agent" } as const;
+
+/**
+ * An answer's key: when its request started, which it has from its first word to its entry, so its lines are kept,
+ * and stay open, as the answer being written becomes the entry; the entry's id without it.
+ */
+const answerKey = (message: { timestamp?: number }, fallback: string) => (message.timestamp === undefined ? fallback : `a${message.timestamp}`);
 
 function entryLines(transcript: Transcript, entry: Entry, results: Map<string, ToolResult>, before: Line | undefined, options: LogOptions): Line[] {
 	const out: Line[] = [];
@@ -267,7 +283,7 @@ function entryLines(transcript: Transcript, entry: Entry, results: Map<string, T
 				out.push(prompts === undefined ? { key: `${key}:${n}`, kind: "you", label: "you", body } : { key: `${key}:${n}`, kind: "prompt", label: PROMPTS[prompts], body });
 			} else out.push({ key: `${key}:${n}`, kind: "sys", label: "note", body: `${entry.kind}: ${splitStamp(textOf(message.content)).text}` });
 		} else if (message.role === "assistant") {
-			out.push(...blockLines(transcript, message.content, key, results));
+			out.push(...blockLines(transcript, message.content, answerKey(message, key), results, false));
 			if (message.stopReason === "error") out.push({ key: `${key}:error`, kind: "err", label: "error", body: message.errorMessage ?? "The model returned an error." });
 			if (message.stopReason === "aborted") out.push({ key: `${key}:aborted`, kind: "sys stopped", label: "sys", body: "Stopped." });
 		}
@@ -284,9 +300,9 @@ function entryLines(transcript: Transcript, entry: Entry, results: Map<string, T
 
 /**
  * The lines for `transcript`'s entries that `include` keeps, oldest first, with each of `local` placed after the
- * entry it followed, and the answer still coming in at the end.
+ * entry it followed, and, when `live`, the answer still coming in at the end.
  */
-export function linesOf(transcript: Transcript, include: (entry: Entry) => boolean, local: readonly Local[], options: LogOptions): Line[] {
+export function linesOf(transcript: Transcript, include: (entry: Entry) => boolean, local: readonly Local[], options: LogOptions, live: boolean): Line[] {
 	const entries = [...transcript.entries.values()].sort((a, b) => a.id - b.id);
 	const results = new Map<string, ToolResult>();
 	for (const entry of entries) for (const m of entry.model ?? []) if (m.role === "toolResult") results.set(m.toolCallId, m);
@@ -299,7 +315,17 @@ export function linesOf(transcript: Transcript, include: (entry: Entry) => boole
 		if (include(entry)) lines.push(...entryLines(transcript, entry, results, lines.at(-1), options));
 		flush(entry.id);
 	}
-	if (transcript.partial !== undefined) lines.push(...blockLines(transcript, transcript.partial.content, "partial", results));
+	if (live && transcript.partial !== undefined) lines.push(...blockLines(transcript, transcript.partial.content, answerKey(transcript.partial, "partial"), results, true));
+	// Sent, and the agent hasn't written anything back yet: its line, with the caret, so the owner sees it's begun.
+	const last = lines.at(-1)?.kind;
+	if (live && transcript.running && (last === "you" || last === "prompt")) lines.push({ key: "coming", kind: "gaidin", label: "gaidin", body: <Answer text="" live /> });
 	flush(Infinity);
-	return lines;
+	// Two answers can't start in the same millisecond in one conversation, but a key given twice would mix up their lines.
+	const keys = new Set<string>();
+	return lines.map((line) => {
+		let unique = line.key;
+		while (keys.has(unique)) unique += "'";
+		keys.add(unique);
+		return unique === line.key ? line : { ...line, key: unique };
+	});
 }

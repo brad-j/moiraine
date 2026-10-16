@@ -93,9 +93,19 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 
 ## Motion
 
-- `--ease-out` for everything; 120ms for color, 200ms for the drawer.
-- The only looping animation is the running pulse on a live status dot. Reduced motion stops it and makes the
-  drawer appear without sliding.
+- `--ease-out` for everything; 120ms for color, 200ms for the drawer, the column collapsing and things that move into
+  place.
+- The column collapses by sliding under the rail as its track closes, keeping its width, so nothing in it wraps anew
+  on the way. On a phone the scrim fades with the drawer.
+- An answer streaming in is shown a little behind what has arrived, at an even pace that follows it, a word at a
+  time, rather than in the bursts gaidin sends. Markdown left open at the end (bold, code, a link, a heading's or
+  list's mark, a table's head until the line under it) waits for its end rather than showing its marks. A still
+  accent caret marks where it's being written, and the agent's line with the caret shows as soon as a message is sent,
+  before the first word. An answer's lines keep their place from its first word to its entry, so a fold opened while
+  it's written stays open.
+- The jump to the end rises into place when it's offered.
+- The only looping animation is the running pulse on a live status dot. Reduced motion stops it, makes the drawer
+  appear and the column collapse without sliding, and shows an answer as it arrives.
 
 ## Microinteractions stance
 

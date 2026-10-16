@@ -2,7 +2,7 @@
 // the owner's next line. Enter sends, a leading / runs a command (Tab completes, and a menu offers them), ↑ and ↓ go
 // through earlier messages, and Esc or Ctrl+C stops a run. Files go with a message: attached, dropped on it or
 // pasted, shown as chips above the text.
-import { type ReactNode, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { type ReactNode, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { PaperclipIcon, XIcon } from "@phosphor-icons/react";
 import { type Attachment, useAttachments } from "../attachments.ts";
 
@@ -70,7 +70,8 @@ export function Prompt({ ref, ...props }: {
 		box.style.height = "auto";
 		box.style.height = `${box.scrollHeight}px`;
 	};
-	useEffect(fit, [text]);
+	// Before the box is drawn, so a new line doesn't show it a line short for a frame.
+	useLayoutEffect(fit, [text]);
 
 	const prefill = (value: string) => {
 		setText(value);
