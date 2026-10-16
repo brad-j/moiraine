@@ -52,7 +52,7 @@ export function Page({ title, agent, wide = false, children }: { title: string; 
 					{children}
 				</div>
 			</main>
-			<footer id="dock">
+			<footer id="dock" className="on-page">
 				<div id="dock-inner">
 					<Dock typed={false} />
 				</div>

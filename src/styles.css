@@ -592,7 +592,14 @@ section > button { margin-top: var(--space-sm); }
 #dock-inner { position: relative; max-width: var(--log-width); margin: 0; padding: 0 var(--space-lg) var(--space-md) var(--space-md); }
 
 #approvals:empty { display: none; }
-#approvals { display: flex; flex-direction: column; gap: var(--space-xs); margin-bottom: var(--space-sm); }
+/* However many wait, they take at most 40% of the window and scroll, so the log or the page keeps the rest. */
+#approvals {
+	display: flex; flex-direction: column; gap: var(--space-xs); max-height: calc(var(--app-height, 100dvh) * 0.4); margin-bottom: var(--space-sm);
+	overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--color-rule-2) transparent;
+}
+/* Under a page, the dock lines up with the page's column, which has no gutter. */
+#dock.on-page #dock-inner { max-width: var(--measure); margin: 0 auto; padding: 0 var(--space-lg) var(--space-md); }
+#dock.on-page .approval { margin-left: 0; }
 .dock-problem { margin: 0; color: var(--color-bad); font-size: var(--text-sm); }
 /* A request: in the line's column, on the warn's wash with its bar where the log's hairline runs; a question or a
  * hand-over on the accent's. */
@@ -709,6 +716,7 @@ section > button { margin-top: var(--space-sm); }
 	.convo-head { height: 48px; padding: 0 var(--space-md); gap: var(--space-xs); }
 	#log { padding: var(--space-md) var(--space-md) var(--space-sm) var(--space-sm); }
 	#dock-inner { padding: 0 var(--space-md) var(--space-sm) var(--space-sm); }
+	#dock.on-page #dock-inner { padding: 0 var(--space-md) var(--space-sm); }
 	#menu { left: var(--space-sm); right: var(--space-sm); }
 	.missing, main.page { padding: var(--space-lg) var(--space-md); }
 	.page { gap: var(--space-lg); padding: var(--space-md) var(--space-md) var(--space-xl); }

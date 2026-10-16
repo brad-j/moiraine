@@ -263,6 +263,26 @@ test("each agent in the rail says when it was last active and what it last said,
 	await expect(page.locator("#approvals")).toContainText("Keep the old branch?");
 });
 
+test("many requests waiting take at most 40% of the window and scroll, and under a page line up with its column", async ({ page }) => {
+	await page.setViewportSize({ width: 1280, height: 800 });
+	await page.goto("/gaidin/new");
+	// Each new thread's fetch waits on the owner.
+	for (let n = 0; n < 4; n++) {
+		const started = await page.request.post("/api/threads/start", { data: { content: `fetch the page ${n}`, requestId: `many-${n}`, agent: "gaidin" } });
+		expect(started.ok()).toBe(true);
+	}
+	const cards = page.locator("#approvals .approval");
+	await expect(cards).toHaveCount(4);
+	const approvals = page.locator("#approvals");
+	expect((await approvals.boundingBox())!.height).toBeLessThanOrEqual(800 * 0.4 + 1);
+	expect(await approvals.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+
+	await cards.first().getByRole("link", { name: "make a rule" }).click();
+	await expect(page.locator(".rule-form")).toBeInViewport();
+	expect((await page.locator(".page-scroll").boundingBox())!.height).toBeGreaterThan(800 * 0.4);
+	expect((await cards.first().boundingBox())!.x).toBe((await page.locator(".page > section").first().boundingBox())!.x);
+});
+
 test("the sidebar's column collapses to the rail and stays so, from its button or Ctrl+B", async ({ page }) => {
 	await page.goto("/gaidin");
 	const column = page.locator("#sidebar-column");
