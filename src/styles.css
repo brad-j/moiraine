@@ -708,13 +708,10 @@ section > button { margin-top: var(--space-sm); }
 #statusline .status.problem::before { background: var(--color-warn); }
 #statusline .seg { gap: var(--space-2xs); min-height: 24px; padding: 0 var(--space-xs); border-radius: var(--radius-sm); color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-2xs); font-weight: 400; }
 #statusline .seg.danger { color: var(--color-bad); }
-#statusline .seg.hint { color: var(--color-ink-3); }
 #statusline .fixed { padding: 0 var(--space-xs); }
 #statusline .spend { padding: 0 var(--space-xs); font-variant-numeric: tabular-nums; }
-#statusline .spend > span + span::before { content: " · "; }
 #statusline .spend.near { color: var(--color-warn); }
 #statusline .spend.stopped { color: var(--color-bad); }
-#statusline .spacer { flex: 1; }
 
 /* --- narrower screens -------------------------------------------------------------------------- */
 
@@ -763,8 +760,7 @@ section > button { margin-top: var(--space-sm); }
 	#message::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.attachments { padding-left: var(--space-sm); }
 	#bar { padding-left: calc(var(--space-sm) - var(--space-xs)); }
-	#statusline .seg.thinking, #statusline .seg.tools, #statusline .seg.instructions, #statusline .seg.hint, #statusline .fixed.thinking, #statusline .spend .here { display: none; }
-	#statusline .spend .here + span::before { content: none; }
+	#statusline .seg.thinking, #statusline .seg.tools, #statusline .seg.instructions, #statusline .fixed.thinking { display: none; }
 	.approval { margin-left: calc(var(--gutter-who) + var(--space-xs)); padding: var(--space-xs) var(--space-sm); }
 	.approval .expires { flex-basis: 100%; margin-left: 0; }
 	.help { grid-template-columns: auto minmax(0, 1fr); }

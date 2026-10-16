@@ -52,7 +52,7 @@ test("with gaidin out of reach the app still opens, from what the service worker
 
 	await context.setOffline(false);
 	await expect(page.locator(".saved-notice")).toHaveCount(0);
-	await expect(page.locator("#statusline .status")).not.toHaveText("reconnecting");
+	await expect(page.locator("#statusline")).not.toContainText("reconnecting");
 	await context.close();
 });
 

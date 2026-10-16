@@ -12,7 +12,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 			{ name: "viewport", content: "width=device-width, initial-scale=1, interactive-widget=resizes-content, viewport-fit=cover" },
 			{ name: "color-scheme", content: "dark" },
 			// --color-paper (tokens.css) in hex, which the browser's own bars take.
-			{ name: "theme-color", content: "#050505" },
+			{ name: "theme-color", content: "#121212" },
 			// On the home screen, iOS draws the page under the status bar, which the safe-area insets keep it clear of.
 			{ name: "mobile-web-app-capable", content: "yes" },
 			{ name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },

@@ -1,18 +1,18 @@
 /* Hallmark · tokens · genre: modern-minimal · theme: custom ("console: clean, sharp, after-dark") · direction C, gutter
- * paper oklch(11.5% 0 0), neutral · accent oklch(80% 0.11 225) ice blue · Fira Sans + Fira Code
+ * paper oklch(18.2% 0 0), neutral · accent oklch(80% 0.11 225) ice blue · Fira Sans + Fira Code
  * axes: dark / humanist-sans with mono chrome / cool accent on neutral */
 :root {
 	color-scheme: dark;
 
 	/* Neutral greys, without a tint. Surfaces, darkest first: the agents' rail, the canvas, the threads' column and
 	 * code, fills, and pressed or current. */
-	--color-paper-0: oklch(9.5% 0 0);
-	--color-paper: oklch(11.5% 0 0);
-	--color-paper-2: oklch(14.5% 0 0);
-	--color-paper-3: oklch(21% 0 0);
-	--color-paper-4: oklch(25% 0 0);
-	--color-rule: oklch(25% 0 0);
-	--color-rule-2: oklch(32% 0 0);
+	--color-paper-0: oklch(15.5% 0 0);
+	--color-paper: oklch(18.2% 0 0);
+	--color-paper-2: oklch(21% 0 0);
+	--color-paper-3: oklch(26.5% 0 0);
+	--color-paper-4: oklch(30% 0 0);
+	--color-rule: oklch(29% 0 0);
+	--color-rule-2: oklch(36% 0 0);
 
 	--color-ink: oklch(94% 0 0);
 	--color-ink-2: oklch(77% 0 0);

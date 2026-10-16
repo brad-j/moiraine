@@ -30,9 +30,9 @@ const MAX_SAVED = 300;
 const OFFLINE = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark"><title>moiraine</title>
-<style>body{margin:0;min-height:100dvh;display:grid;place-content:center;gap:12px;padding:24px;background:oklch(14.5% 0 0);color:oklch(94% 0 0);
+<style>body{margin:0;min-height:100dvh;display:grid;place-content:center;gap:12px;padding:24px;background:oklch(21% 0 0);color:oklch(94% 0 0);
 font:16px/1.5 "Fira Sans",Ubuntu,"Noto Sans","Open Sans",sans-serif;text-align:center}p{margin:0;color:oklch(77% 0 0)}
-button{justify-self:center;padding:8px 16px;border:1px solid oklch(32% 0 0);border-radius:6px;background:oklch(17.5% 0 0);color:inherit;font:inherit;cursor:pointer}</style></head>
+button{justify-self:center;padding:8px 16px;border:1px solid oklch(36% 0 0);border-radius:6px;background:oklch(26.5% 0 0);color:inherit;font:inherit;cursor:pointer}</style></head>
 <body><strong>gaidin can't be reached</strong><p>Check that this device is on the tailnet.</p><button onclick="location.reload()">Try again</button></body></html>`;
 const offline = () => new Response(OFFLINE, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 

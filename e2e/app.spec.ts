@@ -364,7 +364,7 @@ test("after gaidin restarts, an open conversation reconnects and catches up, tho
 	expect((await page.request.post("/api/message", { data: { content: "hello from elsewhere" } })).ok()).toBe(true);
 	await expect(page.locator("#log")).toContainText("hello from elsewhere");
 	await expect(page.locator("#log")).toContainText("Hello, Brad.");
-	await expect(page.locator("#statusline .status")).not.toHaveText("reconnecting");
+	await expect(page.locator("#statusline")).not.toContainText("reconnecting");
 });
 
 test("back from the background, a conversation's stream is opened again at once rather than after its retry", async ({ page }) => {
@@ -384,7 +384,7 @@ test("back from the background, a conversation's stream is opened again at once 
 		}, state);
 	await visibility("hidden");
 	await visibility("visible");
-	await expect(page.locator("#statusline .status")).not.toHaveText("reconnecting");
+	await expect(page.locator("#statusline")).not.toContainText("reconnecting");
 	expect(calls).toBe(2);
 });
 

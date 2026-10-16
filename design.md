@@ -28,8 +28,8 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 
 ## Theme
 
-- Neutral greys with no tint, so nothing reads as slate or blue. The agents' rail `--color-paper-0` oklch(9.5% 0 0);
-  canvas `--color-paper` oklch(11.5% 0 0); the threads' column and code `--color-paper-2`; fills `--color-paper-3`
+- Neutral greys with no tint, so nothing reads as slate or blue. The agents' rail `--color-paper-0` oklch(15.5% 0 0);
+  canvas `--color-paper` oklch(18.2% 0 0), `#121212` (raised from `#050505` on 2026-10-16); the threads' column and code `--color-paper-2`; fills `--color-paper-3`
   (hover); current `--color-paper-4`.
 - Ink in three steps: `--color-ink` (reading), `--color-ink-2` (secondary), `--color-ink-3` (meta).
 - One accent, ice blue `--color-accent` oklch(80% 0.11 225): live state (running), the current item, focus rings,
@@ -110,6 +110,10 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 ## Microinteractions stance
 
 - Silent success: a saved setting shows in the status chips, not a toast.
+- The status line under the composer says only what's worth a glance: the state when it isn't idle (working,
+  reconnecting, retrying) with Stop, the model, the thinking level when it's on, the tools that are off, standing
+  instructions when there are some, and one spend figure (the day's against its limit, the conversation's and the
+  month's in its title). Defaults and what the placeholder already says stay out of it.
 - On a phone the sidebar follows a finger: swiped right across the conversation it comes out under it, swiped left it
   goes, and let go it settles by how far and how fast it went. Something that scrolls sideways keeps its own swipes.
 - When gaidin can't be reached and the app shows what it kept, a warn strip at the top of the column says so and since

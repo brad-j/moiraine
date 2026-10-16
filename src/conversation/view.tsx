@@ -348,7 +348,8 @@ function StatusLine(props: { agent: Agent; home: boolean; transcript: Transcript
 	const usage = useQuery(queries.usage).data;
 	const run = (name: string) => void props.commands.find((c) => c.name === name)?.run("");
 
-	let [label, tone] = ["idle", ""];
+	// Idle says nothing; the line names a state only when it's worth looking at.
+	let [label, tone] = ["", ""];
 	if (!props.connected) [label, tone] = ["reconnecting", "problem"];
 	else if (transcript.retry) [label, tone] = [transcript.retry, "problem"];
 	else if (transcript.running) [label, tone] = ["working", "running"];
@@ -359,8 +360,9 @@ function StatusLine(props: { agent: Agent; home: boolean; transcript: Transcript
 	const total = budget
 		? [budget.dailyLimit > 0 ? `${money(budget.today)} of ${money(budget.dailyLimit)} today` : `${money(budget.today)} today`, budget.monthlyLimit > 0 ? `${money(budget.month)} of ${money(budget.monthlyLimit)} month` : ""]
 		: [usage === undefined ? "" : `${money(cost(usage))} all`];
-	// Each part its own span, so a narrow screen can leave out the conversation's.
-	const parts = ([["here", here === undefined ? "" : `${money(here)} conversation`], ...total.map((t) => ["total", t])] as [string, string][]).filter(([, text]) => text !== "");
+	// One figure, the day's or the total; the conversation's and the month's are in its title.
+	const spend = total[0] ?? "";
+	const spendTitle = [here === undefined ? "" : `${money(here)} this conversation`, ...total.slice(1), budget?.reason ?? ""].filter((t) => t !== "").join(" · ");
 	const near = budget != null && !budget.stopped && budget.dailyLimit > 0 && budget.today >= budget.dailyLimit * 0.8;
 
 	// A thread keeps the settings it started with, which the commands don't change.
@@ -370,7 +372,7 @@ function StatusLine(props: { agent: Agent; home: boolean; transcript: Transcript
 
 	return (
 		<>
-			<span className={`status ${tone}`}>{label}</span>
+			{label !== "" && <span className={`status ${tone}`}>{label}</span>}
 			{transcript.running && (
 				<button className="plain seg danger" type="button" title="Stop the run (Esc or Ctrl+C)" onClick={() => run("stop")}>
 					<StopIcon weight="fill" aria-hidden="true" />
@@ -379,15 +381,19 @@ function StatusLine(props: { agent: Agent; home: boolean; transcript: Transcript
 			)}
 			{home && settings !== undefined ? (
 				<>
-					<button className="plain seg model" type="button" title="Switch the model (/model)" onClick={() => props.prefill("/model ")}>
+					<button className="plain seg model" type="button" title={`Switch the model (/model); thinking ${settings.thinkingLevel} (/thinking)`} onClick={() => props.prefill("/model ")}>
 						{settings.model}
 					</button>
-					<button className="plain seg thinking" type="button" title="Change the thinking level (/thinking)" onClick={() => props.prefill("/thinking ")}>
-						thinking {settings.thinkingLevel}
-					</button>
-					<button className="plain seg tools" type="button" title="Switch a tool on or off (/tool)" onClick={() => props.prefill("/tool ")}>
-						{off.length === 0 ? `tools ${settings.tools.length}/${settings.tools.length}` : `${off.join(" ")} off`}
-					</button>
+					{settings.thinkingLevel !== "off" && (
+						<button className="plain seg thinking" type="button" title="Change the thinking level (/thinking)" onClick={() => props.prefill("/thinking ")}>
+							thinking {settings.thinkingLevel}
+						</button>
+					)}
+					{off.length > 0 && (
+						<button className="plain seg tools" type="button" title="Switch a tool on or off (/tool)" onClick={() => props.prefill("/tool ")}>
+							{off.join(" ")} off
+						</button>
+					)}
 					{settings.instructions !== "" && (
 						<button className="plain seg instructions" type="button" title="Standing instructions (/instructions)" onClick={() => run("instructions")}>
 							instructions
@@ -397,7 +403,7 @@ function StatusLine(props: { agent: Agent; home: boolean; transcript: Transcript
 			) : (
 				<>
 					{model && <span className="fixed model" title="A thread keeps the model it started with">{model}</span>}
-					{thinking && <span className="fixed thinking">thinking {thinking}</span>}
+					{thinking && thinking !== "off" && <span className="fixed thinking">thinking {thinking}</span>}
 				</>
 			)}
 			{budget?.stopped && (
@@ -405,20 +411,10 @@ function StatusLine(props: { agent: Agent; home: boolean; transcript: Transcript
 					stopped · allow more
 				</button>
 			)}
-			{parts.length > 0 && (
-				<span className={`spend${budget?.stopped ? " stopped" : near ? " near" : ""}`} title={budget?.reason}>
-					{parts.map(([kind, text]) => (
-						<span key={kind + text} className={kind}>
-							{text}
-						</span>
-					))}
+			{spend !== "" && (
+				<span className={`spend${budget?.stopped ? " stopped" : near ? " near" : ""}`} title={spendTitle || undefined}>
+					{spend}
 				</span>
-			)}
-			<span className="spacer" />
-			{props.commands.length > 0 && (
-				<button className="plain seg hint" type="button" title="Show the commands" onClick={() => props.prefill("/")}>
-					/ commands
-				</button>
 			)}
 		</>
 	);
