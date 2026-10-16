@@ -11,7 +11,7 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 
 ## Macrostructure family
 
-- App pages (conversations): sidebar + centered log + composer docked at the bottom. The conversation is the page;
+- App pages (conversations): sidebar + log against it, left-aligned + composer docked at the bottom. The conversation is the page;
   nothing decorates it.
 - The log has a gutter, as an IRC client's does: the time an exchange started (mono, `--gutter-time`), then who wrote
   the line (mono, right-aligned, `--gutter-who`): `you`, the agent's name in the accent, a tool call by the tool's

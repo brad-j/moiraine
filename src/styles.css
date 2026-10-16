@@ -174,9 +174,10 @@ main.page a { color: var(--color-accent); }
 
 /* --- the log ---------------------------------------------------------------------------------- */
 
-/* A short log sits against the composer. */
+/* A short log sits against the composer, and the log against the sidebar, as a chat client's does; its width keeps
+ * the answers to a reading measure. */
 #scroll { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--color-rule-2) transparent; }
-#log { width: 100%; max-width: var(--log-width); margin: auto auto 0; padding: var(--space-lg) var(--space-lg) var(--space-md) var(--space-md); }
+#log { width: 100%; max-width: var(--log-width); margin: auto 0 0; padding: var(--space-lg) var(--space-lg) var(--space-md) var(--space-md); }
 
 /* Each line: a gutter, with the time on the first line of an exchange and who wrote the line, then the line itself
  * beside a hairline that runs the length of the log. An exchange's first line opens a gap inside the line, so the
@@ -587,7 +588,7 @@ section > button { margin-top: var(--space-sm); }
 	background: var(--color-paper-3); border-color: var(--color-rule-2); border-radius: var(--radius-pill); box-shadow: 0 4px 16px var(--color-shadow);
 }
 /* The dock lines up with the log, so a request reads as its next line and the composer as the owner's. */
-#dock-inner { position: relative; max-width: var(--log-width); margin: 0 auto; padding: 0 var(--space-lg) var(--space-md) var(--space-md); }
+#dock-inner { position: relative; max-width: var(--log-width); margin: 0; padding: 0 var(--space-lg) var(--space-md) var(--space-md); }
 
 #approvals:empty { display: none; }
 #approvals { display: flex; flex-direction: column; gap: var(--space-xs); margin-bottom: var(--space-sm); }
