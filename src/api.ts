@@ -7,7 +7,7 @@ export type { Gets, LiveEvent, Posts, StreamEvent, Uploaded };
 export type LiveInput = Posts["/api/browser/input"]["body"]["events"][number];
 
 /** The protocol version this build is typed against; tsc fails here when gaidin raises it. */
-export const PROTOCOL: typeof ServerProtocol = 10;
+export const PROTOCOL: typeof ServerProtocol = 11;
 /** Where gaidin serves an agent's picture, with ?id= and &v=, its name. */
 export const AVATAR_PATH: typeof ServerAvatarPath = "/api/agents/avatar";
 /** Where gaidin streams a browser profile's live view, with ?profile=. */
@@ -32,6 +32,9 @@ export type Approval = Gets["/api/approvals"][number];
 export type Settings = Gets["/api/settings"];
 export type Summary = Gets["/api/conversations"]["items"][number];
 export type Connector = Gets["/api/connectors"][number];
+export type Rule = Gets["/api/rules"]["rules"][number];
+export type RuleGrant = Gets["/api/rules"]["grants"][number];
+export type NewRule = Posts["/api/rules/add"]["body"];
 
 /** A GET of one of gaidin's routes, with `query` after it. */
 export async function load<P extends keyof Gets>(path: P, query = ""): Promise<Gets[P]> {

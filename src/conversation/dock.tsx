@@ -170,6 +170,9 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 									{request === first && <kbd>{`${alt}${letter}`}</kbd>}
 								</button>
 							))}
+							<Link className="button-link" to="/rules" search={{ tool: request.tool, agent: request.agent ?? fallback, args: JSON.stringify(request.ruleArgs ?? {}) }}>
+								make a rule
+							</Link>
 							<span className="expires">waits until {clock.format(request.expiresAt)}</span>
 						</div>
 					</div>

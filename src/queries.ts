@@ -32,6 +32,8 @@ export const queries = {
 	push: queryOptions({ queryKey: ["push"], queryFn: () => load("/api/push") }),
 	workspaces: queryOptions({ queryKey: ["workspaces"], queryFn: () => load("/api/workspaces"), staleTime: 5 * 60_000 }),
 	profiles: queryOptions({ queryKey: ["profiles"], queryFn: () => load("/api/profiles"), staleTime: 5 * 60_000 }),
+	/** The owner's rules, the grants beside them, and the tools no allow rule reaches. */
+	rules: queryOptions({ queryKey: ["rules"], queryFn: () => load("/api/rules") }),
 	/** Each connector and its tools, never a token. */
 	connectors: queryOptions({ queryKey: ["connectors"], queryFn: () => load("/api/connectors") }),
 	/** Each browser profile, where it was left, and whether it's taken over. */

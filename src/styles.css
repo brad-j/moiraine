@@ -498,6 +498,26 @@ button.switch:active:not(:disabled) { background: var(--color-paper-3); }
 .tool-row .description { margin: var(--space-3xs) 0 0; color: var(--color-ink-2); font-size: var(--text-sm); overflow-wrap: anywhere; }
 .page-note.done { color: var(--color-ok); }
 
+/* Rules: each rule and the grants beside them; the form's conditions as rows. */
+.rule-row { display: flex; flex-direction: column; gap: var(--space-2xs); padding: var(--space-sm) 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
+.rule-row .title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-xs); }
+.rule-row .id { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-xs); }
+.rule-row .meta, .rule-row .note { margin: 0; color: var(--color-ink-3); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.rule-row .note { color: var(--color-ink-2); }
+.rule-row .actions { display: flex; gap: var(--space-2xs); }
+.tag.allow { color: var(--color-ok); }
+.tag.ask { color: var(--color-warn); }
+.grant-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-xs); padding: var(--space-xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
+.grant-row .kind { color: var(--color-ink-3); font-size: var(--text-sm); }
+.grant-row .button-link { margin-left: auto; }
+.rule-form select { padding: var(--space-xs) var(--space-sm); background: var(--color-paper); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); }
+.rule-form .conditions { margin: 0; padding: 0; border: 0; }
+.rule-form .condition { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); }
+.rule-form .condition .arg { flex: 0 1 14ch; }
+.rule-form .condition .value { flex: 1 1 18ch; }
+.rule-form .check .hint { display: block; margin-top: var(--space-2xs); }
+.page .rule-form input[type="checkbox"] { display: inline-block; width: auto; }
+
 /* Activity: spend against the limits, by model, and the timeline. */
 .stopped { display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-sm); padding: var(--space-sm) var(--space-md); background: var(--color-bad-wash); border: var(--rule-hair) solid var(--color-bad); border-radius: var(--radius-md); }
 .stopped p { flex: 1; margin: 0; }

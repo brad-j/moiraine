@@ -4,7 +4,7 @@
 // drawer.
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BrowserIcon, CalendarBlankIcon, GearSixIcon, type Icon, PlugsConnectedIcon, ListIcon, MagnifyingGlassIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
+import { BrowserIcon, CalendarBlankIcon, GearSixIcon, type Icon, PlugsConnectedIcon, ShieldCheckIcon, ListIcon, MagnifyingGlassIcon, NotebookIcon, NotePencilIcon, PulseIcon, PuzzlePieceIcon, UsersThreeIcon } from "@phosphor-icons/react";
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { type Agent, type Gets, problem } from "./api.ts";
 import { Avatar } from "./avatar.tsx";
@@ -204,6 +204,9 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 					</span>
 				)}
 			</Page>
+			<Page to="/rules" agent={agent} icon={ShieldCheckIcon} onOpen={onOpen}>
+				Rules
+			</Page>
 			{browsers > 0 && (
 				<Page to="/browser" agent={agent} icon={BrowserIcon} onOpen={onOpen}>
 					Browser
@@ -217,7 +220,7 @@ function Pages({ agent, onOpen }: { agent: Agent; onOpen: () => void }) {
 }
 
 /** A link at the sidebar's foot, with its icon. */
-function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/connectors" | "/browser" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {
+function Page({ to, agent, icon: Glyph, onOpen, children }: { to: "/$agent/schedule" | "/$agent/memory" | "/$agent/skills" | "/$agent/settings" | "/agents" | "/connectors" | "/rules" | "/browser" | "/activity"; agent: Agent; icon: Icon; onOpen: () => void; children: ReactNode }) {
 	return (
 		<Link to={to} params={{ agent: agent.id }} onClick={onOpen}>
 			<Glyph aria-hidden="true" />
