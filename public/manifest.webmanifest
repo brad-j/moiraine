@@ -1,7 +1,7 @@
 {
 	"id": "/",
-	"name": "gaidin",
-	"short_name": "gaidin",
+	"name": "moiraine",
+	"short_name": "moiraine",
 	"description": "A personal agent",
 	"start_url": "/",
 	"scope": "/",

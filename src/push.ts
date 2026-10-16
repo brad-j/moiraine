@@ -26,7 +26,7 @@ export async function thisDevice(): Promise<string | undefined> {
 /** Signs this device up for notifications, or throws with why not. */
 export async function subscribeHere(publicKey: string) {
 	// Asked before anything else, while the tap still counts: iOS allows the request only in answer to one.
-	if ((await Notification.requestPermission()) !== "granted") throw new Error("Notifications aren't allowed for gaidin here. Allow them in the device's settings, then try again.");
+	if ((await Notification.requestPermission()) !== "granted") throw new Error("Notifications aren't allowed for moiraine here. Allow them in the device's settings, then try again.");
 	const key = Uint8Array.from(atob(publicKey.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
 	const worker = await registration();
 	if (worker === undefined) throw new Error("This browser can't get notifications.");

@@ -12,7 +12,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 			{ name: "color-scheme", content: "dark" },
 			// --color-paper (tokens.css) in hex, which the browser's own bars take.
 			{ name: "theme-color", content: "#0a0a0a" },
-			{ title: "gaidin" },
+			{ title: "moiraine" },
 		],
 		links: [
 			{ rel: "stylesheet", href: styles },
