@@ -68,12 +68,12 @@ kbd { font-size: var(--text-2xs); font-weight: 400; opacity: 0.7; }
 /* Icons sit on the text's line, the size the root's IconContext gives them, in the color of what they're in. */
 svg { flex: none; }
 
-/* Avatars: an agent's picture in a rounded square, or its initial on the accent's wash. */
+/* Avatars: an agent's picture in a rounded square, or its initial on its color's wash. */
 .avatar { display: inline-grid; place-items: center; flex: none; width: 28px; height: 28px; border-radius: 28%; object-fit: cover; background: var(--color-paper-4); }
 .avatar.sm { width: 20px; height: 20px; }
 .avatar.lg { width: 40px; height: 40px; }
 .avatar.xl { width: 72px; height: 72px; }
-.avatar.monogram { background: var(--color-accent-wash); color: var(--color-accent); font-size: var(--text-sm); font-weight: 600; line-height: 1; }
+.avatar.monogram { background: color-mix(in oklch, var(--agent) 14%, transparent); color: var(--agent); font-size: var(--text-sm); font-weight: 600; line-height: 1; }
 .avatar.monogram::before { content: attr(data-initial); }
 .avatar.monogram.sm { font-size: var(--text-2xs); }
 .avatar.monogram.lg { font-size: var(--text-md); }
@@ -97,13 +97,14 @@ svg { flex: none; }
 .rail .picture { position: relative; display: grid; place-items: center; width: 36px; height: 36px; }
 #sidebar .rail .avatar { width: 36px; height: 36px; }
 .rail li:not(.current) .avatar.monogram { background: var(--color-paper-3); color: var(--color-ink-2); }
-#sidebar .rail li.current > .agent { color: var(--color-accent); }
+#sidebar .rail li.current > .agent { color: var(--agent); }
 .rail .system[aria-pressed="true"] { color: var(--color-ink); }
-/* The agent shown: a bar at the rail's edge beside its picture, an accent ring around the picture, and its name in the accent. */
+/* The agent shown, in its color: a bar at the rail's edge beside its picture, a ring around the picture, and its name. System's bar is the accent. */
 .rail li.current > .agent::before, .rail .system[aria-pressed="true"]::before {
-	content: ""; position: absolute; left: calc((56px - var(--rail) + var(--rule-hair)) / 2); top: var(--space-2xs); width: 3px; height: 36px; border-radius: 0 2px 2px 0; background: var(--color-accent);
+	content: ""; position: absolute; left: calc((56px - var(--rail) + var(--rule-hair)) / 2); top: var(--space-2xs); width: 3px; height: 36px; border-radius: 0 2px 2px 0; background: var(--agent);
 }
-#sidebar .rail li.current .avatar { box-shadow: 0 0 0 2px var(--color-paper-0), 0 0 0 3.5px var(--color-accent); }
+.rail .system[aria-pressed="true"]::before { background: var(--color-accent); }
+#sidebar .rail li.current .avatar { box-shadow: 0 0 0 2px var(--color-paper-0), 0 0 0 3.5px var(--agent); }
 #sidebar.system .rail li.current > .agent::before { content: none; }
 #sidebar.system .rail li.current > .agent { color: var(--color-ink-2); }
 #sidebar.system .rail li.current .avatar { box-shadow: none; }
@@ -208,7 +209,7 @@ main.page a { color: var(--color-accent); }
 .row.prompt .k { color: var(--color-ok); }
 .row.prompt .b { color: var(--color-ink-2); white-space: pre-wrap; }
 
-.row.gaidin .k { color: var(--color-accent); }
+.row.gaidin .k { color: var(--agent); }
 .row.gaidin .b { padding-block: var(--space-xs); }
 .row.gaidin.start .b { padding-top: var(--space-lg); }
 .b.prose { font-size: var(--text-md); line-height: 1.65; }
@@ -302,7 +303,7 @@ main.page a { color: var(--color-accent); }
 .convo-head .avatar { width: 24px; height: 24px; }
 .tag { display: inline-flex; align-items: center; gap: var(--space-2xs); }
 .tag .origin-icon { width: 12px; height: 12px; }
-.tag.with-avatar { padding-left: var(--space-3xs); }
+.tag.with-avatar { padding-left: var(--space-3xs); color: var(--agent); }
 .tag .avatar.sm { width: 16px; height: 16px; }
 .picture { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
 
@@ -427,6 +428,12 @@ button.switch:active:not(:disabled) { background: var(--color-paper-3); }
 }
 .switch.on .track { background: var(--color-accent); border-color: var(--color-accent); }
 .switch.on .track::after { transform: translateX(12px); background: var(--color-accent-ink); }
+/* An agent's colors: a rounded square of each, the one it's shown in ringed. */
+.swatches { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); }
+button.swatch { width: 28px; height: 28px; min-height: 0; padding: 0; background: var(--agent); border: 0; border-radius: 28%; }
+@media (hover: hover) { button.swatch:hover:not(:disabled) { background: var(--agent); box-shadow: 0 0 0 2px var(--color-paper), 0 0 0 3.5px var(--color-rule-2); } }
+button.swatch:active:not(:disabled) { background: var(--agent); }
+button.swatch[aria-pressed="true"], button.swatch[aria-pressed="true"]:hover:not(:disabled) { box-shadow: 0 0 0 2px var(--color-paper), 0 0 0 3.5px var(--agent); }
 .page textarea.instructions-box { margin-top: var(--space-sm); }
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin: 0; padding: 0; list-style: none; }
 .chip { display: inline-flex; align-items: center; gap: var(--space-2xs); padding-left: var(--space-xs); background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-sm); font-size: var(--text-sm); }
@@ -636,7 +643,7 @@ section > button { margin-top: var(--space-sm); }
 .approval .button-link.take { background: var(--color-accent); color: var(--color-accent-ink); }
 @media (hover: hover) { .approval .button-link.take:hover { background: var(--color-accent-strong); color: var(--color-accent-ink); } }
 .ask-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); font-size: var(--text-sm); }
-.who { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-ink); font-weight: 600; text-decoration: none; }
+.who { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--agent); font-weight: 600; text-decoration: none; }
 .ask-head .kind { display: inline-flex; align-items: center; gap: var(--space-2xs); }
 @media (hover: hover) { .who:hover { text-decoration: underline; text-underline-offset: 3px; } }
 .ask-head .kind { color: var(--color-ink-3); }
@@ -811,6 +818,7 @@ section > button { margin-top: var(--space-sm); }
 	#sidebar .new-thread { display: inline-flex; align-items: center; min-height: 40px; }
 	.search { height: 40px; }
 	#send, #bar .attach { min-height: 36px; }
+	button.swatch { width: 36px; height: 36px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

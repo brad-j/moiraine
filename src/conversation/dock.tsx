@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { type Approval, INSIDE_TOOLS, post, problem } from "../api.ts";
 import { BrowserIcon, QuestionIcon, ShieldWarningIcon } from "@phosphor-icons/react";
 import { Avatar } from "../avatar.tsx";
+import { useColorOf } from "../color.ts";
 import { clock, folderOf, shortFolder, when } from "../format.ts";
 import { queries, useAgents } from "../queries.ts";
 
@@ -48,6 +49,7 @@ const SHORTCUTS = new Map<string, Decision>([["KeyY", "once"], ["KeyA", "always"
 export function Dock({ typed }: { /** The prompt is on screen to type an answer into. */ typed: boolean }) {
 	const { approvals, first, busy, decide, answer } = useApprovals();
 	const { byId, fallback } = useAgents();
+	const colorOf = useColorOf();
 	const [failed, setFailed] = useState<string>();
 	const attempt = (work: () => Promise<unknown>) => {
 		setFailed(undefined);
@@ -74,12 +76,12 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 				// Where it came from: the agent's home, or one of its threads.
 				const from =
 					agent === undefined ? undefined : request.conversationId === agent.home ? (
-						<Link className="who" to="/$agent" params={{ agent: agent.id }} title={`${agent.name}'s home conversation`}>
+						<Link className="who" to="/$agent" params={{ agent: agent.id }} title={`${agent.name}'s home conversation`} data-agent-color={colorOf(agent)}>
 							<Avatar agent={agent} size="sm" />
 							{agent.name}
 						</Link>
 					) : (
-						<Link className="who" to="/$agent/t/$id" params={{ agent: agent.id, id: String(request.conversationId) }} title={`${agent.name}'s thread`}>
+						<Link className="who" to="/$agent/t/$id" params={{ agent: agent.id, id: String(request.conversationId) }} title={`${agent.name}'s thread`} data-agent-color={colorOf(agent)}>
 							<Avatar agent={agent} size="sm" />
 							{agent.name}
 						</Link>

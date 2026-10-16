@@ -10,6 +10,7 @@ import { createContext, type ReactNode, useContext, useState } from "react";
 import { type Agent, type Gets, problem } from "./api.ts";
 import { Avatar } from "./avatar.tsx";
 import { PLACES, placeOf } from "./conversation/view.tsx";
+import { useColorOf } from "./color.ts";
 import { ageGroup, lastSeen, oneLine, when } from "./format.ts";
 import { waiting } from "./pages/connectors.tsx";
 import { queries, troubled, useAgents } from "./queries.ts";
@@ -78,13 +79,14 @@ function Rail({ current, system, show }: { current: Agent; system: boolean; show
 	const { data: approvals = [] } = useQuery(queries.approvals);
 	const { data: activity = [] } = useQuery(queries.activity);
 	const plugged = useSignIns();
+	const colorOf = useColorOf();
 	const byAgent = new Map(activity.map((a) => [a.agent, a]));
 	const shown = agents.filter((a) => a.archived === undefined || a.id === current.id);
 	return (
 		<div className="rail">
 			<ul className="agents" role="group" aria-label="Agents">
 				{shown.map((a) => (
-					<li key={a.id} className={a.id === current.id ? "current" : undefined}>
+					<li key={a.id} className={a.id === current.id ? "current" : undefined} data-agent-color={colorOf(a)}>
 						<AgentLink agent={a} activity={byAgent.get(a.id)} waiting={approvals.filter((r) => (r.agent ?? fallback) === a.id).length} onOpen={() => show(false)} />
 					</li>
 				))}

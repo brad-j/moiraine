@@ -26,6 +26,19 @@
 	--color-accent-line: oklch(80% 0.11 225 / 0.45);
 	--color-focus: oklch(80% 0.11 225);
 
+	/* The agents' colors (gaidin's AGENT_COLORS, src/color.ts), which say which agent a thing is: at the accent's
+	 * lightness, so text in them reads on the ground, and off the status colors' hues and terracotta. --agent is the
+	 * one of what's around it, set by data-agent-color, and the accent where nothing sets it. */
+	--agent-ice: oklch(80% 0.11 225);
+	--agent-blue: oklch(76% 0.12 268);
+	--agent-violet: oklch(76% 0.13 300);
+	--agent-orchid: oklch(78% 0.13 330);
+	--agent-pink: oklch(81% 0.09 2);
+	--agent-teal: oklch(80% 0.11 192);
+	--agent-lime: oklch(85% 0.14 125);
+	--agent-silver: oklch(83% 0 0);
+	--agent: var(--color-accent);
+
 	--color-ok: oklch(78% 0.11 165);
 	--color-warn: oklch(83% 0.12 85);
 	--color-warn-wash: oklch(83% 0.12 85 / 0.08);
@@ -76,3 +89,12 @@
 	--dur-short: 120ms;
 	--dur-med: 200ms;
 }
+
+[data-agent-color="ice"] { --agent: var(--agent-ice); }
+[data-agent-color="blue"] { --agent: var(--agent-blue); }
+[data-agent-color="violet"] { --agent: var(--agent-violet); }
+[data-agent-color="orchid"] { --agent: var(--agent-orchid); }
+[data-agent-color="pink"] { --agent: var(--agent-pink); }
+[data-agent-color="teal"] { --agent: var(--agent-teal); }
+[data-agent-color="lime"] { --agent: var(--agent-lime); }
+[data-agent-color="silver"] { --agent: var(--agent-silver); }

@@ -14,7 +14,7 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 - App pages (conversations): sidebar + log against it, left-aligned + composer docked at the bottom. The conversation is the page;
   nothing decorates it.
 - The log has a gutter, as an IRC client's does: the time an exchange started (mono, `--gutter-time`), then who wrote
-  the line (mono, right-aligned, `--gutter-who`): `you`, the agent's name in the accent, a tool call by the tool's
+  the line (mono, right-aligned, `--gutter-who`): `you`, the agent's name in its color, a tool call by the tool's
   name, `think`, `job`, `error`. The line sits beside a hairline that runs the log's length. The dock and the composer
   sit on the same gutter, so a request reads as the next line and the composer as the owner's, `you ›`. On a phone
   the gutter keeps who and leaves out the time, and the composer leaves the gutter for a field across the screen, on
@@ -36,6 +36,12 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 - Ink in three steps: `--color-ink` (reading), `--color-ink-2` (secondary), `--color-ink-3` (meta).
 - One accent, ice blue `--color-accent` oklch(80% 0.11 225): live state (running), the current item, focus rings,
   the primary button. Kept to small surfaces.
+- Each agent has a color (`--agent-*`, gaidin's `AGENT_COLORS`: ice, blue, violet, orchid, pink, teal, lime, silver),
+  chosen on its settings page as a row of swatches, or by its place in the roster until one is chosen. It says which
+  agent a thing is, and only that: the rail's mark for the agent shown, its initial, its name in the log's gutter, in
+  the agent tag of a header and in a dock card. Controls and state keep the accent whatever the agent. The colors sit
+  at the accent's lightness so text in them reads on the ground, off the status colors' hues and terracotta. Added
+  with the owner on 2026-10-16.
 - Status colors, used only for status: `--color-ok` (a tool call that worked), `--color-warn` (waiting on you,
   near a limit), `--color-bad` (errors, deny).
 - Nothing is decorative.
@@ -55,13 +61,13 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
   remove buttons, which have labels for screen readers. Fill weight only for Send and Stop.
 - Icon-only buttons, each with a label for screen readers: the menu (phone), collapse the sidebar (wider), attach,
   and remove.
-- An agent's avatar is a rounded square (28% corners): its picture, from its settings page, or its initial on the
-  accent's wash (on the paper's fill in the rail, but for the agent shown). Sizes: 16 in a tag, 20 in the dock, 24 in
+- An agent's avatar is a rounded square (28% corners): its picture, from its settings page, or its initial on its
+  color's wash (on the paper's fill in the rail, but for the agent shown). Sizes: 16 in a tag, 20 in the dock, 24 in
   headers, 36 in the rail, 40 on the agents page, 72 on its settings.
 - The sidebar is two parts. The rail (`--rail`, 64 pixels, `--color-paper-0`): each agent its avatar and its name in
   small mono below, a pulsing accent dot at the avatar's corner while it works, an amber count of what waits on the
-  owner, and when it was last active and its newest message on hover; the agent shown has a 3-pixel accent bar at the
-  rail's edge beside its picture, an accent ring around the picture, and its name in the accent (changed with the
+  owner, and when it was last active and its newest message on hover; the agent shown has a 3-pixel bar at the rail's
+  edge beside its picture, a ring around the picture, and its name, all in its color (changed with the
   owner on 2026-10-16: the bar alone was cut off and the name's shade too faint to tell). A thread's header names its
   agent, picture and name, as a page's header does. System is at the rail's foot, with an amber count of connectors to sign in. Beside the rail, the
   column (`--sidebar`, 252 pixels, `--color-paper-2`): the agent's name and job and "+ thread"; its pages (Schedule,
@@ -73,8 +79,8 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
   the rail and the column are the drawer and don't collapse. No decorative imagery.
 - An agent's picture may carry a color of its own where it means something, brown included (Verin's Brown Ajah). Never
   the Claude look: no terracotta, coral or clay accent, and no cream, beige or warm-paper ground. The app's own palette
-  stays the neutral greys and ice blue.
-- The agent's name is in the gutter beside each of its lines, in the accent.
+  stays the neutral greys and ice blue, with the agents' colors where they say which agent.
+- The agent's name is in the gutter beside each of its lines, in its color.
 
 ## Spacing
 

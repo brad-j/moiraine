@@ -4,6 +4,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { type Agent, PROTOCOL } from "./api.ts";
+import { useColorOf } from "./color.ts";
 import { ago } from "./format.ts";
 import { useSavedAt } from "./offline.ts";
 import { queries, useAgent, useAgents } from "./queries.ts";
@@ -27,9 +28,11 @@ export function Frame({ agent, children }: { agent: Agent; children: ReactNode }
 	useSwipe(app, open, setOpen);
 	useEffect(() => sessionStorage.setItem(LAST, agent.id), [agent.id]);
 	useBadge();
+	// The agent's color, for what in the frame says it's this agent's: the rail's mark, its name in the log and headers.
+	const color = useColorOf()(agent);
 	return (
 		<Drawer.Provider value={{ open, toggle: (to) => setOpen((now) => to ?? !now), collapsed, collapse }}>
-			<div id="app" ref={app} className={[open && "drawer-open", collapsed && "collapsed"].filter(Boolean).join(" ") || undefined}>
+			<div id="app" ref={app} className={[open && "drawer-open", collapsed && "collapsed"].filter(Boolean).join(" ") || undefined} data-agent-color={color}>
 				<Sidebar agent={agent} />
 				<button className="scrim" type="button" aria-label="Close the conversations" tabIndex={-1} onClick={() => setOpen(false)} />
 				<div id="column">

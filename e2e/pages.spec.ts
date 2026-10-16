@@ -344,3 +344,32 @@ test("an agent's picture is chosen in settings, shown wherever the agent is, and
 	await page.getByRole("button", { name: "remove" }).click();
 	await expect(page.locator("#sidebar .agents li.current .avatar.monogram")).toHaveCount(1);
 });
+
+test("each agent has a color, by its place in the roster until one is chosen in settings, shown in the rail and the log", async ({ page }) => {
+	expect((await page.request.post("/api/agents/save", { data: { id: "scout", name: "Scout", job: "" } })).ok()).toBe(true);
+	await page.goto("/gaidin");
+	const rail = (id: string) => page.locator(`#sidebar .agents li:has(a[href="/${id}"])`);
+	await expect(rail("gaidin")).toHaveAttribute("data-agent-color", "ice");
+	await expect(rail("scout")).toHaveAttribute("data-agent-color", "blue");
+	await send(page, "hi");
+	await expect(page.locator("#log .row.gaidin .k")).toHaveText("gaidin");
+
+	await pages(page).getByRole("link", { name: "Settings" }).click();
+	const swatches = page.getByRole("group", { name: "Color" });
+	await expect(swatches.getByRole("button", { name: "Ice" })).toHaveAttribute("aria-pressed", "true");
+	await swatches.getByRole("button", { name: "Violet" }).click();
+	await expect(swatches.getByRole("button", { name: "Violet" })).toHaveAttribute("aria-pressed", "true");
+	await expect(rail("gaidin")).toHaveAttribute("data-agent-color", "violet");
+	const violet = await swatches.getByRole("button", { name: "Violet" }).evaluate((el) => getComputedStyle(el).backgroundColor);
+
+	// The agent's name in the log takes it, and it's kept.
+	await page.goto("/gaidin");
+	await expect(page.locator("#log .row.gaidin .k")).toHaveCSS("color", violet);
+	await page.reload();
+	await expect(rail("gaidin")).toHaveAttribute("data-agent-color", "violet");
+
+	await page.goto("/gaidin/settings");
+	await page.getByRole("button", { name: "by its place" }).click();
+	await expect(swatches.getByRole("button", { name: "Ice" })).toHaveAttribute("aria-pressed", "true");
+	await expect(rail("gaidin")).toHaveAttribute("data-agent-color", "ice");
+});

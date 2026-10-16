@@ -1,4 +1,4 @@
-// Settings: the agent's roster entry (name, job, Slack channel), its model, thinking, tools and standing instructions,
+// Settings: the agent's roster entry (name, job, Slack channel, picture and color), its model, thinking, tools and standing instructions,
 // which apply from its next request and to new threads, what it may reach (hosts, workspaces, browser profiles, other
 // agents), and the devices that get notifications. The settings file's values (keys, limits, Slack tokens) stay in the
 // file.
@@ -8,6 +8,7 @@ import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "re
 import { TrashIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 import { type Agent, type Posts, post, type Settings as AgentSettings, upload } from "../api.ts";
 import { Avatar } from "../avatar.tsx";
+import { COLORS, PALETTE, useColorOf } from "../color.ts";
 import { when } from "../format.ts";
 import { subscribeHere, supported, thisDevice, unsubscribe } from "../push.ts";
 import { queries, useAgents } from "../queries.ts";
@@ -239,6 +240,32 @@ function Picture({ agent, save }: { agent: Agent; save: (change: EntryChange) =>
 					)}
 				</div>
 			</Field>
+			<Field label="color" hint={agent.color === undefined ? "by its place in the roster until you choose one" : "its mark in the rail and its name in the log"}>
+				<Swatches agent={agent} save={save} />
+			</Field>
+		</div>
+	);
+}
+
+/** The colors the agent can be shown in, the one it's shown in pressed, and a way back to its place's. */
+function Swatches({ agent, save }: { agent: Agent; save: (change: EntryChange) => Promise<void> }) {
+	const shown = useColorOf()(agent);
+	const attempt = useAttempt();
+	return (
+		<div className="swatches" role="group" aria-label="Color">
+			{PALETTE.map((color) => (
+				<button
+					key={color}
+					className="swatch"
+					type="button"
+					data-agent-color={color}
+					aria-pressed={color === shown}
+					aria-label={COLORS[color]}
+					title={COLORS[color]}
+					onClick={() => void attempt(() => save({ color }))}
+				/>
+			))}
+			{agent.color !== undefined && <Action run={() => save({ color: "" })}>by its place</Action>}
 		</div>
 	);
 }
