@@ -183,14 +183,14 @@ test("a job run opens from the sidebar, and a message to it goes to a thread for
 	await run.click();
 	await expect(page).toHaveURL(/\/t\/\d+$/);
 	const runUrl = page.url();
-	await expect(page.locator(".convo-head .tag")).toHaveText("job run");
+	await expect(page.locator(".convo-head .tag.origin")).toHaveText("job run");
 	await expect(page.locator("#log .row.prompt")).toContainText("Check the weather once.");
 	await expect(page.locator("#log .row.prompt .k")).toHaveText("job");
 
 	await send(page, "and tomorrow?");
 	await expect(page).not.toHaveURL(runUrl);
 	await expect(page).toHaveURL(/\/t\/\d+$/);
-	await expect(page.locator(".convo-head .tag")).toHaveText("app");
+	await expect(page.locator(".convo-head .tag.origin")).toHaveText("app");
 	await expect(page.locator(".replying")).toContainText("Hello, Brad.");
 	await expect(page.locator("#log > .row.you .b")).toHaveText("and tomorrow?");
 	await expect(page.locator("#log > .row.gaidin")).toHaveCount(1);

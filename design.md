@@ -60,8 +60,10 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
   headers, 36 in the rail, 40 on the agents page, 72 on its settings.
 - The sidebar is two parts. The rail (`--rail`, 64 pixels, `--color-paper-0`): each agent its avatar and its name in
   small mono below, a pulsing accent dot at the avatar's corner while it works, an amber count of what waits on the
-  owner, and when it was last active and its newest message on hover; the agent shown has a 2-pixel accent bar at the
-  rail's edge. System is at the rail's foot, with an amber count of connectors to sign in. Beside the rail, the
+  owner, and when it was last active and its newest message on hover; the agent shown has a 3-pixel accent bar at the
+  rail's edge beside its picture, an accent ring around the picture, and its name in the accent (changed with the
+  owner on 2026-10-16: the bar alone was cut off and the name's shade too faint to tell). A thread's header names its
+  agent, picture and name, as a page's header does. System is at the rail's foot, with an amber count of connectors to sign in. Beside the rail, the
   column (`--sidebar`, 252 pixels, `--color-paper-2`): the agent's name and job and "+ thread"; its pages (Schedule,
   Memory, Skills, Settings) as tabs, the current one underlined in the accent; a search of its threads; Home, then
   its threads under mono day groups (today, this week, older), each its title, when, and where it began in mono

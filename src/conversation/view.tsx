@@ -105,12 +105,15 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 				{home ? (
 					<span className="tag">home</span>
 				) : (
-					summary && (
-						<span className={`tag ${summary.place}`}>
-							<Origin place={placeOf(summary)} />
-							{PLACES[placeOf(summary)]}
-						</span>
-					)
+					<>
+						<AgentTag agent={agent} />
+						{summary && (
+							<span className={`tag origin ${summary.place}`}>
+								<Origin place={placeOf(summary)} />
+								{PLACES[placeOf(summary)]}
+							</span>
+						)}
+					</>
 				)}
 			</header>
 			<main id="scroll" ref={scroller}>
@@ -173,9 +176,8 @@ export function NewThread({ agent, menu }: Omit<Shown, "thread" | "draft">) {
 		<>
 			<header className="convo-head">
 				{menu}
-				<Avatar agent={agent} />
 				<h1>New thread</h1>
-				<span className="tag">{agent.name}</span>
+				<AgentTag agent={agent} />
 			</header>
 			<main id="scroll">
 				<div id="log" role="log">
@@ -211,6 +213,16 @@ export function NewThread({ agent, menu }: Omit<Shown, "thread" | "draft">) {
 			</footer>
 			<Title agent={agent} running={false} />
 		</>
+	);
+}
+
+/** Whose conversation it is, in a thread's header: the agent's picture and name, as a page's header has them. */
+function AgentTag({ agent }: { agent: Agent }) {
+	return (
+		<span className="tag with-avatar">
+			<Avatar agent={agent} size="sm" />
+			{agent.name}
+		</span>
 	);
 }
 

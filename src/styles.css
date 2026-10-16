@@ -86,7 +86,8 @@ svg { flex: none; }
 /* The rail: each agent's picture and name, with its working dot and what waits on the owner, and System at the foot.
  * The one shown has the accent's bar at the rail's edge, or System has it while it's open. */
 .rail { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; min-height: 0; padding: var(--space-sm) 0; background: var(--color-paper-0); border-right: var(--rule-hair) solid var(--color-rule); }
-.rail .agents { display: flex; flex-direction: column; gap: var(--space-2xs); flex: 1; min-height: 0; margin: 0; padding: var(--space-2xs) 0 0; list-style: none; overflow-y: auto; scrollbar-width: none; }
+/* The list takes the rail's width, so the bar at its edge isn't cut off where the list scrolls. */
+.rail .agents { display: flex; flex-direction: column; align-items: center; align-self: stretch; gap: var(--space-2xs); flex: 1; min-height: 0; margin: 0; padding: var(--space-2xs) 0 0; list-style: none; overflow-y: auto; scrollbar-width: none; }
 #sidebar .rail .agent, .rail .system {
 	position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--space-3xs); width: 56px; min-height: 0; padding: var(--space-2xs) 0;
 	background: none; border: 0; border-radius: 0; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); font-weight: 400; line-height: 1.3; white-space: normal;
@@ -96,12 +97,16 @@ svg { flex: none; }
 .rail .picture { position: relative; display: grid; place-items: center; width: 36px; height: 36px; }
 #sidebar .rail .avatar { width: 36px; height: 36px; }
 .rail li:not(.current) .avatar.monogram { background: var(--color-paper-3); color: var(--color-ink-2); }
-#sidebar .rail li.current > .agent, .rail .system[aria-pressed="true"] { color: var(--color-ink); }
+#sidebar .rail li.current > .agent { color: var(--color-accent); }
+.rail .system[aria-pressed="true"] { color: var(--color-ink); }
+/* The agent shown: a bar at the rail's edge beside its picture, an accent ring around the picture, and its name in the accent. */
 .rail li.current > .agent::before, .rail .system[aria-pressed="true"]::before {
-	content: ""; position: absolute; left: calc((56px - var(--rail)) / 2); top: var(--space-xs); width: 2px; height: 28px; background: var(--color-accent);
+	content: ""; position: absolute; left: calc((56px - var(--rail) + var(--rule-hair)) / 2); top: var(--space-2xs); width: 3px; height: 36px; border-radius: 0 2px 2px 0; background: var(--color-accent);
 }
+#sidebar .rail li.current .avatar { box-shadow: 0 0 0 2px var(--color-paper-0), 0 0 0 3.5px var(--color-accent); }
 #sidebar.system .rail li.current > .agent::before { content: none; }
 #sidebar.system .rail li.current > .agent { color: var(--color-ink-2); }
+#sidebar.system .rail li.current .avatar { box-shadow: none; }
 .rail .live { position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 0 2px var(--color-paper-0); animation: pulse 1.2s var(--ease-in-out) infinite; }
 .rail .waiting { position: absolute; top: -5px; right: -7px; box-shadow: 0 0 0 2px var(--color-paper-0); }
 .rail .system { margin-top: var(--space-xs); }
