@@ -275,7 +275,8 @@ main.page a { color: var(--color-accent); }
 .md hr { border: 0; border-top: var(--rule-hair) solid var(--color-rule); margin: var(--space-lg) 0; }
 .md .table { overflow-x: auto; }
 .md table { border-collapse: collapse; font-size: var(--text-base); font-variant-numeric: tabular-nums; }
-.md th, .md td { padding: var(--space-2xs) var(--space-md) var(--space-2xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); text-align: left; vertical-align: top; }
+/* A cell breaks between words, not inside one: too wide for the line, the table scrolls sideways instead. */
+.md th, .md td { overflow-wrap: break-word; padding: var(--space-2xs) var(--space-md) var(--space-2xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); text-align: left; vertical-align: top; }
 .md th { color: var(--color-ink-2); font-weight: 600; border-bottom-color: var(--color-rule-2); }
 
 .help { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: var(--space-3xs) var(--space-md); }
