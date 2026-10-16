@@ -272,7 +272,8 @@ test("many requests waiting take at most 40% of the window and scroll, and under
 		expect(started.ok()).toBe(true);
 	}
 	const cards = page.locator("#approvals .approval");
-	await expect(cards).toHaveCount(4);
+	// With the suite's other servers busy, four runs can take a while to reach their requests.
+	await expect(cards).toHaveCount(4, { timeout: 15_000 });
 	const approvals = page.locator("#approvals");
 	expect((await approvals.boundingBox())!.height).toBeLessThanOrEqual(800 * 0.4 + 1);
 	expect(await approvals.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);

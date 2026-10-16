@@ -86,6 +86,10 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
   content (the command menu, the drawer).
 - A request in the dock: on the warn's wash with a 2-pixel warn bar where the log's hairline runs; a question or a
   hand-over on the accent's.
+- A workspace file's read, write or edit adds "Trust <folder> for <agent>" beside "make a rule", a quiet link like it,
+  the folder shortened to its last two names after "…/" and given in full in its title. It opens the Rules form
+  filled in, where the folder's ancestors are buttons to widen it before saving. The form says in warn text beside its
+  buttons when an allow rule lets an agent run any command on a workspace.
 
 ## Motion
 

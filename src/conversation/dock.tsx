@@ -3,10 +3,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { type Approval, post, problem } from "../api.ts";
+import { type Approval, INSIDE_TOOLS, post, problem } from "../api.ts";
 import { BrowserIcon, QuestionIcon, ShieldWarningIcon } from "@phosphor-icons/react";
 import { Avatar } from "../avatar.tsx";
-import { clock, when } from "../format.ts";
+import { clock, folderOf, shortFolder, when } from "../format.ts";
 import { queries, useAgents } from "../queries.ts";
 
 type Decision = "once" | "always" | "deny";
@@ -144,6 +144,8 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 				const choices: [Decision, string, string, string][] = [["once", "Allow once", "primary", "Y"]];
 				if (request.always !== undefined) choices.push(["always", request.always.label, "", "A"]);
 				choices.push(["deny", "Deny", "danger", "N"]);
+				// A workspace file's read, write or edit offers to trust the folder it's in, for that agent.
+				const folder = INSIDE_TOOLS.includes(request.tool) && request.ruleArgs?.workspace !== undefined ? folderOf(request.ruleArgs.path ?? "") : undefined;
 				return (
 					<div key={request.id} className="approval">
 						<div className="ask">
@@ -173,6 +175,16 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 							<Link className="button-link" to="/rules" search={{ tool: request.tool, agent: request.agent ?? fallback, args: JSON.stringify(request.ruleArgs ?? {}) }}>
 								make a rule
 							</Link>
+							{folder !== undefined && (
+								<Link
+									className="button-link trust"
+									to="/rules"
+									search={{ tool: "workspace_*", agent: request.agent ?? fallback, args: JSON.stringify({ workspace: request.ruleArgs?.workspace }), folder }}
+									title={`Let ${agent?.name ?? "the agent"} read, write and edit in ${folder} on ${request.ruleArgs?.workspace} without asking`}
+								>
+									Trust {shortFolder(folder)} for {agent?.name ?? request.agent ?? fallback}
+								</Link>
+							)}
 							<span className="expires">waits until {clock.format(request.expiresAt)}</span>
 						</div>
 					</div>

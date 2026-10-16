@@ -124,3 +124,40 @@ export function ageGroup(at: number): "today" | "this week" | "older" {
 export function oneLine(text: string): string {
 	return splitStamp(text).text.replace(/\n\n\[Files from [\s\S]*\]$/, "").replace(/\s+/g, " ").trim();
 }
+
+/** A workspace path with `.` and `..` resolved, as text, as gaidin compares it: absolute, or relative to the first root. */
+export function cleanPath(path: string): string {
+	const absolute = path.startsWith("/");
+	const parts: string[] = [];
+	for (const part of path.split("/")) {
+		if (part === "" || part === ".") continue;
+		if (part !== "..") parts.push(part);
+		else if (parts.length > 0 && parts.at(-1) !== "..") parts.pop();
+		else if (!absolute) parts.push("..");
+	}
+	return absolute ? `/${parts.join("/")}` : parts.join("/") || ".";
+}
+
+/**
+ * The folder a file at `path` is in, to trust: its parent, as given, absolute or relative. Nothing when that's a root
+ * itself (`.` or `/`) or leaves the first root, which isn't a folder to offer in one click.
+ */
+export function folderOf(path: string): string | undefined {
+	const clean = cleanPath(path);
+	const cut = clean.lastIndexOf("/");
+	if (cut <= 0 || clean.startsWith("..")) return undefined;
+	return clean.slice(0, cut);
+}
+
+/** The folders a trusted one can widen to: each of its ancestors and itself, outermost first, with each one's own name. */
+export function ancestors(folder: string): { folder: string; name: string }[] {
+	const absolute = folder.startsWith("/");
+	const parts = cleanPath(folder).split("/").filter((part) => part !== "");
+	return parts.map((name, i) => ({ folder: `${absolute ? "/" : ""}${parts.slice(0, i + 1).join("/")}`, name }));
+}
+
+/** A folder short enough for a button: its last two names after "…/" when it has more. */
+export function shortFolder(folder: string): string {
+	const parts = folder.split("/").filter((part) => part !== "");
+	return parts.length > 2 ? `…/${parts.slice(-2).join("/")}` : folder;
+}

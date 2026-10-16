@@ -15,14 +15,18 @@ function argsOf(value: unknown): Record<string, string> | undefined {
 	}
 }
 
-/** The rules, across agents, beside the sidebar of the agent shown last. An approval card's "make a rule" fills in its form. */
+/**
+ * The rules, across agents, beside the sidebar of the agent shown last. An approval card's "make a rule" fills in its
+ * form, and its "Trust <folder>" fills it in to trust the folder (`folder`).
+ */
 export const Route = createFileRoute("/rules")({
 	component: Page,
-	validateSearch: (search: Record<string, unknown>): { tool?: string; agent?: string; args?: string } => {
-		const found: { tool?: string; agent?: string; args?: string } = {};
+	validateSearch: (search: Record<string, unknown>): { tool?: string; agent?: string; args?: string; folder?: string } => {
+		const found: { tool?: string; agent?: string; args?: string; folder?: string } = {};
 		if (typeof search.tool === "string") found.tool = search.tool;
 		if (typeof search.agent === "string") found.agent = search.agent;
 		if (typeof search.args === "string") found.args = search.args;
+		if (typeof search.folder === "string") found.folder = search.folder;
 		return found;
 	},
 });
@@ -30,7 +34,7 @@ export const Route = createFileRoute("/rules")({
 function Page() {
 	const agent = useLastAgent();
 	const search = Route.useSearch();
-	const draft: Draft = { tool: search.tool, agent: search.agent, args: argsOf(search.args) };
+	const draft: Draft = { tool: search.tool, agent: search.agent, args: argsOf(search.args), folder: search.folder };
 	if (agent === undefined) return <p className="page-empty">Connecting…</p>;
 	return (
 		<Frame agent={agent}>

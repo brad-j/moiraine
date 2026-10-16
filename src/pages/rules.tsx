@@ -1,22 +1,28 @@
 // Rules: your own say over what asks, across agents. Each rule allows or asks, for one agent or every agent, for a tool
 // or a family by prefix, when the call's arguments meet its conditions, until it ends. Beside them, the grants that also
 // let calls through without asking, each changed where it lives. A rule is made here, from scratch or from an approval
-// card's "make a rule", which fills the form in from the request.
+// card's "make a rule", which fills the form in from the request, or its "Trust <folder>", which fills it in to let the
+// agent's reads, writes and edits in a workspace folder through (folder trust, gaidin's `inside` condition).
 import { PlusIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { type NewRule, post, type Rule, type RuleGrant } from "../api.ts";
-import { when } from "../format.ts";
+import { Fragment, useState } from "react";
+import { INSIDE_TOOLS, type NewRule, post, type Rule, type RuleGrant } from "../api.ts";
+import { ancestors, when } from "../format.ts";
 import { queries, useAgents } from "../queries.ts";
 import { Confirm, Empty, Page, SectionHead, useAttempt } from "./page.tsx";
 
-/** What "make a rule" brings from a request: the tool, the agent, and its short arguments. */
-export type Draft = { tool?: string; agent?: string; args?: Record<string, string> };
+/** What "make a rule" brings from a request: the tool, the agent, and its short arguments; "Trust" also the folder. */
+export type Draft = { tool?: string; agent?: string; args?: Record<string, string>; folder?: string };
 
-const OPS = ["equals", "one-of", "starts-with", "contains", "host"] as const;
+const OPS = ["equals", "one-of", "starts-with", "contains", "host", "inside"] as const;
+/** The tools a rule with an inside condition can name. */
+const INSIDE_RULE_TOOLS = [...INSIDE_TOOLS, "workspace_*"];
+/** Whether a rule's tool, a name or a prefix ending in *, names `tool`, as gaidin matches it. */
+const names = (pattern: string, tool: string) => (pattern.endsWith("*") ? tool.startsWith(pattern.slice(0, -1)) : pattern === tool);
 type Op = (typeof OPS)[number];
-type Row = { arg: string; op: Op; value: string; on: boolean };
+/** A condition in the form. `from`: the folder a trust started at, which the folder can widen from and narrow back to. */
+type Row = { arg: string; op: Op; value: string; on: boolean; from?: string };
 const SPANS = [
 	["never", "it ends when you remove it"],
 	["1h", "for an hour"],
@@ -144,11 +150,24 @@ function RuleForm({ draft, floor, done }: { draft?: Draft; floor: readonly strin
 	const [effect, setEffect] = useState<"allow" | "ask">("allow");
 	const [agent, setAgent] = useState(draft?.agent ?? "");
 	const [tool, setTool] = useState(draft?.tool ?? "");
-	const [rows, setRows] = useState<Row[]>(() => Object.entries(draft?.args ?? {}).map(([arg, value]) => rowFor(arg, value)));
+	const [rows, setRows] = useState<Row[]>(() =>
+		draft?.folder === undefined
+			? Object.entries(draft?.args ?? {}).map(([arg, value]) => rowFor(arg, value))
+			: [
+					{ arg: "workspace", op: "equals", value: draft.args?.workspace ?? "", on: true },
+					{ arg: "path", op: "inside", value: draft.folder, on: true, from: draft.folder },
+				],
+	);
 	const [span, setSpan] = useState<Span>("never");
 	const [afterOutside, setAfterOutside] = useState(false);
 	const [note, setNote] = useState("");
 	const floored = floor.includes(tool.trim());
+	/** inside is offered on a path, for the workspace file tools only; a row that has it keeps showing it, for gaidin to refuse. */
+	const offers = (row: Row) => OPS.filter((op) => op !== "inside" || row.op === "inside" || (row.arg.trim() === "path" && INSIDE_RULE_TOOLS.includes(tool.trim())));
+	// An allow rule reaching workspace_run without a folder lets every command through, whatever the cwd.
+	const runs = (floored ? "ask" : effect) === "allow" && names(tool.trim(), "workspace_run") && !rows.some((r) => r.on && r.op === "inside");
+	const workspace = rows.find((r) => r.on && r.arg.trim() === "workspace" && r.op === "equals" && r.value.trim() !== "")?.value.trim();
+	const who = agent === "" ? "every agent" : (agents.find((a) => a.id === agent)?.name ?? agent);
 	const set = (i: number, change: Partial<Row>) => setRows((now) => now.map((row, at) => (at === i ? { ...row, ...change } : row)));
 
 	async function save() {
@@ -220,13 +239,30 @@ function RuleForm({ draft, floor, done }: { draft?: Draft; floor: readonly strin
 						<input type="checkbox" aria-label={`Use the condition on ${row.arg || "a new argument"}`} checked={row.on} onChange={(event) => set(i, { on: event.target.checked })} />
 						<input className="arg" aria-label="Argument" value={row.arg} placeholder="argument" onChange={(event) => set(i, { arg: event.target.value, on: true })} />
 						<select aria-label={`How ${row.arg || "it"} is matched`} value={row.op} onChange={(event) => set(i, { op: OPS.find((o) => o === event.target.value) ?? "equals", on: true })}>
-							{OPS.map((op) => (
+							{offers(row).map((op) => (
 								<option key={op} value={op}>
 									{op}
 								</option>
 							))}
 						</select>
-						<input className="value" aria-label={`Value for ${row.arg || "it"}`} value={row.value} onChange={(event) => set(i, { value: event.target.value, on: true })} />
+						<input className="value" aria-label={`Value for ${row.arg || "it"}`} value={row.value} onChange={(event) => set(i, { value: event.target.value, on: true, from: undefined })} />
+						{row.op === "inside" && ancestors(row.from ?? row.value).length > 1 && (
+							<div className="widen" role="group" aria-label="Widen the folder">
+								<span className="hint">widen to</span>
+								{ancestors(row.from ?? row.value).map((up, n) => (
+									<Fragment key={up.folder}>
+										{n > 0 && (
+											<span className="sep" aria-hidden="true">
+												/
+											</span>
+										)}
+										<button className="plain" type="button" aria-pressed={up.folder === row.value} title={up.folder} onClick={() => set(i, { value: up.folder, on: true })}>
+											{up.name}
+										</button>
+									</Fragment>
+								))}
+							</div>
+						)}
 					</div>
 				))}
 				<button className="plain" type="button" onClick={() => setRows((now) => [...now, { arg: "", op: "equals", value: "", on: true }])}>
@@ -265,6 +301,11 @@ function RuleForm({ draft, floor, done }: { draft?: Draft; floor: readonly strin
 				<input value={note} placeholder="lights" onChange={(event) => setNote(event.target.value)} />
 			</label>
 			<div className="form-bar">
+				{runs && (
+					<p className="warn-note" role="note">
+						This lets {who} run any command on {workspace ?? "any of its workspaces"} without asking, whatever the cwd.
+					</p>
+				)}
 				<button className="plain" type="button" onClick={done}>
 					cancel
 				</button>

@@ -9,11 +9,13 @@ export type { Gets, LiveEvent, Posts, StreamEvent, Uploaded };
 export type LiveInput = Posts["/api/browser/input"]["body"]["events"][number];
 
 /** The protocol version this build is typed against; tsc fails here when gaidin raises it. */
-export const PROTOCOL: typeof ServerProtocol = 11;
+export const PROTOCOL: typeof ServerProtocol = 12;
 /** Where gaidin serves an agent's picture, with ?id= and &v=, its name. */
 export const AVATAR_PATH: typeof ServerAvatarPath = "/api/agents/avatar";
 /** Where gaidin streams a browser profile's live view, with ?profile=. */
 export const LIVE_PATH: typeof ServerLivePath = "/api/browser/live";
+/** The tools a rule's `path inside <folder>` can cover, as gaidin's rules.ts has them; never workspace_run. */
+export const INSIDE_TOOLS = ["workspace_read", "workspace_write", "workspace_edit"];
 /** The header that names a file sent to /api/files, as gaidin reads it. */
 const FILE_HEADER: typeof ServerFileHeader = "X-Gaidin-File";
 
