@@ -18,15 +18,6 @@ export function fromNow(at: number): string {
 	return `in ${Math.round(minutes / 1440)} days`;
 }
 
-/** "now", "25 min", "3 h", "4 d": how long ago, short enough for the sidebar. */
-export function since(at: number): string {
-	const minutes = Math.round((Date.now() - at) / 60_000);
-	if (minutes < 1) return "now";
-	if (minutes < 60) return `${minutes} min`;
-	if (minutes < 48 * 60) return `${Math.floor(minutes / 60)} h`;
-	return `${Math.round(minutes / 1440)} d`;
-}
-
 export function money(dollars: number): string {
 	return `$${dollars.toFixed(dollars < 1 ? 3 : 2)}`;
 }
@@ -119,6 +110,14 @@ export function lastSeen(at: number): string {
 	if (at >= start.getTime()) return clock.format(at);
 	if (yesterday(at)) return "Yesterday";
 	return at >= start.getTime() - 6 * 86_400_000 ? weekday.format(at) : date.format(at);
+}
+
+/** The sidebar's group for something last active at `at`: today, the six days before, or older. */
+export function ageGroup(at: number): "today" | "this week" | "older" {
+	const start = new Date();
+	start.setHours(0, 0, 0, 0);
+	if (at >= start.getTime()) return "today";
+	return at >= start.getTime() - 6 * 86_400_000 ? "this week" : "older";
 }
 
 /** A message on one line: no time stamp, no note of files, no runs of space. */

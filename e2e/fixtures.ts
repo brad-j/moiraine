@@ -1,8 +1,15 @@
 import { resolve } from "node:path";
-import { test as base } from "@playwright/test";
+import { test as base, type Page } from "@playwright/test";
 import { startGaidin, USER } from "../scripts/gaidin.ts";
 
 export { expect } from "@playwright/test";
+
+/** The pages across agents, in the sidebar's column once the rail's System is open; it opens System if it isn't. */
+export async function system(page: Page) {
+	const button = page.getByRole("button", { name: "System" });
+	if ((await button.getAttribute("aria-pressed")) !== "true") await button.click();
+	return page.getByRole("group", { name: "System" });
+}
 
 /**
  * Each test gets its own gaidin and data directory, serving this build, and a browser signed in as the owner

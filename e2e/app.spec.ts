@@ -204,8 +204,8 @@ test("the dock shows another agent's request, labeled with that agent, whichever
 	await agents.getByRole("link", { name: "Scout" }).click();
 	await expect(page).toHaveURL(/\/scout$/);
 	await expect(page.locator(".convo-head h1")).toHaveText("Scout");
-	// With no messages yet, its row shows its job.
-	await expect(page.locator("#sidebar .agents li.current .preview")).toHaveText("Looks things up.");
+	// With no messages yet, its place in the rail shows its job.
+	await expect(page.locator("#sidebar .agents li.current > .agent")).toHaveAttribute("title", "Scout: Looks things up.");
 
 	await send(page, "fetch the page");
 	const dock = page.locator("#approvals");
@@ -246,26 +246,36 @@ test("a missing thread or agent says so", async ({ page }) => {
 	await expect(page.locator(".page-problem")).toHaveText("There's no agent nobody.");
 });
 
-test("each agent's row says when it was last active and what it last said, or that it's working, and the search narrows the list", async ({ page }) => {
+test("each agent in the rail says when it was last active and what it last said, or that it's working", async ({ page }) => {
 	expect((await page.request.post("/api/agents/save", { data: { id: "scout", name: "Scout", job: "Looks things up." } })).ok()).toBe(true);
 	await page.goto("/gaidin");
-	const rows = page.getByRole("group", { name: "Agents" });
-	const gaidin = rows.locator("li", { hasText: "gaidin" });
+	const rail = page.getByRole("group", { name: "Agents" });
+	const gaidin = rail.locator("li", { hasText: "gaidin" }).locator(".agent");
+	await expect(rail.locator("li .name")).toHaveText(["gaidin", "Scout"]);
 	await send(page, "hi");
-	await expect(gaidin.locator(".preview")).toHaveText("Hello, Brad.");
-	await expect(gaidin.locator(".when")).toHaveText(/^\d{2}:\d{2}$/);
-	await expect(rows.locator("li", { hasText: "Scout" }).locator(".preview")).toHaveText("Looks things up.");
+	await expect(gaidin).toHaveAttribute("title", /^gaidin: \d{2}:\d{2} · Hello, Brad\.$/);
+	await expect(rail.locator("li", { hasText: "Scout" }).locator(".agent")).toHaveAttribute("title", "Scout: Looks things up.");
 
-	// A question keeps the run going, so the row says it's working until it's answered.
+	// A question keeps the run going, so the rail says it's working until it's answered.
 	await send(page, "ask me");
-	await expect(gaidin.locator(".working")).toHaveText("working…");
+	await expect(gaidin.locator(".live")).toHaveText("working");
+	await expect(gaidin).toHaveAttribute("title", "gaidin: working…");
 	await expect(page.locator("#approvals")).toContainText("Keep the old branch?");
+});
 
-	await page.getByRole("searchbox", { name: "Search agents and threads" }).fill("looks");
-	await expect(rows.locator("li .name")).toHaveText(["gaidin", "Scout"]);
-	await page.getByRole("searchbox", { name: "Search agents and threads" }).fill("zzz");
-	// The agent shown stays; the others go.
-	await expect(rows.locator("li .name")).toHaveText(["gaidin"]);
+test("the sidebar's column collapses to the rail and stays so, from its button or Ctrl+B", async ({ page }) => {
+	await page.goto("/gaidin");
+	const column = page.locator("#sidebar-column");
+	await expect(column).toBeVisible();
+	await page.getByRole("button", { name: "Hide the sidebar" }).click();
+	await expect(column).toBeHidden();
+	await expect(page.getByRole("group", { name: "Agents" })).toBeVisible();
+	await page.reload();
+	await expect(column).toBeHidden();
+	await page.locator("#message").press("Control+b");
+	await expect(column).toBeVisible();
+	await expect(page.getByRole("button", { name: "Hide the sidebar" })).toBeVisible();
+	await expect(page.locator("#message")).toBeFocused();
 });
 
 test("the agent shown opens to its newest threads, and the search narrows them too", async ({ page }) => {
@@ -276,9 +286,10 @@ test("the agent shown opens to its newest threads, and the search narrows them t
 		await send(page, title);
 		await expect(page.locator("#log")).toContainText("Hello, Brad.");
 	}
-	const threads = page.locator("#sidebar li.current .threads .thread");
+	const threads = page.locator("#sidebar .threads .thread");
 	await expect(threads).toHaveCount(2);
-	await page.getByRole("searchbox", { name: "Search agents and threads" }).fill("garden");
+	await expect(page.locator("#sidebar .threads .day")).toHaveText(["today"]);
+	await page.getByRole("searchbox", { name: "Search threads" }).fill("garden");
 	await expect(threads).toHaveCount(1);
 	await expect(threads).toContainText("plan the garden");
 });

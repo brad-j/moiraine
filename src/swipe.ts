@@ -3,7 +3,7 @@
 import { type RefObject, useEffect, useRef } from "react";
 
 /** Where the sidebar is a drawer; the same width as styles.css's. */
-const DRAWER = "(max-width: 760px)";
+export const DRAWER = "(max-width: 760px)";
 /** How far a finger moves, in pixels, before it's told whether it's a swipe or a scroll. */
 const DECIDE = 10;
 /** How fast a swipe has to be when it's let go, in pixels a millisecond, to settle the way it went however far it got. */

@@ -1,6 +1,6 @@
 import { devices, type Page } from "@playwright/test";
 import { USER } from "../scripts/gaidin.ts";
-import { expect, test } from "./fixtures.ts";
+import { expect, system, test } from "./fixtures.ts";
 
 async function send(page: Page, text: string) {
 	await page.locator("#message").fill(text);
@@ -12,7 +12,7 @@ const frames = async (page: Page) => Number((await page.locator(".live canvas").
 test("an agent hands the browser over; the owner takes it over from the dock, types into the page, and is done", async ({ page }) => {
 	expect((await page.request.post("/api/agents/save", { data: { id: "gaidin", profiles: ["personal"] } })).ok()).toBe(true);
 	await page.goto("/");
-	await page.getByRole("group", { name: "Pages" }).getByRole("link", { name: "Browser" }).click();
+	await (await system(page)).getByRole("link", { name: "Browser" }).click();
 	await expect(page).toHaveURL(/\/browser$/);
 	await expect(page.locator(".profile-row")).toContainText("personal");
 	await expect(page.locator(".profile-row")).toContainText("/form by gaidin");

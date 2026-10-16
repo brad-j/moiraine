@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures.ts";
+import { expect, system, test } from "./fixtures.ts";
 
 async function send(page: Page, text: string) {
 	await page.locator("#message").fill(text);
@@ -273,9 +273,10 @@ test("settings rename an agent, remove a host allowed for good, and let it messa
 
 test("the agents page makes an agent, archives it and restores it", async ({ page }) => {
 	await page.goto("/");
-	await pages(page).getByRole("link", { name: "Agents" }).click();
+	await (await system(page)).getByRole("link", { name: "Agents" }).click();
 	await expect(page).toHaveURL(/\/agents$/);
-	// The sidebar stays the agent's shown last.
+	// The rail keeps the agent shown last, and the column stays on System.
+	await expect(page.getByRole("button", { name: "System" })).toHaveAttribute("aria-pressed", "true");
 	await expect(page.locator("#sidebar .agents .current .name")).toHaveText("gaidin");
 	await expect(page.locator(".agent-row")).toHaveCount(1);
 	await expect(page.locator(".agent-row")).toContainText("default");
@@ -291,7 +292,7 @@ test("the agents page makes an agent, archives it and restores it", async ({ pag
 	await expect(page).toHaveURL(/\/scout\/settings$/);
 	await expect(page.locator("#sidebar .agents .current .name")).toHaveText("Scout");
 
-	await pages(page).getByRole("link", { name: "Agents" }).click();
+	await (await system(page)).getByRole("link", { name: "Agents" }).click();
 	const scout = page.locator(".agent-row", { hasText: "Scout" });
 	await expect(scout).toContainText("Looks things up.");
 	await scout.getByRole("button", { name: "archive" }).click();
@@ -326,7 +327,7 @@ test("an agent's picture is chosen in settings, shown wherever the agent is, and
 	await page.goto("/gaidin");
 	await page.locator("#message").fill("hi");
 	await page.locator("#message").press("Enter");
-	await expect(page.locator("#log .speaker")).toHaveText("gaidin");
+	await expect(page.locator("#log .row.gaidin .k")).toHaveText("gaidin");
 	await expect(page.locator("#sidebar .agents li.current .avatar.monogram")).toHaveCount(1);
 
 	await page.goto("/gaidin/settings");

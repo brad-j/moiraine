@@ -1,13 +1,11 @@
-import type { Page } from "@playwright/test";
-import { expect, test } from "./fixtures.ts";
-
-const pages = (page: Page) => page.getByRole("group", { name: "Pages" });
+import { expect, system, test } from "./fixtures.ts";
 
 test("a connector is signed in from its page and comes back to it, its tools set, given to an agent, and removed", async ({ page }) => {
 	await page.goto("/");
-	// It waits for its first sign-in, which the sidebar counts.
-	await expect(pages(page).getByRole("link", { name: /Connectors/ }).locator(".count")).toHaveText("1");
-	await pages(page).getByRole("link", { name: /Connectors/ }).click();
+	// It waits for its first sign-in, which the rail's System and its Connectors count.
+	await expect(page.getByRole("button", { name: "System" }).locator(".waiting")).toHaveText("1");
+	await expect((await system(page)).getByRole("link", { name: /Connectors/ }).locator(".count")).toHaveText("1");
+	await (await system(page)).getByRole("link", { name: /Connectors/ }).click();
 	await expect(page).toHaveURL(/\/connectors$/);
 	const row = page.locator(".connector-row", { hasText: "home" });
 	await expect(row.locator(".tag").first()).toHaveText("needs signing in");
@@ -18,7 +16,8 @@ test("a connector is signed in from its page and comes back to it, its tools set
 	await expect(page.locator(".page-note.done")).toHaveText("home is signed in, with 2 tools.");
 	await expect(row.locator(".tag").first()).toHaveText("connected");
 	await expect(row).toContainText("MCP 2025-06-18");
-	await expect(pages(page).getByRole("link", { name: /Connectors/ }).locator(".count")).toHaveCount(0);
+	await expect((await system(page)).getByRole("link", { name: /Connectors/ }).locator(".count")).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "System" }).locator(".waiting")).toHaveCount(0);
 
 	const live = row.locator(".tool-row", { hasText: "GetLiveContext" });
 	const turnOn = row.locator(".tool-row", { hasText: "HassTurnOn" });

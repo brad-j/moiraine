@@ -116,7 +116,7 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 					{forkedAt !== undefined && transcript.entries.has(forkedAt) && (
 						<div className="replying">
 							<div className="label">in reply to</div>
-							<Log transcript={transcript} include={(entry) => entry.id === forkedAt} options={{ ...options, speaker: undefined }} />
+							<Log transcript={transcript} include={(entry) => entry.id === forkedAt} options={options} />
 						</div>
 					)}
 					<Log

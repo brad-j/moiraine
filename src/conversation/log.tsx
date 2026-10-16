@@ -1,9 +1,10 @@
 // A conversation as gaidin's console has it (web/log.ts): your messages, the answers, and each tool call and stretch of
 // thinking folded to a line. Two or more such steps in a row fold together into one line, open while one is running.
+// Each line has a gutter, as a chat client's log does: the time an exchange started, and who wrote the line, the agent
+// by name and a tool call by the tool's.
 import { createContext, type ReactNode, useContext, useState } from "react";
 import type { Agent, Block, Entry, ToolResult } from "../api.ts";
 import { CaretRightIcon, CheckIcon, HourglassIcon, XIcon } from "@phosphor-icons/react";
-import { Avatar } from "../avatar.tsx";
 import { argsSummary, isFields, isNumber, isText, ownerMessage, shortStamp, splitStamp, textOf } from "../format.ts";
 import { Markdown } from "../markdown.tsx";
 import type { Transcript } from "../transcript.ts";
@@ -18,12 +19,9 @@ export type LogOptions = {
 	prompts?: "job" | "agent";
 	/** Buttons beside a fired reminder. */
 	reminderActions?: (taskId: number) => ReactNode;
-	/** The agent answering, whose picture and name open each of its answers. */
-	speaker?: Pick<Agent, "id" | "name" | "avatar">;
+	/** The agent answering, whose name is in the gutter beside its words. */
+	speaker?: Pick<Agent, "name">;
 };
-
-/** Lines the agent writes, which an answer starts with: its words, thinking, tool calls, and a job's report. */
-const SPOKEN = /^(gaidin|think|tool|job)\b/;
 
 /** The folds the owner has opened, by key, so they stay open as the log is drawn again. */
 const Opened = createContext<Set<string>>(new Set());
@@ -33,15 +31,7 @@ export function Log(props: { transcript: Transcript; include: (entry: Entry) => 
 	const lines = linesOf(props.transcript, props.include, props.local ?? [], props.options ?? {});
 	const shown: ReactNode[] = [];
 	const speaker = props.options?.speaker;
-	// Whether the agent's answer has started since the owner last spoke, so its picture opens it once.
-	let answering = false;
 	for (let i = 0; i < lines.length; ) {
-		const at = lines[i]!;
-		if (at.kind === "you" || at.kind.startsWith("prompt")) answering = false;
-		else if (speaker !== undefined && !answering && (at.step !== undefined || SPOKEN.test(at.kind))) {
-			answering = true;
-			shown.push(<Speaker key={`speaker:${at.key}`} agent={speaker} />);
-		}
 		let end = i;
 		while (end < lines.length && lines[end]!.step !== undefined) end++;
 		if (end - i >= 2) {
@@ -63,16 +53,6 @@ function State({ status }: { status: string }) {
 	if (status === "error" || status === "no result") return <XIcon weight="bold" aria-hidden="true" />;
 	if (status === "waiting") return <HourglassIcon aria-hidden="true" />;
 	return null;
-}
-
-/** The agent's picture and name, above its answer. */
-function Speaker({ agent }: { agent: Pick<Agent, "id" | "name" | "avatar"> }) {
-	return (
-		<div className="speaker" aria-hidden="true">
-			<Avatar agent={agent} size="sm" />
-			<span>{agent.name}</span>
-		</div>
-	);
 }
 
 /** Steps in a row, as one line naming them; open by itself while one is running or waiting, until the owner toggles it. */
@@ -124,7 +104,9 @@ export function Row({ kind, label, body, start, time, title }: Omit<Line, "key">
 			<span className="t" title={title}>
 				{time}
 			</span>
-			<span className="k">{label}</span>
+			<span className="k" title={label}>
+				{label}
+			</span>
 			<div className={`b${kind === "gaidin" ? " prose" : ""}`}>{body}</div>
 		</div>
 	);
@@ -215,7 +197,6 @@ function blockLines(transcript: Transcript, blocks: readonly Block[], key: strin
 			if (result || slot) sections.push(["output", output || "(no output)"]);
 			const summary = (
 				<>
-					<span className="name">{block.name}</span>
 					<span className="args">{argsSummary(block.name, args)}</span>
 					<span className="state">
 						<State status={status} />
@@ -225,7 +206,7 @@ function blockLines(transcript: Transcript, blocks: readonly Block[], key: strin
 			);
 			const tail = status === "running" && output.trim() !== "" ? lastLines(output, 6) : undefined;
 			// Keyed by the call, so it stays open when the answer being written becomes an entry.
-			out.push({ key: block.id, kind: `tool s-${status.replace(" ", "-")}`, label: "tool", body: <Fold id={block.id} summary={summary} sections={sections} tail={tail} />, step: { name: block.name, status } });
+			out.push({ key: block.id, kind: `tool s-${status.replace(" ", "-")}`, label: block.name, body: <Fold id={block.id} summary={summary} sections={sections} tail={tail} />, step: { name: block.name, status } });
 		}
 	});
 	return out;

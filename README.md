@@ -23,7 +23,7 @@ The build is `dist/client`: hashed assets, `_shell.html`, the page gaidin serves
 
 ## Design
 
-`design.md` is the design system (a dark, cool, clean tool: Fira Sans for reading, Fira Code only for technical text, one ice-blue accent), and `tokens.css` holds its tokens, which `src/styles.css` imports. Change the system there rather than on one screen.
+`design.md` is the design system (a dark, console-like tool with a chat client's gutter in the log: Fira Sans for reading, Fira Code for technical text and the chrome, one ice-blue accent), and `tokens.css` holds its tokens, which `src/styles.css` imports. Change the system there rather than on one screen.
 
 ## Layout
 
@@ -31,8 +31,8 @@ The build is `dist/client`: hashed assets, `_shell.html`, the page gaidin serves
 - `src/queries.ts`: gaidin's GETs as TanStack Query queries; the event stream (`src/conversation/stream.ts`) invalidates the ones its events affect.
 - `src/transcript.ts`: a conversation rebuilt from its event stream, from gaidin's `web/transcript.ts`.
 - `src/conversation/`: the log, the dock (every agent's approvals and questions), the prompt with its commands, and the status line, as gaidin's console has them.
-- `src/sidebar.tsx`: the agent switcher, the home conversation, New thread, and the agent's threads, job runs and conversations from other agents, virtualized and loaded as it scrolls. On a phone it's a drawer.
-- `src/frame.tsx`: the sidebar beside the column, for an agent's routes and, with the agent shown last, for the pages across agents; the notice that gaidin can't be reached and the app's icon badge, the number of requests waiting.
+- `src/sidebar.tsx`: the rail of agents, with System at its foot, and beside it the agent's column: its pages as tabs, New thread, a search, the home conversation and its threads, job runs and conversations from other agents by day, loaded as it scrolls; or System's pages across agents. The column collapses to the rail; on a phone the whole sidebar is a drawer.
+- `src/frame.tsx`: the sidebar beside the column, for an agent's routes and, with the agent shown last, for the pages across agents; whether the sidebar's column is collapsed (kept on the device, Ctrl+B); the notice that gaidin can't be reached and the app's icon badge, the number of requests waiting.
 - `src/swipe.ts`: on a phone, the sidebar follows a swipe, right to open it and left to close it.
 - `src/pages/`: the pages beside the conversations, built from `page.tsx` (the frame with the dock, section heads, actions that show what went wrong, and a second press to confirm). Each agent's `schedule.tsx`, `memory.tsx`, `skills.tsx` and `settings.tsx`, and across agents `agents.tsx` and `activity.tsx`. The roster forms use TanStack Form.
 - `src/attachments.ts`: files going with a message, sent to gaidin as they're added (an image over 3.75 MB made smaller first), shown as chips in the composer.

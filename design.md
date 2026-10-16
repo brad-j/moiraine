@@ -5,13 +5,19 @@ when the system needs to grow, rather than overriding it on one page. The tokens
 
 ## Genre
 
-Modern-minimal, dark: a calm tool for talking to agents and answering what they ask. Clean and cool rather than
-terminal-styled. Brad is the only user, on a computer and a phone.
+Modern-minimal, dark, console-like: a calm tool for talking to agents and answering what they ask, clean and sharp,
+with a chat client's log rather than chat bubbles. Brad is the only user, on a computer and a phone. Chosen on
+2026-10-16 from four directions as C, "gutter".
 
 ## Macrostructure family
 
-- App pages (conversations): sidebar + centered reading column + composer docked at the bottom. The conversation is
-  the page; nothing decorates it.
+- App pages (conversations): sidebar + centered log + composer docked at the bottom. The conversation is the page;
+  nothing decorates it.
+- The log has a gutter, as an IRC client's does: the time an exchange started (mono, `--gutter-time`), then who wrote
+  the line (mono, right-aligned, `--gutter-who`): `you`, the agent's name in the accent, a tool call by the tool's
+  name, `think`, `job`, `error`. The line sits beside a hairline that runs the log's length. The dock and the composer
+  sit on the same gutter, so a request reads as the next line and the composer as the owner's, `you ›`. On a phone
+  the gutter keeps who and leaves out the time.
 - App pages (step 3: schedule, memory, skills, settings, agents, activity; later connectors and browser): the same sidebar, a header naming the
   page, and a single centered column of rows separated by hairlines. No cards that repeat what's on the page, no
   stat strips.
@@ -22,19 +28,21 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 
 ## Theme
 
-- Neutral greys with no tint, so nothing reads as slate or blue. Canvas `--color-paper` oklch(14.5% 0 0); raised panels `--color-paper-2` (sidebar, composer, approval
-  cards); fills `--color-paper-3` (your messages, hover); current `--color-paper-4`.
+- Neutral greys with no tint, so nothing reads as slate or blue. The agents' rail `--color-paper-0` oklch(9.5% 0 0);
+  canvas `--color-paper` oklch(11.5% 0 0); the threads' column and code `--color-paper-2`; fills `--color-paper-3`
+  (hover); current `--color-paper-4`.
 - Ink in three steps: `--color-ink` (reading), `--color-ink-2` (secondary), `--color-ink-3` (meta).
 - One accent, ice blue `--color-accent` oklch(80% 0.11 225): live state (running), the current item, focus rings,
   the primary button. Kept to small surfaces.
 - Status colors, used only for status: `--color-ok` (a tool call that worked), `--color-warn` (waiting on you,
   near a limit), `--color-bad` (errors, deny).
-- One faint neutral light, `--color-glow`, at the top of the conversation column. Nothing else is decorative.
+- Nothing is decorative.
 
 ## Typography
 
 - Body and interface: Fira Sans 400, 500 for labels and buttons, 600 for titles. Humanist, served from the app.
-- Mono: Fira Code, only for technical text: tool names and arguments, code, model ids, timestamps, key hints.
+- Mono: Fira Code for technical text and the console's chrome: tool names and arguments, code, model ids, times,
+  key hints, the log's gutter, the status line, the thread's origin and the day groups, Send and New thread.
 - Headings are small (1rem to 1.125rem). No display type in the app.
 - Prose in answers: `--text-md` at line-height 1.65, measure ~72ch.
 
@@ -43,17 +51,26 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 - Icons are Phosphor (`@phosphor-icons/react`), regular weight, 16 pixels, in the color of the text beside them (the root's
   IconContext). Every icon sits beside a word that says the same; none stands alone except the menu, attach and
   remove buttons, which have labels for screen readers. Fill weight only for Send and Stop.
+- Icon-only buttons, each with a label for screen readers: the menu (phone), collapse the sidebar (wider), attach,
+  and remove.
 - An agent's avatar is a rounded square (28% corners): its picture, from its settings page, or its initial on the
-  accent's wash. Sizes: 16 in a tag, 20 in the dock and above its answers, 24 in headers, 36 in the sidebar, 40 on the
-  agents page, 72 on its settings.
-- The sidebar is the agents as a list: a search and a new-thread button above; each agent its avatar, name and when it
-  was last active, then its newest message on one line, or a pulsing dot and "working…", with an amber count of what
-  waits on the owner. The agent shown has the current background and opens to its newest five threads, indented on a
-  hairline, then "show all". The pages are at the foot. No decorative imagery.
+  accent's wash (on the paper's fill in the rail, but for the agent shown). Sizes: 16 in a tag, 20 in the dock, 24 in
+  headers, 36 in the rail, 40 on the agents page, 72 on its settings.
+- The sidebar is two parts. The rail (`--rail`, 64 pixels, `--color-paper-0`): each agent its avatar and its name in
+  small mono below, a pulsing accent dot at the avatar's corner while it works, an amber count of what waits on the
+  owner, and when it was last active and its newest message on hover; the agent shown has a 2-pixel accent bar at the
+  rail's edge. System is at the rail's foot, with an amber count of connectors to sign in. Beside the rail, the
+  column (`--sidebar`, 252 pixels, `--color-paper-2`): the agent's name and job and "+ thread"; its pages (Schedule,
+  Memory, Skills, Settings) as tabs, the current one underlined in the accent; a search of its threads; Home, then
+  its threads under mono day groups (today, this week, older), each its title, when, and where it began in mono
+  (app, Slack, job run in green, from an agent in amber), newest five, then "show all". System puts the pages across
+  agents (Agents, Connectors, Rules, Browser, Activity) in the column instead, and a page across agents opens it.
+- The column collapses to the rail with the header's button or Ctrl+B (Cmd+B), and stays so on the device. On a phone
+  the rail and the column are the drawer and don't collapse. No decorative imagery.
 - An agent's picture may carry a color of its own where it means something, brown included (Verin's Brown Ajah). Never
   the Claude look: no terracotta, coral or clay accent, and no cream, beige or warm-paper ground. The app's own palette
   stays the neutral greys and ice blue.
-- Each of the agent's answers opens with its avatar and name, once per answer.
+- The agent's name is in the gutter beside each of its lines, in the accent.
 
 ## Spacing
 
@@ -61,10 +78,14 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 
 ## Shape
 
-- Corners: `--radius-sm` 6px (buttons, chips, rows), `--radius-md` 8px (messages, menus), `--radius-lg` 12px
-  (composer, approval cards). Pills only for small status chips.
-- Borders are hairlines (`--rule-hair`) in `--color-rule`; raised panels add `--color-rule-2`. One soft shadow,
-  for things that float over content (the command menu, the drawer).
+- Sharp: `--radius-sm` 4px (buttons, chips, rows), `--radius-md` 6px (menus, code), `--radius-lg` 8px (forms on
+  pages). Requests in the dock and the composer have no corners: they're lines. Pills only for counts. A status chip
+  (`.tag`) is mono in a hairline box.
+- Borders are hairlines (`--rule-hair`) in `--color-rule`; fields add `--color-rule-2`. Focus on the composer turns
+  its hairline and its gutter to the accent: no ring, glow or shadow. One soft shadow, for things that float over
+  content (the command menu, the drawer).
+- A request in the dock: on the warn's wash with a 2-pixel warn bar where the log's hairline runs; a question or a
+  hand-over on the accent's.
 
 ## Motion
 
@@ -85,15 +106,16 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 
 ## Button voice
 
-- Primary: accent fill, accent-ink text, `--radius-sm`, 500 weight ("Send", "Allow once").
+- Primary: accent fill, accent-ink text, `--radius-sm`, 500 weight ("Allow once", "Take over").
+- Send: quiet, mono, in the accent, the accent's wash under a pointer ("Send ↵").
 - Secondary: transparent with a `--color-rule-2` border.
 - Danger: transparent, `--color-bad` text, bad-wash on hover ("Deny").
 - Quiet: text-only, ink-3, fill on hover (status chips, snooze).
 
 ## What screens must share
 
-- The sidebar, its agent switcher (initial badge + name) and its thread rows.
-- The composer and dock at the bottom of every conversation; the dock on every page.
+- The sidebar: the rail, and the column with the agent's tabs and threads, or System's pages.
+- The log's gutter, and the composer and dock on it at the bottom of every conversation; the dock on every page.
 - The accent and its placement; the fonts; the button voice.
 
 ## What screens may differ on

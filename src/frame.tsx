@@ -1,15 +1,17 @@
 // The app's frame: the sidebar for an agent, and beside it the column holding a conversation or a page. On a phone
-// the sidebar is a drawer. The agent shown last is remembered, so the pages across agents keep its sidebar.
+// the sidebar is a drawer; wider, its column collapses to the rail. The agent shown last is remembered, so the pages
+// across agents keep its sidebar, and so is whether the column is collapsed.
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { type Agent, PROTOCOL } from "./api.ts";
 import { ago } from "./format.ts";
 import { useSavedAt } from "./offline.ts";
 import { queries, useAgent, useAgents } from "./queries.ts";
 import { Drawer, Sidebar } from "./sidebar.tsx";
-import { useSwipe } from "./swipe.ts";
+import { DRAWER, useSwipe } from "./swipe.ts";
 
 const LAST = "moiraine.agent";
+const COLLAPSED = "moiraine.collapsed";
 
 /** The agent to show beside the pages across agents: the one shown last, while it's still there, or the default. */
 export function useLastAgent(): Agent | undefined {
@@ -20,13 +22,14 @@ export function useLastAgent(): Agent | undefined {
 
 export function Frame({ agent, children }: { agent: Agent; children: ReactNode }) {
 	const [open, setOpen] = useState(false);
+	const [collapsed, collapse] = useCollapsed();
 	const app = useRef<HTMLDivElement>(null);
 	useSwipe(app, open, setOpen);
 	useEffect(() => sessionStorage.setItem(LAST, agent.id), [agent.id]);
 	useBadge();
 	return (
-		<Drawer.Provider value={{ open, toggle: (to) => setOpen((now) => to ?? !now) }}>
-			<div id="app" ref={app} className={open ? "drawer-open" : undefined}>
+		<Drawer.Provider value={{ open, toggle: (to) => setOpen((now) => to ?? !now), collapsed, collapse }}>
+			<div id="app" ref={app} className={[open && "drawer-open", collapsed && "collapsed"].filter(Boolean).join(" ") || undefined}>
 				<Sidebar agent={agent} />
 				<button className="scrim" type="button" aria-label="Close the conversations" tabIndex={-1} onClick={() => setOpen(false)} />
 				<div id="column">
@@ -37,6 +40,23 @@ export function Frame({ agent, children }: { agent: Agent; children: ReactNode }
 			</div>
 		</Drawer.Provider>
 	);
+}
+
+/** Whether the sidebar's column is collapsed to the rail, kept on this device, and Ctrl+B (Cmd+B on a Mac) to switch it. */
+function useCollapsed(): [boolean, () => void] {
+	const [collapsed, setCollapsed] = useState(() => typeof localStorage !== "undefined" && localStorage.getItem(COLLAPSED) === "1");
+	const collapse = useCallback(() => setCollapsed((now) => !now), []);
+	useEffect(() => localStorage.setItem(COLLAPSED, collapsed ? "1" : "0"), [collapsed]);
+	useEffect(() => {
+		const press = (event: KeyboardEvent) => {
+			if (event.key.toLowerCase() !== "b" || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || matchMedia(DRAWER).matches) return;
+			event.preventDefault();
+			collapse();
+		};
+		document.addEventListener("keydown", press);
+		return () => document.removeEventListener("keydown", press);
+	}, [collapse]);
+	return [collapsed, collapse];
 }
 
 /** The frame for agent `id`, or says there's no such agent. */
