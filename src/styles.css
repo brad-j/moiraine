@@ -9,12 +9,14 @@
 @import "../tokens.css";
 
 *, *::before, *::after { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; overflow: clip; }
+html, body { height: 100%; margin: 0; overflow: clip; overscroll-behavior: none; }
 body {
 	background: var(--color-paper); color: var(--color-ink);
 	font-family: var(--font-body); font-size: var(--text-base); line-height: 1.5;
-	-webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
 }
+/* No double-tap zoom on what's tapped, so a tap acts at once. */
+a, button, summary, label, select { touch-action: manipulation; }
 button, textarea, input, select { font: inherit; color: inherit; }
 code, kbd, pre { font-family: var(--font-mono); }
 pre { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -44,11 +46,14 @@ kbd { font-size: var(--text-2xs); font-weight: 400; opacity: 0.7; }
 
 /* --- the frame: sidebar and column ---------------------------------------------------------------- */
 
-/* Installed as an app, the page runs under the notch and the home bar; the insets keep it clear of both. */
+/* Installed as an app, the page runs under the notch and the home bar; the insets keep it clear of both. Its box is
+ * what's visible (src/viewport.ts), so the composer sits on the keyboard, which covers the home bar while it's up. */
 #app {
-	display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); height: 100dvh;
+	position: fixed; top: var(--app-top, 0); left: 0; right: 0; height: var(--app-height, 100dvh);
+	display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr);
 	padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
+.keyboard #app { padding-bottom: 0; }
 #column {
 	display: flex; flex-direction: column; min-width: 0; min-height: 0;
 	background: radial-gradient(70% 45% at 50% -12%, var(--color-glow), transparent 70%), var(--color-paper);
@@ -140,7 +145,7 @@ svg { flex: none; }
 .tag.job { color: var(--color-ok); }
 .tag.agent { color: var(--color-warn); }
 
-.version-notice { margin: 0; padding: var(--space-xs) var(--space-lg); background: var(--color-warn-wash); border-bottom: var(--rule-hair) solid var(--color-warn); color: var(--color-warn); font-size: var(--text-sm); }
+.version-notice, .saved-notice { margin: 0; padding: var(--space-xs) var(--space-lg); background: var(--color-warn-wash); border-bottom: var(--rule-hair) solid var(--color-warn); color: var(--color-warn); font-size: var(--text-sm); }
 .page-problem { margin: 0; padding: var(--space-xs) var(--space-sm); background: var(--color-bad-wash); border: var(--rule-hair) solid var(--color-bad); border-radius: var(--radius-sm); color: var(--color-bad); }
 .missing, main.page { display: flex; flex-direction: column; align-items: start; gap: var(--space-sm); width: 100%; max-width: var(--measure); margin: 0 auto; padding: var(--space-xl) var(--space-lg); }
 main.page a { color: var(--color-accent); }
@@ -671,7 +676,9 @@ section > button { margin-top: var(--space-sm); }
 		transform: translateX(-100%); visibility: hidden; transition: transform var(--dur-med) var(--ease-out), visibility var(--dur-med);
 	}
 	.drawer-open #sidebar { transform: none; visibility: visible; box-shadow: 0 0 40px var(--color-shadow); }
-	.drawer-open .scrim { display: block; position: fixed; inset: 0; z-index: 9; min-height: 0; padding: 0; background: var(--color-scrim); border: 0; border-radius: 0; }
+	/* Under a finger (src/swipe.ts) the sidebar follows it at once, the scrim darkening as it comes. */
+	.swiping #sidebar { visibility: visible; transition: none; }
+	.drawer-open .scrim, .swiping .scrim { display: block; position: fixed; inset: 0; z-index: 9; min-height: 0; padding: 0; background: var(--color-scrim); border: 0; border-radius: 0; }
 	#menu-button { display: inline-flex; justify-content: center; width: 36px; min-height: 36px; padding: 0; margin-left: calc(-1 * var(--space-xs)); font-size: var(--text-lg); }
 	.convo-head { height: 48px; padding: 0 var(--space-md); gap: var(--space-xs); }
 	#log { padding: var(--space-md) var(--space-md) var(--space-sm); }
@@ -720,10 +727,13 @@ section > button { margin-top: var(--space-sm); }
 	.skill-form { padding: var(--space-sm); }
 }
 
-/* Touch: targets a finger can hit, and no keyboard hints. */
+/* Touch: targets a finger can hit, no keyboard hints, fields at 16px so focusing one doesn't zoom the page, and the
+ * app's controls don't select or call out on a long press, as a native app's don't. The log and pages' text still do. */
 @media (pointer: coarse) {
 	button { min-height: 38px; }
 	kbd { display: none; }
+	:root :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"]), textarea, select) { font-size: 16px; }
+	button, summary, #sidebar, .convo-head, #statusline, .section-head { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 	#statusline .seg { min-height: 32px; }
 	#message { font-size: max(16px, var(--text-md)); }
 	#sidebar .new-thread { width: 40px; height: 40px; }

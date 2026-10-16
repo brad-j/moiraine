@@ -75,6 +75,10 @@ terminal-styled. Brad is the only user, on a computer and a phone.
 ## Microinteractions stance
 
 - Silent success: a saved setting shows in the status chips, not a toast.
+- On a phone the sidebar follows a finger: swiped right across the conversation it comes out under it, swiped left it
+  goes, and let go it settles by how far and how fast it went. Something that scrolls sideways keeps its own swipes.
+- When gaidin can't be reached and the app shows what it kept, a warn strip at the top of the column says so and since
+  when, in the version notice's style, until gaidin answers again.
 - Keyboard first: Enter sends, Alt+Y/A/N answer the oldest approval, Esc stops a run; buttons show their keys as
   `kbd` hints on pointer devices only.
 - Focus rings show instantly, 2px in `--color-focus`.

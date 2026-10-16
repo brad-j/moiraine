@@ -19,7 +19,7 @@ pnpm e2e         # build, then the Playwright tests, each against its own gaidin
 
 `pnpm dev` passes `/api` and `/events` to gaidin with `Tailscale-User-Login` set to `GAIDIN_WEB_USER` (default `brad@example.com`, which the e2e server lets in), as `tailscale serve` would. It needs to match `web.user` in that gaidin's settings.
 
-The build is `dist/client`: hashed assets, `_shell.html`, the page gaidin serves for every path that isn't the API or a file, and what's in `public/`: the service worker (`sw.js`), the manifest and the icons, at the paths gaidin's web view had them. gaidin serves it from the directory its `web.app` setting names. `dist/server` is a by-product of Start's build and isn't deployed.
+The build is `dist/client`: hashed assets, `_shell.html`, the page gaidin serves for every path that isn't the API or a file, `precache.json`, the list of those assets the service worker keeps, and what's in `public/`: the service worker (`sw.js`), the manifest and the icons, at the paths gaidin's web view had them. gaidin serves it from the directory its `web.app` setting names. `dist/server` is a by-product of Start's build and isn't deployed.
 
 ## Design
 
@@ -32,11 +32,14 @@ The build is `dist/client`: hashed assets, `_shell.html`, the page gaidin serves
 - `src/transcript.ts`: a conversation rebuilt from its event stream, from gaidin's `web/transcript.ts`.
 - `src/conversation/`: the log, the dock (every agent's approvals and questions), the prompt with its commands, and the status line, as gaidin's console has them.
 - `src/sidebar.tsx`: the agent switcher, the home conversation, New thread, and the agent's threads, job runs and conversations from other agents, virtualized and loaded as it scrolls. On a phone it's a drawer.
-- `src/frame.tsx`: the sidebar beside the column, for an agent's routes and, with the agent shown last, for the pages across agents.
+- `src/frame.tsx`: the sidebar beside the column, for an agent's routes and, with the agent shown last, for the pages across agents; the notice that gaidin can't be reached and the app's icon badge, the number of requests waiting.
+- `src/swipe.ts`: on a phone, the sidebar follows a swipe, right to open it and left to close it.
 - `src/pages/`: the pages beside the conversations, built from `page.tsx` (the frame with the dock, section heads, actions that show what went wrong, and a second press to confirm). Each agent's `schedule.tsx`, `memory.tsx`, `skills.tsx` and `settings.tsx`, and across agents `agents.tsx` and `activity.tsx`. The roster forms use TanStack Form.
 - `src/attachments.ts`: files going with a message, sent to gaidin as they're added (an image over 3.75 MB made smaller first), shown as chips in the composer.
+- `src/viewport.ts`: keeps the app's box on the visible area, so on a phone the composer sits on the keyboard and comes back to the bottom when it closes, which `100dvh` doesn't do on iOS.
+- `src/offline.ts`: whether what's shown came from the service worker's kept answers, and each conversation's last transcript, kept for when its stream can't connect.
 - `src/push.ts`: notifications for this device, through gaidin's service worker at `/sw.js` until the switch moves it here.
-- `public/sw.js`: the service worker, at `/sw.js` with the scope `/`, where the web view's was, so devices signed up for notifications stay signed up. It shows them, opens the conversation one came from, and answers with a short page when gaidin can't be reached.
+- `public/sw.js`: the service worker, at `/sw.js` with the scope `/`, where the web view's was, so devices signed up for notifications stay signed up. It shows them, opens the conversation one came from and refreshes the icon badge. It keeps the app on the device: the shell, the build's files from `precache.json`, and the API's last answers, so the app opens at once and still shows what it last had when gaidin can't be reached, and a short page saying so when nothing's kept yet.
 - `src/routes/`: `/<agent>` (home; `?draft=` starts the prompt with a request), `/<agent>/t/<id>` (a thread), `/<agent>/new` (a thread about to start), `/<agent>/schedule`, `/<agent>/memory`, `/<agent>/skills[/<name>[/<file>]]` (`?create` for a file being added), `/<agent>/settings`, `/agents` and `/activity`. The web view's `#/<page>` and `#/history/<id>` addresses open the matching page or thread, and gaidin sends the app's old `/app/...` addresses to the new ones. An agent can't have the id `agents`, `activity` or `app`.
 
 ## Status

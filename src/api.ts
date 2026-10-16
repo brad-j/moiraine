@@ -2,6 +2,8 @@
 // none of gaidin's code is in the build; a changed answer there fails tsc here.
 import type { AVATAR_PATH as ServerAvatarPath, FILE_HEADER as ServerFileHeader, Gets, LIVE_PATH as ServerLivePath, LiveEvent, Posts, PROTOCOL as ServerProtocol, StreamEvent, Uploaded } from "gaidin/src/web.ts";
 
+import { noteAnswer } from "./offline.ts";
+
 export type { Gets, LiveEvent, Posts, StreamEvent, Uploaded };
 /** The owner's input to a profile they've taken over. */
 export type LiveInput = Posts["/api/browser/input"]["body"]["events"][number];
@@ -39,6 +41,7 @@ export type NewRule = Posts["/api/rules/add"]["body"];
 /** A GET of one of gaidin's routes, with `query` after it. */
 export async function load<P extends keyof Gets>(path: P, query = ""): Promise<Gets[P]> {
 	const response = await fetch(path + query);
+	noteAnswer(response);
 	if (!response.ok) throw new Error(`${path}: ${await response.text()}`);
 	// SAFETY: gaidin's route table is checked against Gets, so the route answers with Gets[P].
 	return response.json() as Promise<Gets[P]>;

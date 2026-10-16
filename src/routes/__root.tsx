@@ -3,6 +3,7 @@ import { IconContext } from "@phosphor-icons/react";
 import { ClientOnly, createRootRouteWithContext, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { type ReactNode, useEffect } from "react";
 import styles from "../styles.css?url";
+import { followViewport } from "../viewport.ts";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
 	head: () => ({
@@ -12,6 +13,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 			{ name: "color-scheme", content: "dark" },
 			// --color-paper (tokens.css) in hex, which the browser's own bars take.
 			{ name: "theme-color", content: "#0a0a0a" },
+			// On the home screen, iOS draws the page under the status bar, which the safe-area insets keep it clear of.
+			{ name: "mobile-web-app-capable", content: "yes" },
+			{ name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
 			{ title: "moiraine" },
 		],
 		links: [
@@ -36,6 +40,7 @@ function Root() {
 	useEffect(() => {
 		if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((error) => console.error("The service worker didn't start:", error));
 	}, []);
+	useEffect(followViewport, []);
 	return (
 		<QueryClientProvider client={queryClient}>
 			<IconContext.Provider value={ICONS}>

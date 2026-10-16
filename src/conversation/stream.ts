@@ -3,11 +3,16 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { StreamEvent } from "../api.ts";
+import { savedTranscript, saveTranscript } from "../offline.ts";
 import { applyEvent, newTranscript, type Transcript } from "../transcript.ts";
 
 /** How long to wait before opening a stream that was closed, at first and at most. */
 const RETRY_MS = 1_000;
 const MAX_RETRY_MS = 15_000;
+/** How long in the background before a stream that says it's open is opened again anyway. */
+const STALE_MS = 20_000;
+/** How long the stream is quiet before the transcript is kept for when gaidin can't be reached. */
+const SAVE_MS = 2_000;
 
 /** Which conversation: an agent's home, or `conversation` by id. */
 export type Target = { agent: string; conversation?: number };
@@ -39,6 +44,28 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			});
 		};
 		const address = `/events?${conversation === undefined ? `agent=${encodeURIComponent(agent)}` : `conversation=${conversation}`}`;
+		// Kept once gaidin has sent the transcript, and shown when the stream can't connect before it has.
+		const key = address.slice("/events?".length);
+		const transcript = live.current.transcript;
+		let current = false;
+		let restoring = false;
+		let saving: ReturnType<typeof setTimeout> | undefined;
+		const keep = () => {
+			saving = undefined;
+			void saveTranscript(key, transcript).catch(() => undefined);
+		};
+		const save = (after = SAVE_MS) => {
+			clearTimeout(saving);
+			if (current) saving = setTimeout(keep, after);
+		};
+		const restore = async () => {
+			restoring = true;
+			const saved = await savedTranscript(key).catch(() => undefined);
+			if (saved === undefined || current || closed) return;
+			Object.assign(transcript, { entries: new Map(saved.entries.map((entry) => [entry.id, entry])), usage: saved.usage, agent: saved.agent });
+			draw();
+		};
+		let closed = false;
 		let source: EventSource;
 		let retry: ReturnType<typeof setTimeout> | undefined;
 		let wait = RETRY_MS;
@@ -56,6 +83,7 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			source.onerror = () => {
 				live.current.connected = false;
 				draw();
+				if (!current && !restoring) void restore();
 				if (source.readyState !== EventSource.CLOSED) return;
 				retry = setTimeout(open, wait);
 				wait = Math.min(wait * 2, MAX_RETRY_MS);
@@ -65,6 +93,8 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			// SAFETY: gaidin sends each event as JSON (web.ts events()).
 			const event = JSON.parse(message.data) as StreamEvent;
 			applyEvent(live.current.transcript, event);
+			if (event.type === "snapshot") current = true;
+			save();
 			switch (event.type) {
 				case "snapshot":
 					// A (re)connection may have missed changes.
@@ -93,11 +123,39 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			heard.current?.(event, live.current.transcript);
 			draw();
 		};
-		open();
-		return () => {
+		const reopen = () => {
 			clearTimeout(retry);
 			source.close();
+			wait = RETRY_MS;
+			live.current.connected = false;
+			draw();
+			open();
+		};
+		// A phone suspends the app in the background and its stream with it. Back in front, the stream may be waiting out a
+		// retry or, after a while, still say it's open over a connection that's gone, so it's opened again at once.
+		let hiddenAt = 0;
+		const shown = () => {
+			if (document.visibilityState === "hidden") {
+				hiddenAt = Date.now();
+				return save(0);
+			}
+			if (source.readyState !== EventSource.OPEN || Date.now() - hiddenAt > STALE_MS) reopen();
+		};
+		const online = () => {
+			if (source.readyState !== EventSource.OPEN) reopen();
+		};
+		open();
+		document.addEventListener("visibilitychange", shown);
+		window.addEventListener("online", online);
+		return () => {
+			closed = true;
+			clearTimeout(retry);
+			clearTimeout(saving);
+			if (saving !== undefined) keep();
+			source.close();
 			cancelAnimationFrame(frame);
+			document.removeEventListener("visibilitychange", shown);
+			window.removeEventListener("online", online);
 		};
 	}, [agent, conversation, queryClient]);
 

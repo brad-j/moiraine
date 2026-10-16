@@ -334,3 +334,45 @@ test("after gaidin restarts, an open conversation reconnects and catches up, tho
 	await expect(page.locator("#log")).toContainText("Hello, Brad.");
 	await expect(page.locator("#statusline .status")).not.toHaveText("reconnecting");
 });
+
+test("back from the background, a conversation's stream is opened again at once rather than after its retry", async ({ page }) => {
+	let calls = 0;
+	await page.route("**/events**", async (route) => {
+		calls += 1;
+		// The first stream ends with a retry far off, as one suspended in the background can be left waiting.
+		if (calls === 1) return route.fulfill({ status: 200, headers: { "Content-Type": "text/event-stream" }, body: "retry: 600000\n\n" });
+		return route.continue();
+	});
+	await page.goto("/gaidin");
+	await expect(page.locator("#statusline .status")).toHaveText("reconnecting");
+	const visibility = (state: string) =>
+		page.evaluate((to) => {
+			Object.defineProperty(document, "visibilityState", { configurable: true, get: () => to });
+			document.dispatchEvent(new Event("visibilitychange"));
+		}, state);
+	await visibility("hidden");
+	await visibility("visible");
+	await expect(page.locator("#statusline .status")).not.toHaveText("reconnecting");
+	expect(calls).toBe(2);
+});
+
+test("the app is the visible area: with a keyboard up the composer sits on it, without the home bar's inset, and back at the bottom after", async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 844 });
+	await page.goto("/gaidin");
+	const prompt = page.locator("#prompt");
+	const bottom = async () => {
+		const box = await prompt.boundingBox();
+		return box === null ? 0 : box.y + box.height;
+	};
+	await expect(prompt).toBeVisible();
+	const resting = await bottom();
+	expect(resting).toBeGreaterThan(780);
+	// What a keyboard leaves visible.
+	await page.setViewportSize({ width: 390, height: 500 });
+	await expect(page.locator("html")).toHaveClass(/keyboard/);
+	await expect.poll(bottom).toBeLessThanOrEqual(500);
+	await expect.poll(bottom).toBeGreaterThan(470);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await expect(page.locator("html")).not.toHaveClass(/keyboard/);
+	await expect.poll(bottom).toBe(resting);
+});
