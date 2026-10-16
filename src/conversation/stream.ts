@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import type { StreamEvent } from "../api.ts";
 import { applyEvent, newTranscript, type Transcript } from "../transcript.ts";
 
+/** How long to wait before opening a stream that was closed, at first and at most. */
+const RETRY_MS = 1_000;
+const MAX_RETRY_MS = 15_000;
+
 /** Which conversation: an agent's home, or `conversation` by id. */
 export type Target = { agent: string; conversation?: number };
 
@@ -34,19 +38,37 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 				setState({ ...live.current });
 			});
 		};
-		const source = new EventSource(`/events?${conversation === undefined ? `agent=${encodeURIComponent(agent)}` : `conversation=${conversation}`}`);
-		source.onopen = () => {
-			live.current.connected = true;
-			draw();
+		const address = `/events?${conversation === undefined ? `agent=${encodeURIComponent(agent)}` : `conversation=${conversation}`}`;
+		let source: EventSource;
+		let retry: ReturnType<typeof setTimeout> | undefined;
+		let wait = RETRY_MS;
+		const open = () => {
+			source = new EventSource(address);
+			source.onopen = () => {
+				wait = RETRY_MS;
+				live.current.connected = true;
+				draw();
+			};
+			source.onmessage = receive;
+			// EventSource reconnects by itself after a dropped stream, but gives up for good on an answer that isn't 200, such
+			// as tailscale serve's 502 while gaidin restarts; then a new one is opened, waiting longer each time. gaidin starts
+			// every connection with a snapshot, so the conversation catches up either way.
+			source.onerror = () => {
+				live.current.connected = false;
+				draw();
+				if (source.readyState !== EventSource.CLOSED) return;
+				retry = setTimeout(open, wait);
+				wait = Math.min(wait * 2, MAX_RETRY_MS);
+			};
 		};
-		source.onmessage = (message) => {
+		const receive = (message: MessageEvent<string>) => {
 			// SAFETY: gaidin sends each event as JSON (web.ts events()).
 			const event = JSON.parse(message.data) as StreamEvent;
 			applyEvent(live.current.transcript, event);
 			switch (event.type) {
 				case "snapshot":
 					// A (re)connection may have missed changes.
-					invalidate(["approvals"]);
+					invalidate(["approvals"], ["activity-by-agent"], ["conversations", agent]);
 					break;
 				case "run_start":
 					invalidate(["activity-by-agent"]);
@@ -71,12 +93,9 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			heard.current?.(event, live.current.transcript);
 			draw();
 		};
-		// EventSource reconnects by itself, and gaidin starts every connection with a snapshot.
-		source.onerror = () => {
-			live.current.connected = false;
-			draw();
-		};
+		open();
 		return () => {
+			clearTimeout(retry);
 			source.close();
 			cancelAnimationFrame(frame);
 		};

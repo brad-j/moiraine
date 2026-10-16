@@ -316,3 +316,21 @@ test("the log stays at its end when the dock grows under it, and after a reload"
 	await page.getByRole("button", { name: "new activity" }).click();
 	await expect.poll(() => fromEnd(page)).toBeLessThan(2);
 });
+
+test("after gaidin restarts, an open conversation reconnects and catches up, though tailscale serve answered 502 meanwhile", async ({ page }) => {
+	let calls = 0;
+	await page.route("**/events**", async (route) => {
+		calls += 1;
+		// The first stream ends, as when gaidin stops; then two tries get 502 while it starts again.
+		if (calls === 1) return route.fulfill({ status: 200, headers: { "Content-Type": "text/event-stream" }, body: "retry: 100\n\n" });
+		if (calls <= 3) return route.fulfill({ status: 502, body: "" });
+		return route.continue();
+	});
+	await page.goto("/gaidin");
+	await expect.poll(() => calls).toBeGreaterThanOrEqual(3);
+	// A message sent elsewhere while the page was cut off, as from Slack or the CLI.
+	expect((await page.request.post("/api/message", { data: { content: "hello from elsewhere" } })).ok()).toBe(true);
+	await expect(page.locator("#log")).toContainText("hello from elsewhere");
+	await expect(page.locator("#log")).toContainText("Hello, Brad.");
+	await expect(page.locator("#statusline .status")).not.toHaveText("reconnecting");
+});
