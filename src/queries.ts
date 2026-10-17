@@ -6,7 +6,8 @@ import { type Agent, type Gets, load } from "./api.ts";
 const agentQuery = (agent: string) => `?agent=${encodeURIComponent(agent)}`;
 
 export const queries = {
-	version: queryOptions({ queryKey: ["version"], queryFn: () => load("/api/version"), staleTime: Infinity }),
+	/** Read again when the window is focused, on a stream's snapshot, and when the device comes back (frame.tsx). */
+	version: queryOptions({ queryKey: ["version"], queryFn: () => load("/api/version"), staleTime: 60_000 }),
 	// Asked again until it's had, since nothing else can be shown right without it.
 	/** What each agent is up to, for the sidebar; asked often, since it says when one is working. */
 	activity: queryOptions({ queryKey: ["activity-by-agent"], queryFn: () => load("/api/agents/activity"), refetchInterval: 4_000 }),

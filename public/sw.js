@@ -7,7 +7,8 @@
 // - The shell (any address that isn't the API or a file) comes from the network, or from the last one kept when the
 //   network fails, answers 5xx (tailscale serve while gaidin restarts), or takes longer than SLOW_MS.
 // - Built files under /assets/ have hashed names, so a kept one is used as it is. A new shell is kept only once its
-//   build's files are all in, from the list the build writes (/precache.json); then the others go.
+//   build's files are all in, from the list the build writes (/precache.json); then the others go,
+//   and the open pages are told (a message of type shell-changed) so they can offer a reload.
 // - The API's GETs come from the network, or from the last answer kept when it fails, marked with SAVED_AT so the app
 //   says it's showing what was saved. The event streams and POSTs pass through.
 // - With nothing kept yet, a short page says gaidin can't be reached.
@@ -60,7 +61,8 @@ self.addEventListener("fetch", (event) => {
 		// The API's own pages, such as a connector's sign-in coming back, are never the shell.
 		if (api) return event.respondWith(fetch(request).catch(offline));
 		const network = fetch(request);
-		event.waitUntil(network.then(keepShell).catch(() => undefined));
+		// Copied as soon as it comes, before the page starts reading it, or keepShell finds the body used.
+		event.waitUntil(network.then((response) => keepShell(response.clone(), event.resultingClientId)).catch(() => undefined));
 		return event.respondWith(page(network));
 	}
 	if (url.pathname.startsWith("/assets/")) return event.respondWith(kept(request));
@@ -78,14 +80,15 @@ async function page(network) {
 	return Promise.race([answered, new Promise((resolve) => setTimeout(resolve, SLOW_MS, shell))]);
 }
 
-/** Keeps `response` when it's the shell, and when it's changed, once its build's files are all kept. */
-async function keepShell(response) {
+/** Keeps `response` when it's the shell, and when it's changed, once its build's files are all kept. The page `except` is loading it, so it is already on the new build. */
+async function keepShell(response, except) {
 	const type = response.headers.get("Content-Type") ?? "";
 	if (!response.ok || response.type !== "basic" || response.redirected || !type.startsWith("text/html")) return;
 	const cache = await caches.open(SHELL);
 	const before = await cache.match(SHELL_KEY);
 	const text = await response.clone().text();
-	if (before !== undefined && (await before.text()) === text && (await (await caches.open(ASSETS)).keys()).length > 0) return;
+	const changed = before !== undefined && (await before.text()) !== text;
+	if (before !== undefined && !changed && (await (await caches.open(ASSETS)).keys()).length > 0) return;
 	// The files first: a shell is kept only when everything it loads is, so the one kept before stays whole if the
 	// network drops partway.
 	const files = await keepBuild(text);
@@ -94,6 +97,8 @@ async function keepShell(response) {
 	// Only now do the previous build's files go.
 	const assets = await caches.open(ASSETS);
 	for (const request of await assets.keys()) if (!files.has(new URL(request.url).pathname)) await assets.delete(request);
+	// The open pages run the previous build, so they're told, to offer a reload.
+	if (changed) for (const client of await self.clients.matchAll({ type: "window", includeUncontrolled: true })) if (client.id !== except) client.postMessage({ type: "shell-changed" });
 }
 
 /** The build's files, from its list, the missing ones fetched; the list, or undefined if `shell` or a fetch doesn't fit it. */
