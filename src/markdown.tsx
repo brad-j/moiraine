@@ -10,7 +10,8 @@ export type MarkdownOptions = {
 	link?: (href: string, label: ReactNode, key: number) => ReactNode | undefined;
 };
 
-const INLINE = /(`+)([\s\S]*?[^`])\1(?!`)|\*\*([^*][\s\S]*?)\*\*|__([^_][\s\S]*?)__|~~([\s\S]+?)~~|!?\[([^\]]+)\]\(<?((?:[^()\s<>]|\([^()\s]*\))+)>?\)|<?(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"\]])>?|\*([^*\s](?:[^*]*[^*\s])?)\*|(?<![\w])_([^_\s](?:[^_]*[^_\s])?)_(?![\w])/g;
+/** A closing delimiter is never preceded by an unpaired backslash: an escaped character closes nothing. */
+const INLINE = /(`+)([\s\S]*?[^`])\1(?!`)|\*\*([^*][\s\S]*?)(?<!(?<!\\)(?:\\\\)*\\)\*\*|__([^_][\s\S]*?)(?<!(?<!\\)(?:\\\\)*\\)__|~~([\s\S]+?)(?<!(?<!\\)(?:\\\\)*\\)~~|!?\[([^\]]+)\]\(<?((?:[^()\s<>]|\([^()\s]*\))+)>?\)|<?(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"\]])>?|\*((?:\\[\s\S]|[^*\s\\])(?:(?:\\[\s\S]|[^*\\])*(?:\\[\s\S]|[^*\s\\]))?)\*|(?<![\w])_((?:\\[\s\S]|[^_\s\\])(?:(?:\\[\s\S]|[^_\\])*(?:\\[\s\S]|[^_\s\\]))?)_(?![\w])|\\([!-/:-@[-`{-~])/g;
 
 function inline(text: string, o: MarkdownOptions): ReactNode[] {
 	const out: ReactNode[] = [];
@@ -25,6 +26,7 @@ function inline(text: string, o: MarkdownOptions): ReactNode[] {
 		else if (m[5] !== undefined) out.push(<s key={key}>{inline(m[5], o)}</s>);
 		else if (m[6] !== undefined) out.push(link(key, m[7]!, m[6], o));
 		else if (m[8] !== undefined) out.push(link(key, m[8], undefined, o));
+		else if (m[11] !== undefined) out.push(m[11]);
 		else out.push(<em key={key}>{inline(m[9] ?? m[10]!, o)}</em>);
 	}
 	if (last < text.length) out.push(text.slice(last));
@@ -195,7 +197,9 @@ function list(lines: string[], i: number, indent: number, key: number, o: Markdo
 	while (i < lines.length) {
 		const item = ITEM.exec(lines[i]!);
 		if (!item || item[1]!.length !== indent || /\d/.test(item[2]!) !== ordered) break;
-		const body = [item[3]!];
+		// A task item: [ ] or [x] opens its text.
+		const task = /^\[([ xX])\]\s+(.*)$/.exec(item[3]!);
+		const body = [task ? task[2]! : item[3]!];
 		let loose = false;
 		for (i++; i < lines.length; i++) {
 			const line = lines[i]!;
@@ -218,7 +222,12 @@ function list(lines: string[], i: number, indent: number, key: number, o: Markdo
 			const lead = content[0];
 			if (!loose && isParagraph(lead)) content = [lead.props.children, ...content.slice(1)];
 		}
-		items.push(<li key={items.length}>{content}</li>);
+		if (task) content = [<input key="task" type="checkbox" aria-label={task[1] === " " ? "Not done" : "Done"} disabled checked={task[1] !== " "} />, ...content];
+		items.push(
+			<li key={items.length} className={task ? "task" : undefined}>
+				{content}
+			</li>,
+		);
 		if (lines[i]?.trim() === "") {
 			let next = i;
 			while (next < lines.length && lines[next]!.trim() === "") next++;

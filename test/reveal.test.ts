@@ -67,3 +67,10 @@ test("a table waits for the line under its head, then shows a row at a time", ()
 	// A line that starts with a bar but has none of a table's under it shows.
 	assert.equal(at("| not a table\nreally not ", "| not a table\nreally "), "| not a table\nreally ");
 });
+
+test("an escaped mark opens nothing, so nothing waits for it", () => {
+	assert.equal(at("Use \\*literal stars\\* here now", "Use \\*literal "), "Use \\*literal ");
+	assert.equal(at("Costs \\[5] and more", "Costs \\[5] and "), "Costs \\[5] and ");
+	// The escape's backslash doesn't escape the mark after it.
+	assert.equal(at("A \\\\*quick look* here", "A \\\\*quick "), "A \\\\");
+});

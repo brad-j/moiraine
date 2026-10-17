@@ -115,6 +115,11 @@ function openSpan(line: string): number | undefined {
 			i++;
 			continue;
 		}
+		if (c === "\\" && /[!-/:-@[-`{-~]/.test(line[i + 1] ?? "")) {
+			// An escaped character is only text: it opens and closes nothing.
+			i += 2;
+			continue;
+		}
 		if (c === "*" && line[i + 1] === "*") {
 			strong = strong === undefined ? i : undefined;
 			i += 2;
