@@ -46,6 +46,13 @@ export function useApprovals() {
 
 const SHORTCUTS = new Map<string, Decision>([["KeyY", "once"], ["KeyA", "always"], ["KeyN", "deny"]]);
 
+/** Whether a shortcut can be taken from `focused`: not in a field to type into, unless it's the empty prompt. */
+function free(focused: Element | null) {
+	if (!(focused instanceof HTMLElement)) return true;
+	if (focused.id === "message") return (focused as HTMLTextAreaElement).value === "";
+	return !(focused.isContentEditable || focused instanceof HTMLTextAreaElement || focused instanceof HTMLSelectElement || (focused instanceof HTMLInputElement && !/^(button|checkbox|radio|submit|reset|range|color|file|image)$/.test(focused.type)));
+}
+
 export function Dock({ typed }: { /** The prompt is on screen to type an answer into. */ typed: boolean }) {
 	const { approvals, first, busy, decide, answer } = useApprovals();
 	const { byId, fallback } = useAgents();
@@ -59,6 +66,8 @@ export function Dock({ typed }: { /** The prompt is on screen to type an answer 
 	useEffect(() => {
 		const press = (event: KeyboardEvent) => {
 			if (!event.altKey || event.ctrlKey || event.metaKey || first === undefined) return;
+			// Option types å, ¥ and ñ on a Mac: leave keys something else handled or composed, and keys typed into a field.
+			if (event.defaultPrevented || event.isComposing || event.key === "Dead" || !free(document.activeElement)) return;
 			const decision = SHORTCUTS.get(event.code);
 			if (decision === undefined) return;
 			event.preventDefault();
