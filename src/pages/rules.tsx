@@ -9,6 +9,7 @@ import { Link } from "@tanstack/react-router";
 import { Fragment, useState } from "react";
 import { INSIDE_TOOLS, type NewRule, post, type Rule, type RuleGrant } from "../api.ts";
 import { ancestors, when } from "../format.ts";
+import { useLeaveGuard } from "../guard.tsx";
 import { queries, useAgents } from "../queries.ts";
 import { Confirm, Empty, Page, SectionHead, useAttempt } from "./page.tsx";
 
@@ -161,6 +162,9 @@ function RuleForm({ draft, floor, done }: { draft?: Draft; floor: readonly strin
 	const [span, setSpan] = useState<Span>("never");
 	const [afterOutside, setAfterOutside] = useState(false);
 	const [note, setNote] = useState("");
+	// Any change in the form counts: its controls' change events bubble to the form.
+	const [touched, setTouched] = useState(false);
+	const guard = useLeaveGuard(touched);
 	const floored = floor.includes(tool.trim());
 	/** inside is offered on a path, for the workspace file tools only; a row that has it keeps showing it, for gaidin to refuse. */
 	const offers = (row: Row) => OPS.filter((op) => op !== "inside" || row.op === "inside" || (row.arg.trim() === "path" && INSIDE_RULE_TOOLS.includes(tool.trim())));
@@ -183,17 +187,21 @@ function RuleForm({ draft, floor, done }: { draft?: Draft; floor: readonly strin
 			await post("/api/rules/add", rule);
 			await queryClient.invalidateQueries({ queryKey: ["rules"] });
 		});
-		if (made) done();
+		if (!made) return;
+		guard.release();
+		done();
 	}
 
 	return (
 		<form
 			className="skill-form rule-form"
+			onChange={() => setTouched(true)}
 			onSubmit={(event) => {
 				event.preventDefault();
 				void save();
 			}}
 		>
+			{guard.dialog}
 			<div className="form-field">
 				<span className="form-label">
 					<span>effect</span>

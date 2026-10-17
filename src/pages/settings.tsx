@@ -11,6 +11,7 @@ import { Avatar } from "../avatar.tsx";
 import { COLORS, PALETTE, useColorOf } from "../color.ts";
 import { when } from "../format.ts";
 import { subscribeHere, supported, thisDevice, unsubscribe } from "../push.ts";
+import { useKeptDraft, useLeaveGuard } from "../guard.tsx";
 import { queries, useAgents } from "../queries.ts";
 import { Action, Confirm, Empty, Page, SectionHead, useAttempt } from "./page.tsx";
 
@@ -50,7 +51,7 @@ export function Settings({ agent }: { agent: Agent }) {
 				<>
 					<ModelSection settings={settings.data} configure={configure} saved={saved("model")} />
 					<ToolsSection settings={settings.data} configure={configure} saved={saved("tools")} />
-					<InstructionsSection key={agent.id} settings={settings.data} configure={configure} saved={saved("instructions")} />
+					<InstructionsSection key={agent.id} agent={agent.id} settings={settings.data} configure={configure} saved={saved("instructions")} />
 				</>
 			)}
 			<AccessSection agent={agent} save={save} saved={saved("access")} />
@@ -341,13 +342,14 @@ function ToolsSection({ settings, configure, saved }: { settings: AgentSettings;
 	);
 }
 
-function InstructionsSection({ settings, configure, saved }: { settings: AgentSettings; configure: Configure; saved: ReactNode }) {
+function InstructionsSection({ agent, settings, configure, saved }: { agent: string; settings: AgentSettings; configure: Configure; saved: ReactNode }) {
 	const attempt = useAttempt();
-	const [draft, setDraft] = useState<string>();
+	const [draft, setDraft] = useKeptDraft(`instructions:${agent}`, settings.instructions);
 	const [busy, setBusy] = useState(false);
 	const box = useRef<HTMLTextAreaElement>(null);
 	const text = draft ?? settings.instructions;
 	const changed = draft !== undefined && draft !== settings.instructions;
+	const guard = useLeaveGuard(changed);
 	useLayoutEffect(() => {
 		const el = box.current;
 		if (el === null) return;
@@ -357,6 +359,7 @@ function InstructionsSection({ settings, configure, saved }: { settings: AgentSe
 	return (
 		<section>
 			<SectionHead title="Standing instructions" />
+			{guard.dialog}
 			<p className="page-note">Added to the system prompt of every conversation this agent has, its threads and job runs included.</p>
 			<textarea
 				ref={box}

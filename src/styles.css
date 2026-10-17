@@ -834,3 +834,4 @@ section > button { margin-top: var(--space-sm); }
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { transition-duration: 0s !important; animation: none !important; }
 }
+.leave-guard { display: flex; flex-direction: column; gap: var(--space-xs); } .leave-guard p { margin: 0; } .leave-guard .form-bar { margin-top: 0; }
