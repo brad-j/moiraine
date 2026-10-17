@@ -56,6 +56,30 @@ test("with gaidin out of reach the app still opens, from what the service worker
 	await context.close();
 });
 
+test("a build whose files didn't all arrive is not kept as the shell, so offline shows the offline page rather than a blank one", async ({ browser, server }) => {
+	const context = await browser.newContext({ baseURL: server });
+	const headers = { "tailscale-user-login": USER };
+	const files: string[] = await (await context.request.get("/precache.json", { headers })).json();
+	// A route's script the first page doesn't load, so only the worker's precache asks for it.
+	const lazy = files.find((file) => file.includes("memory") && file.endsWith(".js"));
+	expect(lazy).toBeDefined();
+	await context.route("**/*", (route) =>
+		route.request().url().endsWith(lazy ?? "") ? route.abort() : route.continue({ headers: { ...route.request().headers(), ...headers } }),
+	);
+	const page = await context.newPage();
+	await page.goto("/gaidin");
+	await expect(page.locator("#message")).toBeVisible();
+	await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
+	// The rest of the build is in, and the shell that names the missing file is not.
+	await expect.poll(() => page.evaluate(async () => (await (await caches.open("moiraine-assets")).keys()).length)).toBeGreaterThan(10);
+	expect(await page.evaluate(async () => (await caches.open("moiraine-shell")).match("/").then((r) => r !== undefined))).toBe(false);
+
+	await context.setOffline(true);
+	await page.reload();
+	await expect(page.getByText("gaidin can't be reached")).toBeVisible();
+	await context.close();
+});
+
 test("on a phone the sidebar follows a swipe: right across the conversation opens it, left closes it", async ({ browser, server }) => {
 	const context = await browser.newContext({
 		baseURL: server,
