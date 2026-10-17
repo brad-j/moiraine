@@ -267,7 +267,7 @@ main.page a { color: var(--color-accent); }
 .md { max-width: 72ch; }
 .md > :first-child { margin-top: 0; }
 .md > :last-child { margin-bottom: 0; }
-.md p, .md ul, .md ol, .md blockquote, .md pre, .md .table { margin: 0 0 var(--space-sm); }
+.md p, .md ul, .md ol, .md blockquote, .md .code, .md .table { margin: 0 0 var(--space-sm); }
 .md h3, .md h4, .md h5 { margin: var(--space-lg) 0 var(--space-xs); font-size: var(--text-md); font-weight: 600; line-height: 1.4; }
 .md ul, .md ol { padding-left: var(--space-lg); }
 .md li { margin: var(--space-2xs) 0; }
@@ -279,6 +279,15 @@ main.page a { color: var(--color-accent); }
 .md code { padding: var(--space-3xs) var(--space-2xs); background: var(--color-paper-3); border-radius: 4px; font-size: 0.86em; }
 .md pre { padding: var(--space-sm) var(--space-md); overflow-x: auto; white-space: pre; overflow-wrap: normal; background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-md); line-height: 1.55; }
 .md pre code { padding: 0; background: none; font-size: var(--text-sm); }
+/* Copy sits in a code block's corner, outside its scrolling: always on touch, on hover or focus with a pointer, and
+ * not on a block still being written. */
+.md .code { position: relative; }
+.md .copy { position: absolute; top: var(--space-2xs); right: var(--space-2xs); min-height: 26px; padding: 0 var(--space-xs); background: var(--color-paper-2); font-size: var(--text-xs); }
+@media (hover: hover) {
+	.md .copy { opacity: 0; transition: opacity var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out); }
+	.md .code:hover .copy, .md .copy:focus-visible { opacity: 1; }
+}
+.md.writing > .code:last-child .copy { display: none; }
 .md blockquote { padding-left: var(--space-sm); border-left: 2px solid var(--color-rule-2); color: var(--color-ink-2); }
 .md hr { border: 0; border-top: var(--rule-hair) solid var(--color-rule); margin: var(--space-lg) 0; }
 .md .table { overflow-x: auto; }
@@ -288,7 +297,7 @@ main.page a { color: var(--color-accent); }
 .md th { color: var(--color-ink-2); font-weight: 600; border-bottom-color: var(--color-rule-2); }
 /* While an answer is being written: a caret at its end, or alone before its first word. Still, not blinking. */
 .md.writing > :is(p, h3, h4, h5):last-child::after, .md.writing > :is(ul, ol):last-child > li:last-child::after,
-.md.writing > blockquote:last-child > :last-child::after, .md.writing > pre:last-child > code::after, .md.writing:empty::before {
+.md.writing > blockquote:last-child > :last-child::after, .md.writing > .code:last-child > pre > code::after, .md.writing:empty::before {
 	content: ""; display: inline-block; width: 0.5em; height: 1.1em; margin-left: 0.15em; vertical-align: -0.2em; background: var(--color-accent); opacity: 0.6;
 }
 .md.writing:empty::before { margin-left: 0; }

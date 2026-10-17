@@ -1,6 +1,7 @@
 // Enough Markdown for model answers and skill files: fences, headings, lists, quotes, tables, rules, and inline code,
 // emphasis and links. gaidin's web/markdown.ts, building React elements: nothing in a message is read as markup.
-import { type CSSProperties, memo, type ReactNode } from "react";
+import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
+import { type CSSProperties, memo, type ReactNode, useEffect, useState } from "react";
 
 export type MarkdownOptions = {
 	/** A document rather than an answer: # is a page title (h2) and ## a section (h3), and headings get ids for anchors. */
@@ -52,6 +53,27 @@ export const Markdown = memo(function Markdown({ text, writing = false, ...given
 	return <div className={writing ? "md writing" : "md"}>{blocks(text.replace(/\r\n?/g, "\n").split("\n"), given)}</div>;
 });
 
+/** A fenced block with a Copy button, which says Copied for a moment after. */
+function Code({ text, lang }: { text: string; lang: string | undefined }) {
+	const [copied, setCopied] = useState(false);
+	useEffect(() => {
+		if (!copied) return;
+		const timer = setTimeout(() => setCopied(false), 1500);
+		return () => clearTimeout(timer);
+	}, [copied]);
+	return (
+		<div className="code">
+			<pre>
+				<code data-lang={lang}>{text}</code>
+			</pre>
+			<button type="button" className="plain copy" onClick={() => void navigator.clipboard.writeText(text).then(() => setCopied(true))}>
+				{copied ? <CheckIcon /> : <CopyIcon />}
+				{copied ? "Copied" : "Copy"}
+			</button>
+		</div>
+	);
+}
+
 /** A heading's anchor, as GitHub makes them: "Tools that reach outside" is "tools-that-reach-outside". */
 export function anchor(text: string): string {
 	return text.toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, "").trim().replace(/\s/g, "-");
@@ -86,12 +108,8 @@ function blocks(lines: string[], o: MarkdownOptions): ReactNode[] {
 			const close = new RegExp(`^ {0,3}${fence[1]![0]}{${fence[1]!.length},}\\s*$`);
 			const body: string[] = [];
 			for (i++; i < lines.length && !close.test(lines[i]!); i++) body.push(lines[i]!);
+			out.push(<Code key={key} text={body.join("\n")} lang={fence[2] || undefined} />);
 			i++;
-			out.push(
-				<pre key={key}>
-					<code data-lang={fence[2] || undefined}>{body.join("\n")}</code>
-				</pre>,
-			);
 			continue;
 		}
 		const heading = HEADING.exec(line);

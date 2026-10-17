@@ -39,6 +39,19 @@ test("the app opens on the default agent's home conversation, where a message is
 	expect(sidebar.x + sidebar.width).toBeLessThanOrEqual(log.x);
 });
 
+test("a code block in an answer copies its text, and says so", async ({ page, context }) => {
+	await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+	await page.goto("/");
+	await send(page, "markdown");
+	const block = page.locator("#log .md .code");
+	await expect(block.locator("pre")).toHaveText("ssh think-2 'pvesm status | grep nas'");
+	await block.hover();
+	await block.getByRole("button", { name: "Copy" }).click();
+	await expect(block.getByRole("button", { name: "Copied" })).toBeVisible();
+	expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("ssh think-2 'pvesm status | grep nas'");
+	await expect(block.getByRole("button", { name: "Copy" })).toBeVisible();
+});
+
 test("a fetch waits in the dock until it's allowed, and Deny stops it", async ({ page }) => {
 	await page.goto("/");
 	const dock = page.locator("#approvals");

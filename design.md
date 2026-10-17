@@ -120,6 +120,8 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
 ## Microinteractions stance
 
 - Silent success: a saved setting shows in the status chips, not a toast.
+- A code block in an answer or document has a quiet Copy button in its top-right corner: always shown on touch, on
+  hover or focus with a pointer, and not while the block is still being written. It says Copied for 1.5 seconds after.
 - The status line under the composer says only what's worth a glance: the state when it isn't idle (working,
   reconnecting, retrying) with Stop, the model, the thinking level when it's on, the tools that are off, standing
   instructions when there are some, and one spend figure (the day's against its limit, the conversation's and the
