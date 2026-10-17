@@ -40,7 +40,7 @@ test("an agent hands the browser over; the owner takes it over from the dock, ty
 	await expect(page.locator("#approvals")).toBeEmpty();
 
 	await page.locator("#sidebar .agents li.current > .agent").click();
-	await expect(page.locator("#log")).toContainText('Back from the browser: - textbox \\"Name\\" [active] [ref=e2]: brad');
+	await expect(page.locator("#log")).toContainText('Back from the browser: - textbox "Name" [active] [ref=e2]: brad');
 });
 
 test("on a phone, a tap clicks the page and the Keyboard button types and deletes", async ({ browser, server }) => {
@@ -61,6 +61,6 @@ test("on a phone, a tap clicks the page and the Keyboard button types and delete
 	await page.getByRole("main").getByRole("button", { name: "Done" }).click();
 	await expect(page.locator(".live-released")).toContainText("Released: you're done.");
 	await page.goto("/gaidin");
-	await expect(page.locator("#log")).toContainText(/Back from the browser: - textbox \\"Name\\" (\[active\] )?\[ref=e2\]: brad"?$/m);
+	await expect(page.locator("#log")).toContainText(/Back from the browser: - textbox "Name" (\[active\] )?\[ref=e2\]: brad"?$/m);
 	await phone.close();
 });
