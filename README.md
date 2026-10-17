@@ -52,3 +52,7 @@ The plan's design for the app is built: the conversations, every page, attachmen
 ## Deploying
 
 `pnpm ship` asks the VM's gaidin which protocol it speaks and stops unless it's this build's (deploy gaidin first: push, then `setup.sh` on the VM), builds, and copies `dist/client` to `/var/lib/gaidin/moiraine` over Tailscale SSH: built files first, keeping older ones for two weeks, then the shell. gaidin needs `"app": "/var/lib/gaidin/moiraine"` in the `web` section of `/etc/gaidin/config.json` and a restart once; the script says so when it's missing, and doesn't edit the settings itself.
+
+## License
+
+MIT, in [LICENSE](LICENSE).

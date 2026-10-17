@@ -2,6 +2,7 @@
   "name": "moiraine",
   "version": "0.0.0",
   "description": "The app for gaidin",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.13.0",
