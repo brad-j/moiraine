@@ -90,7 +90,7 @@ function VersionNotice() {
 		window.addEventListener("online", ask);
 		navigator.serviceWorker?.addEventListener("message", message);
 		// Messages queue until a page says it's listening, which adding a listener alone doesn't.
-		navigator.serviceWorker?.startMessages();
+		navigator.serviceWorker?.startMessages?.();
 		return () => {
 			document.removeEventListener("visibilitychange", resume);
 			window.removeEventListener("online", ask);

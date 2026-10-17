@@ -159,5 +159,8 @@ test("a page open on a build the service worker has since replaced offers a relo
 	await other.goto("/gaidin");
 	await expect(page.getByText("A new version is ready.")).toBeVisible();
 	await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
+	// The window that opened the new build is already on it.
+	await expect(other.locator("#message")).toBeVisible();
+	await expect(other.getByText("A new version is ready.")).toHaveCount(0);
 	await context.close();
 });

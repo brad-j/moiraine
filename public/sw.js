@@ -62,7 +62,7 @@ self.addEventListener("fetch", (event) => {
 		if (api) return event.respondWith(fetch(request).catch(offline));
 		const network = fetch(request);
 		// Copied as soon as it comes, before the page starts reading it, or keepShell finds the body used.
-		event.waitUntil(network.then((response) => keepShell(response.clone())).catch(() => undefined));
+		event.waitUntil(network.then((response) => keepShell(response.clone(), event.resultingClientId)).catch(() => undefined));
 		return event.respondWith(page(network));
 	}
 	if (url.pathname.startsWith("/assets/")) return event.respondWith(kept(request));
@@ -80,8 +80,8 @@ async function page(network) {
 	return Promise.race([answered, new Promise((resolve) => setTimeout(resolve, SLOW_MS, shell))]);
 }
 
-/** Keeps `response` when it's the shell, and when it's changed, once its build's files are all kept. */
-async function keepShell(response) {
+/** Keeps `response` when it's the shell, and when it's changed, once its build's files are all kept. The page `except` is loading it, so it is already on the new build. */
+async function keepShell(response, except) {
 	const type = response.headers.get("Content-Type") ?? "";
 	if (!response.ok || response.type !== "basic" || response.redirected || !type.startsWith("text/html")) return;
 	const cache = await caches.open(SHELL);
@@ -98,7 +98,7 @@ async function keepShell(response) {
 	const assets = await caches.open(ASSETS);
 	for (const request of await assets.keys()) if (!files.has(new URL(request.url).pathname)) await assets.delete(request);
 	// The open pages run the previous build, so they're told, to offer a reload.
-	if (changed) for (const client of await self.clients.matchAll({ type: "window", includeUncontrolled: true })) client.postMessage({ type: "shell-changed" });
+	if (changed) for (const client of await self.clients.matchAll({ type: "window", includeUncontrolled: true })) if (client.id !== except) client.postMessage({ type: "shell-changed" });
 }
 
 /** The build's files, from its list, the missing ones fetched; the list, or undefined if `shell` or a fetch doesn't fit it. */
