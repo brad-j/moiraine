@@ -120,3 +120,44 @@ test("on a phone the sidebar follows a swipe: right across the conversation open
 	await expect(sidebar).toBeHidden();
 	await context.close();
 });
+
+test("an open app asks for gaidin's version again when it's shown again, and says so when the protocol has moved", async ({ page }) => {
+	let protocol: number | undefined;
+	await page.route("**/api/version", async (route) => {
+		const response = await route.fetch();
+		const body = await response.json();
+		await route.fulfill({ response, json: { ...body, protocol: protocol ?? body.protocol } });
+	});
+	await page.goto("/gaidin");
+	await expect(page.locator("#message")).toBeVisible();
+	await expect(page.locator(".version-notice")).toHaveCount(0);
+	// gaidin is deployed with a newer protocol while the page stays open; the page is hidden and shown again.
+	protocol = 9999;
+	await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+	await expect(page.locator(".version-notice")).toContainText("gaidin speaks 9999");
+	// And it's seen coming back online.
+	protocol = undefined;
+	await page.evaluate(() => window.dispatchEvent(new Event("online")));
+	await expect(page.locator(".version-notice")).toHaveCount(0);
+});
+
+test("a page open on a build the service worker has since replaced offers a reload", async ({ browser, server }) => {
+	const context = await browser.newContext({ baseURL: server });
+	await context.route("**/*", (route) => route.continue({ headers: { ...route.request().headers(), "tailscale-user-login": USER } }));
+	const page = await context.newPage();
+	await page.goto("/gaidin");
+	await expect(page.locator("#message")).toBeVisible();
+	await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true);
+	await expect.poll(() => page.evaluate(async () => (await (await caches.open("moiraine-assets")).keys()).length)).toBeGreaterThan(10);
+	await expect.poll(() => page.evaluate(async () => (await caches.open("moiraine-shell")).match("/").then((r) => r !== undefined))).toBe(true);
+	await expect(page.getByText("A new version is ready.")).toHaveCount(0);
+	// What was kept is made to differ from what gaidin serves, as after a deploy, and another window opens the app.
+	await page.evaluate(async () => {
+		await (await caches.open("moiraine-shell")).put("/", new Response("<!doctype html><title>old</title>", { headers: { "Content-Type": "text/html" } }));
+	});
+	const other = await context.newPage();
+	await other.goto("/gaidin");
+	await expect(page.getByText("A new version is ready.")).toBeVisible();
+	await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
+	await context.close();
+});

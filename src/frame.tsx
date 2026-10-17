@@ -1,7 +1,7 @@
 // The app's frame: the sidebar for an agent, and beside it the column holding a conversation or a page. On a phone
 // the sidebar is a drawer; wider, its column collapses to the rail. The agent shown last is remembered, so the pages
 // across agents keep its sidebar, and so is whether the column is collapsed.
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { type Agent, PROTOCOL } from "./api.ts";
 import { useColorOf } from "./color.ts";
@@ -78,11 +78,41 @@ export function AgentFrame({ id, children }: { id: string; children: ReactNode }
 /** Says so when gaidin speaks another protocol than this build was typed against: they're deployed separately. */
 function VersionNotice() {
 	const { data } = useQuery(queries.version);
-	if (data === undefined || data.protocol === PROTOCOL) return null;
+	const client = useQueryClient();
+	const [newBuild, setNewBuild] = useState(false);
+	useEffect(() => {
+		// An installed app stays open for days, resuming rather than reloading, so gaidin's version is asked again then.
+		const ask = () => void client.invalidateQueries({ queryKey: queries.version.queryKey });
+		const resume = () => document.visibilityState === "visible" && ask();
+		// The service worker (public/sw.js) says when it has kept a changed shell: this page runs the previous build.
+		const message = (event: MessageEvent) => (event.data as { type?: unknown } | null)?.type === "shell-changed" && setNewBuild(true);
+		document.addEventListener("visibilitychange", resume);
+		window.addEventListener("online", ask);
+		navigator.serviceWorker?.addEventListener("message", message);
+		// Messages queue until a page says it's listening, which adding a listener alone doesn't.
+		navigator.serviceWorker?.startMessages();
+		return () => {
+			document.removeEventListener("visibilitychange", resume);
+			window.removeEventListener("online", ask);
+			navigator.serviceWorker?.removeEventListener("message", message);
+		};
+	}, [client]);
 	return (
-		<p className="version-notice">
-			This app was built for gaidin's protocol {PROTOCOL}, and gaidin speaks {data.protocol}. Deploy a build of moiraine that matches it.
-		</p>
+		<>
+			{data !== undefined && data.protocol !== PROTOCOL && (
+				<p className="version-notice">
+					This app was built for gaidin's protocol {PROTOCOL}, and gaidin speaks {data.protocol}. Deploy a build of moiraine that matches it.
+				</p>
+			)}
+			{newBuild && (
+				<p className="version-notice" role="status">
+					A new version is ready.{" "}
+					<button type="button" onClick={() => location.reload()}>
+						Reload
+					</button>
+				</p>
+			)}
+		</>
 	);
 }
 

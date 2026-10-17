@@ -176,6 +176,7 @@ svg { flex: none; }
 .tag.agent { color: var(--color-warn); }
 
 .version-notice, .saved-notice { margin: 0; padding: var(--space-xs) var(--space-lg); background: var(--color-warn-wash); border-bottom: var(--rule-hair) solid var(--color-warn); color: var(--color-warn); font-size: var(--text-sm); }
+.version-notice button { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .page-problem { margin: 0; padding: var(--space-xs) var(--space-sm); background: var(--color-bad-wash); border: var(--rule-hair) solid var(--color-bad); border-radius: var(--radius-sm); color: var(--color-bad); }
 .missing, main.page { display: flex; flex-direction: column; align-items: start; gap: var(--space-sm); width: 100%; max-width: var(--measure); margin: 0 auto; padding: var(--space-xl) var(--space-lg); }
 main.page a { color: var(--color-accent); }

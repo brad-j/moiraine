@@ -102,7 +102,7 @@ export function useConversation(target: Target, onEvent?: (event: StreamEvent, t
 			switch (event.type) {
 				case "snapshot":
 					// A (re)connection may have missed changes.
-					invalidate(["approvals"], ["activity-by-agent"], ["conversations", agent]);
+					invalidate(["approvals"], ["activity-by-agent"], ["conversations", agent], ["version"]);
 					break;
 				case "run_start":
 					invalidate(["activity-by-agent"]);
