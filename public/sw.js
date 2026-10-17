@@ -6,8 +6,8 @@
 // such as from a phone off the tailnet:
 // - The shell (any address that isn't the API or a file) comes from the network, or from the last one kept when the
 //   network fails, answers 5xx (tailscale serve while gaidin restarts), or takes longer than SLOW_MS.
-// - Built files under /assets/ have hashed names, so a kept one is used as it is. Each new shell brings its build's
-//   files in, from the list the build writes (/precache.json), and lets the others go.
+// - Built files under /assets/ have hashed names, so a kept one is used as it is. A new shell is kept only once its
+//   build's files are all in, from the list the build writes (/precache.json); then the others go.
 // - The API's GETs come from the network, or from the last answer kept when it fails, marked with SAVED_AT so the app
 //   says it's showing what was saved. The event streams and POSTs pass through.
 // - With nothing kept yet, a short page says gaidin can't be reached.
@@ -78,7 +78,7 @@ async function page(network) {
 	return Promise.race([answered, new Promise((resolve) => setTimeout(resolve, SLOW_MS, shell))]);
 }
 
-/** Keeps `response` when it's the shell, and when it's changed, brings in its build's files. */
+/** Keeps `response` when it's the shell, and when it's changed, once its build's files are all kept. */
 async function keepShell(response) {
 	const type = response.headers.get("Content-Type") ?? "";
 	if (!response.ok || response.type !== "basic" || response.redirected || !type.startsWith("text/html")) return;
@@ -86,19 +86,29 @@ async function keepShell(response) {
 	const before = await cache.match(SHELL_KEY);
 	const text = await response.clone().text();
 	if (before !== undefined && (await before.text()) === text && (await (await caches.open(ASSETS)).keys()).length > 0) return;
+	// The files first: a shell is kept only when everything it loads is, so the one kept before stays whole if the
+	// network drops partway.
+	const files = await keepBuild(text);
+	if (files === undefined) return;
 	await cache.put(SHELL_KEY, response);
-	await keepBuild();
+	// Only now do the previous build's files go.
+	const assets = await caches.open(ASSETS);
+	for (const request of await assets.keys()) if (!files.has(new URL(request.url).pathname)) await assets.delete(request);
 }
 
-/** The build's files, from its list: the missing ones fetched, and other builds' let go. */
-async function keepBuild() {
+/** The build's files, from its list, the missing ones fetched; the list, or undefined if `shell` or a fetch doesn't fit it. */
+async function keepBuild(shell) {
 	const listed = await fetch("/precache.json", { cache: "no-store" });
-	if (!listed.ok) return;
+	if (!listed.ok) return undefined;
 	const files = new Set(await listed.json());
+	// A deploy between the two fetches pairs a shell with another build's list; the shell's own files must be in it.
+	for (const file of shell.match(/\/assets\/[^"'\s<>()\\]+/g) ?? []) if (!files.has(file)) return undefined;
 	const cache = await caches.open(ASSETS);
 	const have = new Set((await cache.keys()).map((request) => new URL(request.url).pathname));
-	await Promise.all([...files].filter((file) => !have.has(file)).map((file) => cache.add(file).catch(() => undefined)));
-	for (const request of await cache.keys()) if (!files.has(new URL(request.url).pathname)) await cache.delete(request);
+	const fetched = await Promise.all(
+		[...files].filter((file) => !have.has(file)).map((file) => cache.add(file).then(() => true, () => false)),
+	);
+	return fetched.every(Boolean) ? files : undefined;
 }
 
 /** A built file, kept for good once fetched: a new build names new files. */
