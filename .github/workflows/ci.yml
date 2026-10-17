@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request replaces the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # moiraine needs gaidin beside it (link:../gaidin): the API types come from its src/web.ts, and the tests start its
+      # e2e server. It's gaidin's main, so a change there that breaks the app fails here.
+      - uses: actions/checkout@v7
+        with:
+          path: moiraine
+      - uses: actions/checkout@v7
+        with:
+          repository: brad-j/gaidin
+          path: gaidin
+
+      # The version comes from packageManager in moiraine's package.json.
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: moiraine/package.json
+
+      # The Node line gaidin supports.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - run: pnpm install --frozen-lockfile
+        working-directory: gaidin
+      - run: pnpm install --frozen-lockfile
+        working-directory: moiraine
+
+      # gaidin's e2e server runs the scripted model's command in its sandbox, which needs bubblewrap; Ubuntu 24.04
+      # confines the unprivileged user namespaces it uses, so this throwaway runner lifts that, as gaidin's CI does. The
+      # Playwright tests run in Chromium's headless shell.
+      - name: Install bubblewrap and Chromium
+        working-directory: moiraine
+        run: |
+          sudo apt-get install -y -qq bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          pnpm exec playwright install --with-deps --only-shell chromium
+
+      - name: Build, type check, lint and tests
+        working-directory: moiraine
+        shell: bash
+        run: pnpm check 2>&1 | tee check.log
+
+      - name: Browser tests
+        working-directory: moiraine
+        shell: bash
+        run: pnpm e2e 2>&1 | tee e2e.log
+
+      # A test that skips itself makes a broken runner look green.
+      - name: No tests skipped
+        working-directory: moiraine
+        run: |
+          grep -Eqx '(# |ℹ )skipped 0' check.log
+          ! grep -Eq '^ +[0-9]+ skipped' e2e.log
