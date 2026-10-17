@@ -25,6 +25,14 @@ test("a backslash before anything else stays", () => {
 	assert.equal(render("C:\\dir and \\é"), html("<p>C:\\dir and \\é</p>"));
 });
 
+test("an escaped delimiter closes no span", () => {
+	assert.equal(render("*a\\*b*"), html("<p><em>a*b</em></p>"));
+	assert.equal(render("_foo\\_bar_"), html("<p><em>foo_bar</em></p>"));
+	assert.equal(render("*literal \\* star*"), html("<p><em>literal * star</em></p>"));
+	assert.equal(render("**a\\**b**"), html("<p><strong>a**b</strong></p>"));
+	assert.equal(render("*a\\\\*"), html("<p><em>a\\</em></p>"));
+});
+
 test("a backslash in code is kept, and an escaped pipe works in a table cell", () => {
 	assert.equal(render("`a\\*b`"), html("<p><code>a\\*b</code></p>"));
 	assert.match(render("| a |\n| - |\n| x \\| y |"), /<td>x \| y<\/td>/);
@@ -32,9 +40,9 @@ test("a backslash in code is kept, and an escaped pipe works in a table cell", (
 
 test("task items are disabled checkboxes", () => {
 	const out = render("- [ ] todo\n- [x] done\n- [X] also *done*\n- [] plain");
-	assert.match(out, /<li class="task"><input type="checkbox" disabled=""\/>todo<\/li>/);
-	assert.match(out, /<li class="task"><input type="checkbox" disabled="" checked=""\/>done<\/li>/);
-	assert.match(out, /<li class="task"><input type="checkbox" disabled="" checked=""\/>also <em>done<\/em><\/li>/);
+	assert.match(out, /<li class="task"><input type="checkbox" aria-label="Not done" disabled=""\/>todo<\/li>/);
+	assert.match(out, /<li class="task"><input type="checkbox" aria-label="Done" disabled="" checked=""\/>done<\/li>/);
+	assert.match(out, /<li class="task"><input type="checkbox" aria-label="Done" disabled="" checked=""\/>also <em>done<\/em><\/li>/);
 	assert.match(out, /<li>\[\] plain<\/li>/);
 });
 

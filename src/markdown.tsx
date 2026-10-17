@@ -10,7 +10,8 @@ export type MarkdownOptions = {
 	link?: (href: string, label: ReactNode, key: number) => ReactNode | undefined;
 };
 
-const INLINE = /(`+)([\s\S]*?[^`])\1(?!`)|\*\*([^*][\s\S]*?)\*\*|__([^_][\s\S]*?)__|~~([\s\S]+?)~~|!?\[([^\]]+)\]\(<?((?:[^()\s<>]|\([^()\s]*\))+)>?\)|<?(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"\]])>?|\*([^*\s](?:[^*]*[^*\s])?)\*|(?<![\w])_([^_\s](?:[^_]*[^_\s])?)_(?![\w])|\\([!-/:-@[-`{-~])/g;
+/** A closing delimiter is never preceded by an unpaired backslash: an escaped character closes nothing. */
+const INLINE = /(`+)([\s\S]*?[^`])\1(?!`)|\*\*([^*][\s\S]*?)(?<!(?<!\\)(?:\\\\)*\\)\*\*|__([^_][\s\S]*?)(?<!(?<!\\)(?:\\\\)*\\)__|~~([\s\S]+?)(?<!(?<!\\)(?:\\\\)*\\)~~|!?\[([^\]]+)\]\(<?((?:[^()\s<>]|\([^()\s]*\))+)>?\)|<?(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"\]])>?|\*((?:\\[\s\S]|[^*\s\\])(?:(?:\\[\s\S]|[^*\\])*(?:\\[\s\S]|[^*\s\\]))?)\*|(?<![\w])_((?:\\[\s\S]|[^_\s\\])(?:(?:\\[\s\S]|[^_\\])*(?:\\[\s\S]|[^_\s\\]))?)_(?![\w])|\\([!-/:-@[-`{-~])/g;
 
 function inline(text: string, o: MarkdownOptions): ReactNode[] {
 	const out: ReactNode[] = [];
@@ -221,7 +222,7 @@ function list(lines: string[], i: number, indent: number, key: number, o: Markdo
 			const lead = content[0];
 			if (!loose && isParagraph(lead)) content = [lead.props.children, ...content.slice(1)];
 		}
-		if (task) content = [<input key="task" type="checkbox" disabled checked={task[1] !== " "} />, ...content];
+		if (task) content = [<input key="task" type="checkbox" aria-label={task[1] === " " ? "Not done" : "Done"} disabled checked={task[1] !== " "} />, ...content];
 		items.push(
 			<li key={items.length} className={task ? "task" : undefined}>
 				{content}
