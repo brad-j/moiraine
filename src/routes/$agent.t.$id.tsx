@@ -3,7 +3,7 @@ import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { problem } from "../api.ts";
 import { Conversation } from "../conversation/view.tsx";
 import { queries, useAgent } from "../queries.ts";
-import { MenuButton } from "../sidebar.tsx";
+import { MenuButton, useShownConversation } from "../sidebar.tsx";
 
 /** One of the agent's threads, job runs or conversations another agent started, which goes on from here. */
 export const Route = createFileRoute("/$agent/t/$id")({ component: Thread });
@@ -14,9 +14,12 @@ function Thread() {
 	const id = Number(params.id);
 	// A notification names the conversation it came from, which may be the agent's home.
 	const isHome = agent.home !== 0 && id === agent.home;
-	const found = useQuery({ ...queries.conversation(id), enabled: Number.isInteger(id) && id > 0 && !isHome });
+	const valid = Number.isInteger(id) && id > 0;
+	const found = useQuery({ ...queries.conversation(id), enabled: valid && !isHome });
+	// One that isn't there isn't gone back to.
+	useShownConversation(agent.id, valid && !isHome && !found.isError ? id : undefined);
 	if (isHome) return <Navigate to="/$agent" params={{ agent: agent.id }} replace />;
-	if (found.isError || !(Number.isInteger(id) && id > 0)) {
+	if (found.isError || !valid) {
 		return (
 			<>
 				<header className="convo-head">

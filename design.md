@@ -68,7 +68,9 @@ with a chat client's log rather than chat bubbles. Brad is the only user, on a c
   small mono below, a pulsing accent dot at the avatar's corner while it works, an amber count of what waits on the
   owner, and when it was last active and its newest message on hover; the agent shown has a 3-pixel bar at the rail's
   edge beside its picture, a ring around the picture, and its name, all in its color (changed with the
-  owner on 2026-10-16: the bar alone was cut off and the name's shade too faint to tell). A thread's header names its
+  owner on 2026-10-16: the bar alone was cut off and the name's shade too faint to tell). An agent in the rail goes
+  back to its conversation shown last in the tab, home or a thread; the one whose conversation is open goes to its
+  home. A thread's header names its
   agent, picture and name, as a page's header does. System is at the rail's foot, with an amber count of connectors to sign in. Beside the rail, the
   column (`--sidebar`, 252 pixels, `--color-paper-2`): the agent's name and job and "+ thread"; its pages (Schedule,
   Memory, Skills, Settings) as tabs, the current one underlined in the accent; a search of its threads; Home, then

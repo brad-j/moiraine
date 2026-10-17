@@ -4,9 +4,9 @@
 // started, grouped by when they were last active. System puts the pages across agents in the column instead. The column
 // collapses, leaving the rail; on a phone the whole sidebar is a drawer.
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useMatch } from "@tanstack/react-router";
 import { ListIcon, MagnifyingGlassIcon, SidebarSimpleIcon, SquaresFourIcon } from "@phosphor-icons/react";
-import { createContext, type ReactNode, useContext, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import { type Agent, type Gets, problem } from "./api.ts";
 import { Avatar } from "./avatar.tsx";
 import { PLACES, placeOf } from "./conversation/view.tsx";
@@ -52,6 +52,28 @@ export function MenuButton() {
 	);
 }
 
+const SHOWN = "moiraine.conversations";
+
+/** Each agent's conversation shown last in this tab, by agent: a thread's id, or none for its home. */
+function shownConversations(): Record<string, number> {
+	try {
+		const shown: unknown = JSON.parse(sessionStorage.getItem(SHOWN) ?? "{}");
+		return typeof shown === "object" && shown !== null ? (shown as Record<string, number>) : {};
+	} catch {
+		return {};
+	}
+}
+
+/** Records the agent's conversation shown, `thread` or its home without one, for its entry in the rail to go back to. */
+export function useShownConversation(agent: string, thread?: number) {
+	useEffect(() => {
+		const shown = shownConversations();
+		if (thread === undefined) delete shown[agent];
+		else shown[agent] = thread;
+		sessionStorage.setItem(SHOWN, JSON.stringify(shown));
+	}, [agent, thread]);
+}
+
 /** The pages across agents, which System shows in the column. */
 const SYSTEM = ["/agents", "/connectors", "/rules", "/browser", "/activity"];
 const onSystem = (path: string) => SYSTEM.some((page) => path === page || path.startsWith(`${page}/`));
@@ -73,7 +95,10 @@ export function Sidebar({ agent }: { agent: Agent }) {
 	);
 }
 
-/** Every agent but the archived ones, each going to its home conversation, and System below them. */
+/**
+ * Every agent but the archived ones, each going back to its conversation shown last, and System below them. The agent
+ * whose conversation is open goes to its home, which is how to get there with the column collapsed.
+ */
 function Rail({ current, system, show }: { current: Agent; system: boolean; show: (system: boolean) => void }) {
 	const { agents, fallback } = useAgents();
 	const { data: approvals = [] } = useQuery(queries.approvals);
@@ -82,12 +107,19 @@ function Rail({ current, system, show }: { current: Agent; system: boolean; show
 	const colorOf = useColorOf();
 	const byAgent = new Map(activity.map((a) => [a.agent, a]));
 	const shown = agents.filter((a) => a.archived === undefined || a.id === current.id);
+	const atHome = useMatch({ from: "/$agent/", shouldThrow: false });
+	const inThread = useMatch({ from: "/$agent/t/$id", shouldThrow: false });
+	const inConversation = atHome !== undefined || inThread !== undefined;
+	const back = shownConversations();
 	return (
 		<div className="rail">
 			<ul className="agents" role="group" aria-label="Agents">
 				{shown.map((a) => (
 					<li key={a.id} className={a.id === current.id ? "current" : undefined} data-agent-color={colorOf(a)}>
-						<AgentLink agent={a} activity={byAgent.get(a.id)} waiting={approvals.filter((r) => (r.agent ?? fallback) === a.id).length} onOpen={() => show(false)} />
+						<AgentLink
+							agent={a}
+							thread={a.id === current.id && inConversation ? undefined : back[a.id]}
+							activity={byAgent.get(a.id)} waiting={approvals.filter((r) => (r.agent ?? fallback) === a.id).length} onOpen={() => show(false)} />
 					</li>
 				))}
 			</ul>
@@ -106,15 +138,19 @@ function Rail({ current, system, show }: { current: Agent; system: boolean; show
 	);
 }
 
-/** An agent in the rail: its picture and name; when it was last active and its newest message, or that it's working, on hover. */
-function AgentLink({ agent, activity, waiting, onOpen }: { agent: Agent; activity: Activity | undefined; waiting: number; onOpen: () => void }) {
+/**
+ * An agent in the rail, going to `thread` or its home: its picture and name; when it was last active and its newest
+ * message, or that it's working, on hover.
+ */
+function AgentLink({ agent, thread, activity, waiting, onOpen }: { agent: Agent; thread: number | undefined; activity: Activity | undefined; waiting: number; onOpen: () => void }) {
 	const last = activity?.last;
 	// The owner's words, in the agent's home or a thread, start with "You:"; a job's prompt or another agent's are as they are.
 	const yours = last?.role === "user" && (last.place === "main" || last.place === "thread");
 	const preview = last === undefined ? agent.job || "No messages yet" : `${yours ? "You: " : ""}${oneLine(last.text)}`;
 	const said = activity?.running ? "working…" : last === undefined ? preview : `${lastSeen(last.at)} · ${preview}`;
+	const to = thread === undefined ? ({ to: "/$agent", params: { agent: agent.id } } as const) : ({ to: "/$agent/t/$id", params: { agent: agent.id, id: String(thread) } } as const);
 	return (
-		<Link className="agent" to="/$agent" params={{ agent: agent.id }} activeOptions={{ exact: true }} title={`${agent.name}: ${said}`} onClick={onOpen}>
+		<Link className="agent" {...to} activeOptions={{ exact: true }} title={`${agent.name}: ${said}`} onClick={onOpen}>
 			<span className="picture">
 				<Avatar agent={agent} size="lg" />
 				{activity?.running && (

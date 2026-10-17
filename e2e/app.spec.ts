@@ -183,6 +183,39 @@ test("a new thread starts from the app, is listed in the sidebar as the app's, a
 	await expect(page.locator("#log")).not.toContainText("plan the garden");
 });
 
+test("an agent in the rail goes back to its conversation shown last, or home from its own conversation", async ({ page }) => {
+	expect((await page.request.post("/api/agents/save", { data: { id: "scout", name: "Scout", job: "Looks things up." } })).ok()).toBe(true);
+	await page.goto("/");
+	const sidebar = page.getByRole("navigation", { name: "Conversations" });
+	const rail = page.getByRole("group", { name: "Agents" });
+	const gaidin = rail.locator("li", { hasText: "gaidin" }).locator(".agent");
+	await sidebar.getByRole("link", { name: "New thread" }).click();
+	await expect(page.locator(".convo-head h1")).toHaveText("New thread");
+	await send(page, "plan the garden");
+	await expect(page).toHaveURL(/\/gaidin\/t\/\d+$/);
+	const thread = page.url();
+
+	// From one of its pages, and from another agent, it's the thread again.
+	await sidebar.getByRole("group", { name: "Pages" }).getByRole("link", { name: "Memory" }).click();
+	await expect(page).toHaveURL(/\/gaidin\/memory$/);
+	await gaidin.click();
+	await expect(page).toHaveURL(thread);
+	await expect(page.locator(".convo-head h1")).toHaveText("plan the garden");
+	await rail.locator("li", { hasText: "Scout" }).locator(".agent").click();
+	await expect(page).toHaveURL(/\/scout$/);
+	await gaidin.click();
+	await expect(page).toHaveURL(thread);
+
+	// From the thread itself it's home, and from then on home.
+	await gaidin.click();
+	await expect(page).toHaveURL(/\/gaidin$/);
+	await page.getByRole("button", { name: "System" }).click();
+	await sidebar.getByRole("link", { name: "Activity" }).click();
+	await expect(page).toHaveURL(/\/activity$/);
+	await gaidin.click();
+	await expect(page).toHaveURL(/\/gaidin$/);
+});
+
 test("a job run opens from the sidebar, and a message to it goes to a thread forked from it", async ({ page }) => {
 	await page.goto("/");
 	await send(page, "check the weather soon");
