@@ -108,3 +108,38 @@ test("a new thread starts with a file", async ({ page }) => {
 	await expect(page).toHaveURL(/\/gaidin\/t\/\d+$/);
 	await expect(page.locator("#log")).toContainText("I can see 1 image.");
 });
+
+test("what's typed and attached and not sent stays with its conversation on coming back, and the text through a reload", async ({ page }) => {
+	await page.goto("/gaidin");
+	const sidebar = page.getByRole("navigation", { name: "Conversations" });
+	await attach(page, { name: "dog.png", mimeType: "image/png", buffer: PIXEL });
+	await expect(files(page).locator(".attachment.ready")).toHaveCount(1);
+	await page.locator("#message").fill("look at this");
+
+	// A new thread's prompt is its own.
+	await sidebar.getByRole("link", { name: "New thread" }).click();
+	await expect(page.locator(".convo-head h1")).toHaveText("New thread");
+	await expect(page.locator("#message")).toHaveValue("");
+	await expect(files(page)).toHaveCount(0);
+	await page.locator("#message").fill("plan the garden");
+
+	await sidebar.getByRole("group", { name: "Pages" }).getByRole("link", { name: "Memory" }).click();
+	await expect(page.locator("#message")).toHaveCount(0);
+	await sidebar.locator(".threads .home").click();
+	await expect(page.locator("#message")).toHaveValue("look at this");
+	await expect(files(page).locator(".attachment.ready")).toContainText("dog.png");
+	await sidebar.getByRole("link", { name: "New thread" }).click();
+	await expect(page.locator("#message")).toHaveValue("plan the garden");
+
+	// Sent, it's gone from the home prompt for good.
+	await sidebar.locator(".threads .home").click();
+	await page.locator("#message").press("Enter");
+	await expect(page.locator("#log")).toContainText("I can see 1 image.");
+	await expect(page.locator("#message")).toHaveValue("");
+	await page.reload();
+	await expect(page.locator("#log")).toContainText("I can see 1 image.");
+	await expect(page.locator("#message")).toHaveValue("");
+	await expect(files(page)).toHaveCount(0);
+	await sidebar.getByRole("link", { name: "New thread" }).click();
+	await expect(page.locator("#message")).toHaveValue("plan the garden");
+});

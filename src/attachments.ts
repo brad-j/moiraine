@@ -1,6 +1,7 @@
 // Files going with a message. Each is sent to gaidin as soon as it's added, so it's ready when the message is, and the
-// message names them by the ids gaidin gave. An image over what the model takes is made smaller here first.
-import { useRef, useState } from "react";
+// message names them by the ids gaidin gave. An image over what the model takes is made smaller here first. A prompt's
+// files are kept while the page is open, so they're still there, and still being sent, on coming back to it.
+import { useSyncExternalStore } from "react";
 import { problem, upload } from "./api.ts";
 
 /** gaidin sends an image this size or smaller to the model; a bigger one is saved as a file instead. */
@@ -69,16 +70,41 @@ async function thumbnail(file: File, side = 72): Promise<string | undefined> {
 	}
 }
 
-/** The files going with the next message: adding sends each to gaidin; `ids` are the ready ones'. */
-export function useAttachments() {
-	const [items, setItems] = useState<Attachment[]>([]);
-	const next = useRef(0);
+/** Each prompt's files, by the prompt's key, and what to tell when they change. */
+const kept = new Map<string, Attachment[]>();
+const watching = new Map<string, Set<() => void>>();
+const NONE: Attachment[] = [];
+let next = 0;
+
+function keep(prompt: string, update: (now: Attachment[]) => Attachment[]) {
+	const items = update(kept.get(prompt) ?? NONE);
+	if (items.length === 0) kept.delete(prompt);
+	else kept.set(prompt, items);
+	for (const tell of watching.get(prompt) ?? []) tell();
+}
+
+function watch(prompt: string, tell: () => void): () => void {
+	const set = watching.get(prompt) ?? new Set();
+	watching.set(prompt, set.add(tell));
+	return () => {
+		set.delete(tell);
+		if (set.size === 0) watching.delete(prompt);
+	};
+}
+
+/** The files going with the next message from the prompt `prompt`: adding sends each to gaidin; `ids` are the ready ones'. */
+export function useAttachments(prompt: string) {
+	const items = useSyncExternalStore(
+		(tell) => watch(prompt, tell),
+		() => kept.get(prompt) ?? NONE,
+	);
+	const setItems = (update: (now: Attachment[]) => Attachment[]) => keep(prompt, update);
 
 	const change = (key: number, update: Partial<Attachment>) => setItems((now) => now.map((a) => (a.key === key ? { ...a, ...update } : a)));
 
 	function add(files: Iterable<File>) {
 		for (const file of files) {
-			const key = next.current++;
+			const key = next++;
 			const item: Attachment = { key, name: file.name || "file", size: file.size, state: "sending" };
 			setItems((now) => [...now, item]);
 			if (file.type.startsWith("image/")) void thumbnail(file).then((preview) => preview !== undefined && change(key, { preview }));
@@ -103,7 +129,7 @@ export function useAttachments() {
 		items,
 		add,
 		remove,
-		clear: () => setItems([]),
+		clear: () => setItems(() => NONE),
 		/** Still being sent: the message waits for them. */
 		sending: items.some((a) => a.state === "sending"),
 		ids: items.flatMap((a) => (a.state === "ready" && a.id !== undefined ? [a.id] : [])),

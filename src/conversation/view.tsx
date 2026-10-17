@@ -146,6 +146,7 @@ export function Conversation({ agent, thread, menu, draft }: Shown) {
 					<Dock typed />
 					<Prompt
 						ref={prompt}
+						keepAs={id === undefined ? `${agent.id}:home` : `${agent.id}:t:${id}`}
 						// gaidin posts what's sent here in the Slack thread too, then the answer.
 						placeholder={summary !== undefined && placeOf(summary) === "slack" ? `Message ${agent.name}; it's posted in the Slack thread too` : `Message ${agent.name}, or type / for commands`}
 						commands={commands}
@@ -189,6 +190,7 @@ export function NewThread({ agent, menu }: Omit<Shown, "thread" | "draft">) {
 				<div id="dock-inner">
 					<Dock typed={false} />
 					<Prompt
+						keepAs={`${agent.id}:new`}
 						placeholder={`Start a thread with ${agent.name}`}
 						commands={[]}
 						history={() => []}

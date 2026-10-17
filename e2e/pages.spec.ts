@@ -51,9 +51,10 @@ test("+ new reminder starts the request in the home conversation's prompt, on a 
 	await expect(page).toHaveURL(/\/gaidin$/);
 	await expect(page.locator("#message")).toHaveValue("Remind me to ");
 	await expect(page.locator("#message")).toBeFocused();
-	// The draft left the address, so a reload starts empty.
+	// The draft left the address, so a reload has it once, as the prompt kept it.
+	await expect(page).toHaveURL(/\/gaidin$/);
 	await page.reload();
-	await expect(page.locator("#message")).toHaveValue("");
+	await expect(page.locator("#message")).toHaveValue("Remind me to ");
 });
 
 test("memory adds, edits and forgets shared notes, keeps work notes apart, and /remember adds one from a conversation", async ({ page }) => {

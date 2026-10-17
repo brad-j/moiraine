@@ -1,7 +1,8 @@
 // The prompt, as in gaidin's console: a text box that grows, with the status line under it, on the log's gutter as
 // the owner's next line. Enter sends, a leading / runs a command (Tab completes, and a menu offers them), ↑ and ↓ go
 // through earlier messages, and Esc or Ctrl+C stops a run. Files go with a message: attached, dropped on it or
-// pasted, shown as chips above the text.
+// pasted, shown as chips above the text. What's typed and attached and not sent is kept by conversation, so it's there
+// on coming back: the text in the tab, through a reload, and the files while the page is open.
 import { type ReactNode, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { PaperclipIcon, PaperPlaneRightIcon, XIcon } from "@phosphor-icons/react";
 import { type Attachment, useAttachments } from "../attachments.ts";
@@ -12,6 +13,8 @@ type Suggestion = { value: string; label: string; args?: string; hint?: string; 
 
 /** What the conversation does with the prompt: put text in it, from a status line button. */
 export type PromptHandle = { prefill: (text: string) => void };
+
+const DRAFT = "moiraine.draft:";
 
 function suggestions(commands: readonly Command[], text: string): Suggestion[] {
 	if (!text.startsWith("/") || text.startsWith("//") || text.includes("\n")) return [];
@@ -34,6 +37,8 @@ function suggestions(commands: readonly Command[], text: string): Suggestion[] {
 
 export function Prompt({ ref, ...props }: {
 	ref?: React.Ref<PromptHandle>;
+	/** Which conversation's prompt this is, for keeping what's typed and attached in it: "gaidin:home", "gaidin:t:12". */
+	keepAs: string;
 	placeholder: string;
 	commands: readonly Command[];
 	/** Earlier messages in the conversation, oldest first, for ↑. */
@@ -50,11 +55,15 @@ export function Prompt({ ref, ...props }: {
 	const { commands, running, stop } = props;
 	const input = useRef<HTMLTextAreaElement>(null);
 	const picker = useRef<HTMLInputElement>(null);
-	const attachments = useAttachments();
+	const attachments = useAttachments(props.keepAs);
 	const [dropping, setDropping] = useState(false);
 	// A message waits for its files to be sent, and doesn't go while one couldn't be.
 	const held = attachments.sending || attachments.items.some((a) => a.state === "failed");
-	const [text, setText] = useState("");
+	const [text, setText] = useState(() => (typeof sessionStorage === "undefined" ? null : sessionStorage.getItem(DRAFT + props.keepAs)) ?? "");
+	useEffect(() => {
+		if (text === "") sessionStorage.removeItem(DRAFT + props.keepAs);
+		else sessionStorage.setItem(DRAFT + props.keepAs, text);
+	}, [text, props.keepAs]);
 	const [menuIndex, setMenuIndex] = useState(0);
 	const [dismissed, setDismissed] = useState<string>();
 	/** Commands typed since the page opened, after the conversation's messages for ↑. */
