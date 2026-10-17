@@ -96,6 +96,32 @@ test("Alt+N denies, Alt+Y allows once and Alt+A allows the host from then on", a
 	await expect(dock).toBeEmpty();
 });
 
+test("Alt+N typed into a field, or already handled, leaves the approval waiting", async ({ page }) => {
+	await page.goto("/");
+	const dock = page.locator("#approvals");
+	await send(page, "fetch");
+	await expect(dock).toContainText("fetch_url");
+
+	// In a page's field, as Option+N is ñ on a Mac.
+	await page.goto("/gaidin/memory");
+	const note = page.getByRole("textbox", { name: "A new note" }).first();
+	await note.focus();
+	await page.keyboard.type("Se");
+	await page.keyboard.press("Alt+KeyN");
+	await expect(dock).toContainText("fetch_url");
+
+	// In the prompt with something typed.
+	await page.goto("/gaidin");
+	await page.locator("#message").fill("Se");
+	await page.keyboard.press("Alt+KeyN");
+	await expect(dock).toContainText("fetch_url");
+
+	// Where it's not typed, it still answers.
+	await page.locator("#message").fill("");
+	await page.keyboard.press("Alt+KeyN");
+	await expect(page.locator("#log")).toContainText("Brad said no.");
+});
+
 test("a question is answered with its button or in the owner's own words", async ({ page }) => {
 	await page.goto("/");
 	const dock = page.locator("#approvals");
