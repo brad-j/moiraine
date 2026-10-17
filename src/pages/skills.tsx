@@ -369,7 +369,7 @@ function FileEditor({ agent, skill, file, initial, isNew = false, done }: { agen
 	const [kept, keep] = useKeptDraft(`skill:${agent.id}/${skill.name}/${file}`, initial);
 	const draft = kept ?? initial;
 	const [busy, setBusy] = useState(false);
-	const guard = useLeaveGuard(draft !== initial);
+	const guard = useLeaveGuard(draft !== initial, () => keep(undefined));
 	const save = async () => {
 		setBusy(true);
 		const saved = await attempt(async () => {

@@ -1,17 +1,21 @@
 // Unsaved edits on the pages: a guard that asks before the app navigates away or the page unloads while an editor
 // holds changes, and drafts kept in sessionStorage (under the composer's prefix) for the long ones.
 import { useBlocker } from "@tanstack/react-router";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 const DRAFT = "moiraine.draft:";
 
 /**
  * Asks before leaving while `dirty`: in the app with `dialog`, which the editor renders, and on a reload or closing
  * the tab with the browser's own prompt. `release` lets the next navigation through, for one the editor makes itself
- * once its text is saved or given up.
+ * once its text is saved or given up; the guard arms again when the editor is clean, so an editor that stays mounted
+ * is guarded for its next edit. `onLeave` runs when the owner chooses to leave, to drop what the editor kept.
  */
-export function useLeaveGuard(dirty: boolean): { dialog: ReactNode; release: () => void } {
+export function useLeaveGuard(dirty: boolean, onLeave?: () => void): { dialog: ReactNode; release: () => void } {
 	const released = useRef(false);
+	useEffect(() => {
+		if (!dirty) released.current = false;
+	}, [dirty]);
 	const blocker = useBlocker({ shouldBlockFn: () => dirty && !released.current, enableBeforeUnload: () => dirty && !released.current, withResolver: true });
 	const dialog =
 		blocker.status === "blocked" ? (
@@ -21,7 +25,11 @@ export function useLeaveGuard(dirty: boolean): { dialog: ReactNode; release: () 
 					<button className="plain" type="button" autoFocus onClick={blocker.reset}>
 						stay
 					</button>
-					<button className="danger" type="button" onClick={blocker.proceed}>
+					<button className="danger" type="button" onClick={() => {
+								onLeave?.();
+								blocker.proceed();
+							}}
+						>
 						leave
 					</button>
 				</div>

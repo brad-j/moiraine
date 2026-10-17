@@ -231,6 +231,22 @@ test("an edited skill file asks before another file replaces it, and survives st
 	await guard.getByRole("button", { name: "leave" }).click();
 	await expect(page).toHaveURL(/\/skills\/guarded\/notes\.md$/);
 	await expect(page.locator(".skill-doc h2")).toHaveText("Notes");
+
+	// Leaving dropped the kept draft: the file opens as saved.
+	await files.getByRole("link", { name: "SKILL.md" }).click();
+	await page.getByRole("button", { name: "edit" }).click();
+	await expect(editor).not.toHaveValue(text);
+});
+
+test("an edited agent entry in settings asks before a sidebar tab leaves it", async ({ page }) => {
+	await page.goto("/gaidin/settings");
+	await page.getByRole("textbox", { name: "Job" }).fill("Something else entirely.");
+	await page.locator("#sidebar .agents li.current > .agent").click();
+	const guard = page.getByRole("alertdialog", { name: "Unsaved changes" });
+	await expect(guard).toBeVisible();
+	await guard.getByRole("button", { name: "stay" }).click();
+	await expect(page).toHaveURL(/\/gaidin\/settings$/);
+	await expect(page.getByRole("textbox", { name: "Job" })).toHaveValue("Something else entirely.");
 });
 
 test("settings switch the thinking and a tool, keep the instructions, and say what notifications need", async ({ page }) => {

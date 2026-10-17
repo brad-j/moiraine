@@ -2,7 +2,7 @@
 // which apply from its next request and to new threads, what it may reach (hosts, workspaces, browser profiles, other
 // agents), and the devices that get notifications. The settings file's values (keys, limits, Slack tokens) stay in the
 // file.
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { TrashIcon, UploadSimpleIcon } from "@phosphor-icons/react";
@@ -139,9 +139,11 @@ function EntrySection({ agent, save, saved }: { agent: Agent; save: (change: Ent
 			if (await attempt(() => save({ name: value.name, job: value.job, channel: value.channel.trim() }))) formApi.reset(value);
 		},
 	});
+	const guard = useLeaveGuard(useStore(form.store, (state) => state.isDirty));
 	return (
 		<section>
 			<SectionHead title="Agent" count={agent.id} />
+			{guard.dialog}
 			<Picture agent={agent} save={save} />
 			<form
 				className="fields"
@@ -349,7 +351,7 @@ function InstructionsSection({ agent, settings, configure, saved }: { agent: str
 	const box = useRef<HTMLTextAreaElement>(null);
 	const text = draft ?? settings.instructions;
 	const changed = draft !== undefined && draft !== settings.instructions;
-	const guard = useLeaveGuard(changed);
+	const guard = useLeaveGuard(changed, () => setDraft(undefined));
 	useLayoutEffect(() => {
 		const el = box.current;
 		if (el === null) return;
