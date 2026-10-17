@@ -173,6 +173,8 @@ export function NewThread({ agent, menu }: Omit<Shown, "thread" | "draft">) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [problemText, setProblem] = useState<string>();
+	// No conversation is open here to say when the requests waiting on the owner change, so the dock asks again often.
+	useQuery({ ...queries.approvals, refetchInterval: 5_000 });
 	return (
 		<>
 			<header className="convo-head">
