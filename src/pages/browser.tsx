@@ -225,6 +225,15 @@ export function TakeOver({ name }: { name: string }) {
 		if (started !== undefined && !started.moved) send({ type: "click", x: started.x, y: started.y });
 	}
 
+	/**
+	 * Ends the hold. gaidin tells the live view it's released before it closes the hand-over request, so the refetch the
+	 * release starts can still see the request; once the POST is answered it's closed, so the dock asks again.
+	 */
+	async function done() {
+		await post("/api/browser/release", { profile: name });
+		await queryClient.invalidateQueries({ queryKey: ["approvals"] });
+	}
+
 	async function go(event: FormEvent) {
 		event.preventDefault();
 		setFailed(undefined);
@@ -254,7 +263,7 @@ export function TakeOver({ name }: { name: string }) {
 						<KeyboardIcon aria-hidden="true" />
 						Keyboard
 					</button>
-					<Action className="primary" run={() => post("/api/browser/release", { profile: name })}>
+					<Action className="primary" run={done}>
 						Done
 					</Action>
 				</form>
