@@ -35,6 +35,26 @@ test("an agent hands the browser over; the owner takes it over from the dock, ty
 	const before = await frames(page);
 	await page.keyboard.type("brad");
 	await expect.poll(() => frames(page)).toBeGreaterThan(before);
+	// gaidin tells the live view it's released before it closes the hand-over request, so on a loaded machine the requests
+	// the page asks for on the release can still have it. Here they always do: until gaidin has answered Done and one
+	// such answer has reached the page, the page is given the requests as they were.
+	const waiting: unknown = await (await page.request.get("/api/approvals")).json();
+	let clicked = false;
+	let stale = true;
+	let servedStale!: () => void;
+	const staleServed = new Promise<void>((done) => (servedStale = done));
+	await page.route("**/api/approvals", async (route) => {
+		if (!stale) return route.fallback();
+		await route.fulfill({ json: waiting });
+		if (clicked) servedStale();
+	});
+	await page.route("**/api/browser/release", async (route) => {
+		const response = await route.fetch();
+		await staleServed;
+		stale = false;
+		await route.fulfill({ response });
+	});
+	clicked = true;
 	await page.getByRole("main").getByRole("button", { name: "Done" }).click();
 	await expect(page.locator(".live-released")).toContainText("Released: you're done. The agents can use personal again.");
 	await expect(page.locator("#approvals")).toBeEmpty();
