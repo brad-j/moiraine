@@ -220,6 +220,8 @@ test("an agent in the rail goes back to its conversation shown last, or home fro
 	await send(page, "plan the garden");
 	await expect(page).toHaveURL(/\/gaidin\/t\/\d+$/);
 	const thread = page.url();
+	// The address changes before the thread is drawn, and one left before then was never shown.
+	await expect(page.locator(".convo-head h1")).toHaveText("plan the garden");
 
 	// From one of its pages, and from another agent, it's the thread again.
 	await sidebar.getByRole("group", { name: "Pages" }).getByRole("link", { name: "Memory" }).click();
