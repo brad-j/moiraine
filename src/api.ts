@@ -9,7 +9,7 @@ export type { Gets, LiveEvent, Posts, StreamEvent, Uploaded };
 export type LiveInput = Posts["/api/browser/input"]["body"]["events"][number];
 
 /** The protocol version this build is typed against; tsc fails here when gaidin raises it. */
-export const PROTOCOL: typeof ServerProtocol = 15;
+export const PROTOCOL: typeof ServerProtocol = 16;
 /** Where gaidin serves an agent's picture, with ?id= and &v=, its name. */
 export const AVATAR_PATH: typeof ServerAvatarPath = "/api/agents/avatar";
 /** Where gaidin streams a browser profile's live view, with ?profile=. */
