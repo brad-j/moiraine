@@ -48,16 +48,27 @@ export function useLeaveGuard(dirty: boolean, onLeave?: () => void): { dialog: R
  * It is undefined until the text is touched, then follows `initial` no more; setting undefined, or `initial`, drops it.
  */
 export function useKeptDraft(key: string, initial: string): [string | undefined, (text: string | undefined) => void] {
-	const [draft, set] = useState<string | undefined>(() => {
-		const kept = typeof sessionStorage === "undefined" ? null : sessionStorage.getItem(DRAFT + key);
-		return kept === null || kept === initial ? undefined : kept;
-	});
+	const [draft, set] = useState<string | undefined>(() => keptDraft(key, initial));
 	return [
 		draft,
 		(text) => {
 			set(text);
-			if (text === undefined || text === initial) sessionStorage.removeItem(DRAFT + key);
-			else sessionStorage.setItem(DRAFT + key, text);
+			try {
+				if (text === undefined || text === initial) sessionStorage.removeItem(DRAFT + key);
+				else sessionStorage.setItem(DRAFT + key, text);
+			} catch {
+				// Storage full or blocked: the text stays in the editor, only the reload copy is lost.
+			}
 		},
 	];
+}
+
+/** The text kept as `key` that differs from `initial`, if any; what a reload left behind. */
+export function keptDraft(key: string, initial: string): string | undefined {
+	try {
+		const kept = typeof sessionStorage === "undefined" ? null : sessionStorage.getItem(DRAFT + key);
+		return kept === null || kept === initial ? undefined : kept;
+	} catch {
+		return undefined;
+	}
 }

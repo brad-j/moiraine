@@ -225,7 +225,6 @@ test("an edited skill file asks before another file replaces it, and survives st
 	// A reload brings the draft back, and leaving then drops it.
 	page.once("dialog", (dialog) => void dialog.accept());
 	await page.reload();
-	await page.getByRole("button", { name: "edit" }).click();
 	await expect(editor).toHaveValue(text);
 	await files.getByRole("link", { name: "notes.md" }).click();
 	await guard.getByRole("button", { name: "leave" }).click();

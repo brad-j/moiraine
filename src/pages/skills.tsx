@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type Agent, type Gets, post, problem } from "../api.ts";
-import { useKeptDraft, useLeaveGuard } from "../guard.tsx";
+import { keptDraft, useKeptDraft, useLeaveGuard } from "../guard.tsx";
 import { Markdown } from "../markdown.tsx";
 import { queries } from "../queries.ts";
 import { Confirm, Empty, Page, SectionHead, useAttempt } from "./page.tsx";
@@ -316,7 +316,8 @@ function NewFile({ agent, skill }: { agent: Agent; skill: Skill }) {
 function Document({ agent, skill, file, text }: { agent: Agent; skill: Skill; file: string; text: string }) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const [editing, setEditing] = useState(false);
+	// A draft a reload left behind opens the editor again, on the text it was made from.
+	const [editing, setEditing] = useState(() => skill.source === "local" && keptDraft(`skill:${agent.id}/${skill.name}/${file}`, text) !== undefined);
 	const local = skill.source === "local";
 	if (editing) return <FileEditor agent={agent} skill={skill} file={file} initial={text} done={() => setEditing(false)} />;
 	// SKILL.md's front matter is the name and description, shown above.
