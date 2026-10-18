@@ -1,6 +1,6 @@
 // A conversation: an agent's home, one of its threads, or a thread about to start. The log, the dock and the prompt,
 // with the status line under it, as gaidin's console has them.
-import { ArrowDownIcon, ChatCircleIcon, ClockIcon, RobotIcon, SlackLogoIcon, StopIcon } from "@phosphor-icons/react";
+import { ArrowDownIcon, ChatCircleIcon, ClockIcon, RobotIcon, SlackLogoIcon, SpeakerHighIcon, StopIcon } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -17,9 +17,9 @@ import { useConversation } from "./stream.ts";
 const LEVELS = ["off", "low", "medium", "high"] as const;
 
 /** Where a conversation began, as its label says. */
-export const PLACES = { slack: "Slack", app: "app", job: "job run", agent: "from an agent" } as const;
+export const PLACES = { slack: "Slack", app: "app", voice: "speaker", job: "job run", agent: "from an agent" } as const;
 export const placeOf = (summary: Pick<Summary, "place" | "origin">) => (summary.place === "thread" ? (summary.origin ?? "slack") : summary.place);
-const ORIGINS = { slack: SlackLogoIcon, app: ChatCircleIcon, job: ClockIcon, agent: RobotIcon } as const;
+const ORIGINS = { slack: SlackLogoIcon, app: ChatCircleIcon, voice: SpeakerHighIcon, job: ClockIcon, agent: RobotIcon } as const;
 
 /** Where a conversation began, as an icon beside its label. */
 export function Origin({ place }: { place: keyof typeof PLACES }) {

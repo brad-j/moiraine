@@ -1,7 +1,7 @@
 // The folder helpers behind "Trust <folder>": a file's folder, the ones it widens to, and its short label.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ancestors, cleanPath, folderOf, shortFolder } from "../src/format.ts";
+import { ancestors, cleanPath, folderOf, ownerMessage, shortFolder } from "../src/format.ts";
 
 test("a path is cleaned as gaidin compares it", () => {
 	assert.equal(cleanPath("notes/./Ideas//a.md"), "notes/Ideas/a.md");
@@ -34,4 +34,10 @@ test("a long folder is labeled by its last two names", () => {
 	assert.equal(shortFolder("notes/Ideas"), "notes/Ideas");
 	assert.equal(shortFolder("/home/brad/westwood/Notes/Ideas"), "…/Notes/Ideas");
 	assert.equal(shortFolder("notes/Ideas/2026"), "…/Ideas/2026");
+});
+
+test("what a speaker heard comes apart from its mark, with the speaker's name", () => {
+	assert.deepEqual(ownerMessage("[Sun 2026-10-18 19:14 GMT-4] [spoken] (kitchen speaker) plan the garden"), { time: "Sun 2026-10-18 19:14 GMT-4", speaker: "kitchen", text: "plan the garden", images: [], files: [] });
+	assert.equal(ownerMessage("[Sun 2026-10-18 19:14 GMT-4] plan the garden").speaker, undefined);
+	assert.equal(ownerMessage("[Sun 2026-10-18 19:14 GMT-4] [spoken] by me").text, "[spoken] by me");
 });

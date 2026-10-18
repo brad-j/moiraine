@@ -209,6 +209,28 @@ test("a new thread starts from the app, is listed in the sidebar as the app's, a
 	await expect(page.locator("#log")).not.toContainText("plan the garden");
 });
 
+test("a thread a speaker started is listed as the speaker's", async ({ page, request, server }) => {
+	const turn = await request.post(`${server}/api/voice/turn`, {
+		headers: { Authorization: "Bearer e2e-voice-token-0123456789abcdefghij" },
+		data: { speaker: "kitchen", text: "plan the garden", key: "e2e-1" },
+	});
+	expect(turn.status()).toBe(200);
+	expect(await turn.text()).toContain("event: done");
+	await page.goto("/");
+	const sidebar = page.getByRole("navigation", { name: "Conversations" });
+	const listed = sidebar.locator(".thread").first();
+	await expect(listed).toContainText("speaker");
+	await listed.click();
+	await expect(page).toHaveURL(/\/gaidin\/t\/\d+$/);
+	await expect(page.locator(".convo-head .tag.origin")).toHaveText("speaker");
+	// The title and the message are the words, and the message is the speaker's.
+	await expect(page.locator(".convo-head h1")).toHaveText("plan the garden");
+	await expect(listed).toContainText("plan the garden");
+	await expect(page.locator("#log .row.you .b")).toHaveText("plan the garden");
+	await expect(page.locator("#log .row.you")).toContainText("kitchen");
+	await page.screenshot({ path: "e2e/results/voice-thread.png" });
+});
+
 test("an agent in the rail goes back to its conversation shown last, or home from its own conversation", async ({ page }) => {
 	expect((await page.request.post("/api/agents/save", { data: { id: "scout", name: "Scout", job: "Looks things up." } })).ok()).toBe(true);
 	await page.goto("/");

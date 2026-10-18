@@ -87,14 +87,19 @@ type Said = string | readonly ({ type: string; text?: string; data?: string; mim
 /**
  * An owner's message, apart: its text with the time stamp split off, the images that went with it, and where its other
  * files were saved, from the note gaidin adds (files.ts: "[Files from the app: a is saved as uploads/x (...); ...]").
+ * What a speaker heard starts with gaidin's mark and the speaker's name (threads.ts: "[spoken] (kitchen speaker) ..."),
+ * which come apart as `speaker`.
  */
-export function ownerMessage(content: Said): { time?: string; text: string; images: { data: string; mimeType: string }[]; files: string[] } {
+export function ownerMessage(content: Said): { time?: string; speaker?: string; text: string; images: { data: string; mimeType: string }[]; files: string[] } {
 	const parts = typeof content === "string" ? [{ type: "text", text: content }] : content;
 	const whole = parts.map((p) => (p.type === "text" ? (p.text ?? "") : "")).join("");
 	const images = parts.flatMap((p) => (p.type === "image" && p.data !== undefined && p.mimeType !== undefined ? [{ data: p.data, mimeType: p.mimeType }] : []));
 	const note = /\n\n\[Files from [^:]+: ([\s\S]*?)\. Read them with the file tools[\s\S]*\]$/.exec(whole);
 	const { time, text } = splitStamp(note === null ? whole : whole.slice(0, note.index));
-	return { time, text: text.trim(), images, files: note === null ? [] : note[1]!.split("; ") };
+	const heard = /^\[spoken\] \(([a-z][a-z0-9-]*) speaker\) /.exec(text);
+	const files = note === null ? [] : note[1]!.split("; ");
+	if (heard === null) return { time, text: text.trim(), images, files };
+	return { time, speaker: heard[1]!, text: text.slice(heard[0].length).trim(), images, files };
 }
 
 const yesterday = (at: number) => {

@@ -280,7 +280,8 @@ function entryLines(transcript: Transcript, entry: Entry, results: Map<string, T
 				time = said.time;
 				const prompts = options.prompts;
 				const body = <Said text={said.text} images={said.images} files={said.files} />;
-				out.push(prompts === undefined ? { key: `${key}:${n}`, kind: "you", label: "you", body } : { key: `${key}:${n}`, kind: "prompt", label: PROMPTS[prompts], body });
+				// What a speaker heard is from whoever was in the room, so it's labeled with the speaker.
+				out.push(prompts === undefined ? { key: `${key}:${n}`, kind: "you", label: said.speaker ?? "you", body } : { key: `${key}:${n}`, kind: "prompt", label: PROMPTS[prompts], body });
 			} else out.push({ key: `${key}:${n}`, kind: "sys", label: "note", body: `${entry.kind}: ${splitStamp(textOf(message.content)).text}` });
 		} else if (message.role === "assistant") {
 			out.push(...blockLines(transcript, message.content, answerKey(message, key), results, false));
