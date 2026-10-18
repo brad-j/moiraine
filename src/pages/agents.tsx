@@ -2,13 +2,14 @@
 // settings, and making, archiving and restoring agents. Archiving pauses its jobs and cancels its reminders; its
 // conversations, notes and sandbox stay, and restoring leaves its jobs paused. The default agent can't be archived.
 import { PlusIcon } from "@phosphor-icons/react";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { type Agent, post } from "../api.ts";
 import { Avatar } from "../avatar.tsx";
 import { ago, when } from "../format.ts";
+import { useLeaveGuard } from "../guard.tsx";
 import { useAgents } from "../queries.ts";
 import { Action, Confirm, Page, SectionHead, useAttempt } from "./page.tsx";
 
@@ -111,10 +112,13 @@ function MakeForm({ done }: { done: () => void }) {
 				await queryClient.invalidateQueries({ queryKey: ["agents"] });
 			});
 			if (!made) return;
+			guard.release();
 			done();
 			void navigate({ to: "/$agent/settings", params: { agent: value.id.trim() } });
 		},
 	});
+	const dirty = useStore(form.store, (state) => state.isDirty);
+	const guard = useLeaveGuard(dirty);
 	return (
 		<form
 			className="skill-form"
@@ -123,6 +127,7 @@ function MakeForm({ done }: { done: () => void }) {
 				void form.handleSubmit();
 			}}
 		>
+			{guard.dialog}
 			<form.Field
 				name="name"
 				validators={{ onChange: ({ value }) => (value.trim() === "" ? "An agent needs a name." : agents.some((a) => a.name.toLowerCase() === value.trim().toLowerCase()) ? `Another agent is called ${value.trim()}.` : undefined) }}

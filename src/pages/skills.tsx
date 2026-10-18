@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type Agent, type Gets, post, problem } from "../api.ts";
+import { keptDraft, useKeptDraft, useLeaveGuard } from "../guard.tsx";
 import { Markdown } from "../markdown.tsx";
 import { queries } from "../queries.ts";
 import { Confirm, Empty, Page, SectionHead, useAttempt } from "./page.tsx";
@@ -101,6 +102,7 @@ function CreateForm({ agent, cancel }: { agent: Agent; cancel: () => void }) {
 	const queryClient = useQueryClient();
 	const [draft, setDraft] = useState({ name: "", description: "", body: "" });
 	const [busy, setBusy] = useState(false);
+	const guard = useLeaveGuard(draft.name !== "" || draft.description !== "" || draft.body !== "");
 	const labelled = (text: string, hint: string, control: ReactNode) => (
 		<label className="form-field">
 			<span className="form-label">
@@ -123,9 +125,13 @@ function CreateForm({ agent, cancel }: { agent: Agent; cancel: () => void }) {
 					await queryClient.invalidateQueries({ queryKey: ["skills"] });
 				});
 				setBusy(false);
-				if (made) void navigate({ to: "/$agent/skills/$name", params: { agent: agent.id, name } });
+				if (made) {
+					guard.release();
+					void navigate({ to: "/$agent/skills/$name", params: { agent: agent.id, name } });
+				}
 			}}
 		>
+			{guard.dialog}
 			{labelled(
 				"name",
 				"lowercase letters, digits and hyphens",
@@ -310,7 +316,8 @@ function NewFile({ agent, skill }: { agent: Agent; skill: Skill }) {
 function Document({ agent, skill, file, text }: { agent: Agent; skill: Skill; file: string; text: string }) {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const [editing, setEditing] = useState(false);
+	// A draft a reload left behind opens the editor again, on the text it was made from.
+	const [editing, setEditing] = useState(() => skill.source === "local" && keptDraft(`skill:${agent.id}/${skill.name}/${file}`, text) !== undefined);
 	const local = skill.source === "local";
 	if (editing) return <FileEditor agent={agent} skill={skill} file={file} initial={text} done={() => setEditing(false)} />;
 	// SKILL.md's front matter is the name and description, shown above.
@@ -360,8 +367,10 @@ function FileEditor({ agent, skill, file, initial, isNew = false, done }: { agen
 	const attempt = useAttempt();
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const [draft, setDraft] = useState(initial);
+	const [kept, keep] = useKeptDraft(`skill:${agent.id}/${skill.name}/${file}`, initial);
+	const draft = kept ?? initial;
 	const [busy, setBusy] = useState(false);
+	const guard = useLeaveGuard(draft !== initial, () => keep(undefined));
 	const save = async () => {
 		setBusy(true);
 		const saved = await attempt(async () => {
@@ -370,18 +379,23 @@ function FileEditor({ agent, skill, file, initial, isNew = false, done }: { agen
 		});
 		setBusy(false);
 		if (!saved) return;
+		guard.release();
+		keep(undefined);
 		done();
 		// Made: the address stops saying it's being added.
 		if (isNew) void navigate({ to: "/$agent/skills/$name/$", params: { agent: agent.id, name: skill.name, _splat: file }, search: {}, replace: true });
 	};
 	return (
 		<div className="file-editor">
+			{guard.dialog}
 			<div className="doc-bar">
 				<span className="file">{isNew ? `new: ${file}` : file}</span>
 				<button
 					className="plain"
 					type="button"
 					onClick={() => {
+						guard.release();
+						keep(undefined);
 						done();
 						if (isNew) void navigate({ to: "/$agent/skills/$name", params: { agent: agent.id, name: skill.name } });
 					}}
@@ -392,7 +406,7 @@ function FileEditor({ agent, skill, file, initial, isNew = false, done }: { agen
 					{isNew ? "create file" : "save"}
 				</button>
 			</div>
-			<Editor label={`${skill.name}/${file}`} value={draft} onChange={setDraft} autoFocus onSave={() => void (busy ? undefined : save())} />
+			<Editor label={`${skill.name}/${file}`} value={draft} onChange={keep} autoFocus onSave={() => void (busy ? undefined : save())} />
 			{file === "SKILL.md" && <p className="page-note">Keep the front matter: name, the skill's name, and description, one line saying what it's for and when to open it.</p>}
 		</div>
 	);

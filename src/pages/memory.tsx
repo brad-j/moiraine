@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLayoutEffect, useRef, useState } from "react";
 import { type Agent, type Gets, post } from "../api.ts";
 import { ago, when } from "../format.ts";
+import { useLeaveGuard } from "../guard.tsx";
 import { queries, useAgents } from "../queries.ts";
 import { Confirm, Empty, Page, SectionHead, useAttempt } from "./page.tsx";
 
@@ -50,6 +51,7 @@ function Shelf({ agent, work, title, about, notes, max, maxNote, placeholder }: 
 	const [adding, setAdding] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [editing, setEditing] = useState<number>();
+	const guard = useLeaveGuard(adding.trim() !== "");
 	const used = notes.reduce((sum, n) => sum + n.text.length, 0);
 	const reload = () => queryClient.invalidateQueries({ queryKey: ["memory", agent.id] });
 	const label = work ? "A new work note" : "A new note";
@@ -69,6 +71,7 @@ function Shelf({ agent, work, title, about, notes, max, maxNote, placeholder }: 
 				</span>
 			</SectionHead>
 			<p className="page-note">{about}</p>
+			{guard.dialog}
 			<form
 				className="note-add"
 				onSubmit={(event) => {
@@ -178,13 +181,18 @@ function NoteEditor({ note, max, save, done }: { note: Note; max: number; save: 
 	const attempt = useAttempt();
 	const [draft, setDraft] = useState(note.text);
 	const [busy, setBusy] = useState(false);
+	const guard = useLeaveGuard(draft !== note.text);
 	const submit = async () => {
 		setBusy(true);
-		if (await attempt(() => save(draft))) done();
+		if (await attempt(() => save(draft))) {
+			guard.release();
+			done();
+		}
 		else setBusy(false);
 	};
 	return (
 		<li className="note-row editing">
+			{guard.dialog}
 			<NoteBox value={draft} max={max} label={`Note ${note.id}`} onChange={setDraft} onEnter={() => void submit()} onEscape={done} autoFocus />
 			<div className="note-bar">
 				<Chars text={draft} max={max} />

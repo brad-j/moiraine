@@ -195,6 +195,59 @@ test("the owner creates a skill, adds a file and edits it, and removes the skill
 	await expect(page.getByRole("button", { name: "edit" })).toHaveCount(0);
 });
 
+test("an edited skill file asks before another file replaces it, and survives staying and a reload", async ({ page }) => {
+	await page.goto("/gaidin/skills");
+	await page.getByRole("button", { name: "new skill" }).click();
+	await page.locator(".skill-form input").fill("guarded");
+	await page.getByRole("textbox", { name: "Description" }).fill("A skill to edit.");
+	await page.getByRole("textbox", { name: "Guide" }).fill("# Guarded\n\nFirst.");
+	await page.getByRole("button", { name: "create skill" }).click();
+	await page.getByRole("button", { name: "file", exact: true }).click();
+	await page.getByRole("textbox", { name: "New file's path" }).fill("notes.md");
+	await page.getByRole("textbox", { name: "New file's path" }).press("Enter");
+	await page.getByRole("textbox", { name: "guarded/notes.md" }).fill("# Notes");
+	await page.getByRole("button", { name: "create file" }).click();
+	const files = page.getByRole("navigation", { name: "Files" });
+	await files.getByRole("link", { name: "SKILL.md" }).click();
+
+	const editor = page.getByRole("textbox", { name: "guarded/SKILL.md" });
+	await page.getByRole("button", { name: "edit" }).click();
+	const text = "---\nname: guarded\ndescription: A skill to edit.\n---\n\n# Guarded\n\nSecond, longer.";
+	await editor.fill(text);
+	await files.getByRole("link", { name: "notes.md" }).click();
+	const guard = page.getByRole("alertdialog", { name: "Unsaved changes" });
+	await expect(guard).toBeVisible();
+	await expect(page).toHaveURL(/\/skills\/guarded$/);
+	await guard.getByRole("button", { name: "stay" }).click();
+	await expect(guard).toHaveCount(0);
+	await expect(editor).toHaveValue(text);
+
+	// A reload brings the draft back, and leaving then drops it.
+	page.once("dialog", (dialog) => void dialog.accept());
+	await page.reload();
+	await expect(editor).toHaveValue(text);
+	await files.getByRole("link", { name: "notes.md" }).click();
+	await guard.getByRole("button", { name: "leave" }).click();
+	await expect(page).toHaveURL(/\/skills\/guarded\/notes\.md$/);
+	await expect(page.locator(".skill-doc h2")).toHaveText("Notes");
+
+	// Leaving dropped the kept draft: the file opens as saved.
+	await files.getByRole("link", { name: "SKILL.md" }).click();
+	await page.getByRole("button", { name: "edit" }).click();
+	await expect(editor).not.toHaveValue(text);
+});
+
+test("an edited agent entry in settings asks before a sidebar tab leaves it", async ({ page }) => {
+	await page.goto("/gaidin/settings");
+	await page.getByRole("textbox", { name: "Job" }).fill("Something else entirely.");
+	await page.locator("#sidebar .agents li.current > .agent").click();
+	const guard = page.getByRole("alertdialog", { name: "Unsaved changes" });
+	await expect(guard).toBeVisible();
+	await guard.getByRole("button", { name: "stay" }).click();
+	await expect(page).toHaveURL(/\/gaidin\/settings$/);
+	await expect(page.getByRole("textbox", { name: "Job" })).toHaveValue("Something else entirely.");
+});
+
 test("settings switch the thinking and a tool, keep the instructions, and say what notifications need", async ({ page }) => {
 	await page.goto("/gaidin/settings");
 	const thinking = page.getByRole("group", { name: "Thinking" });

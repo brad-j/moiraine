@@ -3,11 +3,12 @@
 // since you set them, which are off until you set them again. Connect sends this tab to the service to sign in; it
 // comes back here. Agents are given connectors on their settings pages.
 import { PlusIcon } from "@phosphor-icons/react";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { type Connector, post } from "../api.ts";
 import { ago } from "../format.ts";
+import { useLeaveGuard } from "../guard.tsx";
 import { queries, useAgents } from "../queries.ts";
 import { Action, Confirm, Empty, Page, SectionHead, useAttempt } from "./page.tsx";
 import { Choices } from "./settings.tsx";
@@ -64,6 +65,7 @@ function ConnectorRow({ connector }: { connector: Connector }) {
 	const queryClient = useQueryClient();
 	const { agents } = useAgents();
 	const [token, setToken] = useState<string>();
+	const guard = useLeaveGuard(token !== undefined && token !== "");
 	const refresh = () => queryClient.invalidateQueries({ queryKey: ["connectors"] });
 	const given = agents.filter((a) => a.connectors?.includes(connector.name)).map((a) => a.name);
 	const reviews = connector.tools.filter((t) => t.review !== undefined);
@@ -97,6 +99,7 @@ function ConnectorRow({ connector }: { connector: Connector }) {
 				<Action run={() => post("/api/connectors/refresh", { name: connector.name }).then(refresh)}>refresh</Action>
 				<Confirm label="remove" run={() => post("/api/connectors/remove", { name: connector.name }).then(() => queryClient.invalidateQueries())} />
 			</div>
+			{guard.dialog}
 			{token !== undefined && (
 				<form
 					className="token-form"
@@ -109,6 +112,7 @@ function ConnectorRow({ connector }: { connector: Connector }) {
 						className="primary"
 						run={async () => {
 							await post("/api/connectors/token", token.trim() === "" ? { name: connector.name } : { name: connector.name, token: token.trim() });
+							guard.release();
 							setToken(undefined);
 							await refresh();
 						}}
@@ -168,9 +172,12 @@ function AddForm({ done }: { done: () => void }) {
 				await post("/api/connectors/add", body);
 				await queryClient.invalidateQueries({ queryKey: ["connectors"] });
 			});
-			if (added) done();
+			if (!added) return;
+			guard.release();
+			done();
 		},
 	});
+	const guard = useLeaveGuard(useStore(form.store, (state) => state.isDirty));
 	return (
 		<form
 			className="skill-form"
