@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>moiraine · four directions</title>
+<!-- A throwaway sheet for picking a direction: static markup, mock content, the app's real tokens and fonts. -->
+<link rel="stylesheet" href="../node_modules/@fontsource/fira-sans/latin-400.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/fira-sans/latin-500.css">
+<link rel="stylesheet" href="../node_modules/@fontsource/fira-sans/latin-600.css">
+<link rel="stylesheet" href="../node_modules/@fontsource-variable/fira-code/wght.css">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: clip; }
+body {
+	display: flex; flex-direction: column; background: oklch(11% 0 0); color: var(--color-ink);
+	font-family: var(--font-body); font-size: var(--text-base); line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; cursor: pointer; }
+code, kbd, pre, .mono { font-family: var(--font-mono); }
+pre { margin: 0; }
+ol, ul { margin: 0; padding: 0; list-style: none; }
+textarea { display: block; width: 100%; margin: 0; padding: 0; resize: none; background: none; border: 0; outline: none; caret-color: var(--color-accent); }
+textarea::placeholder, input::placeholder { color: var(--color-ink-3); }
+input { background: none; border: 0; outline: none; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.live { display: inline-block; flex: none; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.2s var(--ease-in-out) infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .live { animation: none; } }
+.ok { color: var(--color-ok); }
+.warn { color: var(--color-warn); }
+.bad { color: var(--color-bad); }
+.acc { color: var(--color-accent); }
+.dim { color: var(--color-ink-3); }
+
+/* --- the sheet ----------------------------------------------------------------------------------- */
+
+#sheet-bar {
+	flex: none; display: flex; align-items: center; gap: var(--space-2xs); height: 40px; padding: 0 var(--space-sm);
+	border-bottom: var(--rule-hair) solid var(--color-rule); font-size: var(--text-sm); white-space: nowrap; overflow-x: auto;
+}
+#sheet-bar button { min-height: 28px; padding: 0 var(--space-sm); background: none; border: 0; border-radius: var(--radius-sm); color: var(--color-ink-3); }
+#sheet-bar button:hover { color: var(--color-ink); background: var(--color-paper-3); }
+#sheet-bar button[aria-pressed="true"] { color: var(--color-ink); background: var(--color-paper-4); }
+#sheet-bar .sep { width: 1px; height: 18px; margin: 0 var(--space-xs); background: var(--color-rule-2); }
+#sheet-bar .note { margin-left: auto; padding-left: var(--space-md); color: var(--color-ink-3); font-size: var(--text-xs); }
+#stage { position: relative; flex: 1; min-height: 0; }
+.dir { position: absolute; inset: 0; display: none; min-height: 0; }
+.dir.on { display: grid; }
+#phone { position: absolute; inset: 0; display: none; place-items: center; overflow: auto; padding: var(--space-lg); }
+.phone #phone { display: grid; }
+.phone .dir.on { display: none; }
+#phone iframe { width: 390px; height: 800px; border: var(--rule-hair) solid var(--color-rule-2); border-radius: 0; background: var(--color-paper); }
+.bare #sheet-bar { display: none; }
+
+/* --- an answer in Markdown, shared ----------------------------------------------------------------- */
+
+.md { max-width: 72ch; font-size: var(--text-md); line-height: 1.65; }
+.md > :first-child { margin-top: 0; }
+.md > :last-child { margin-bottom: 0; }
+.md p, .md ul, .md pre, .md .table { margin: 0 0 var(--space-sm); }
+.md h3 { margin: var(--space-md) 0 var(--space-2xs); font-size: var(--text-md); font-weight: 600; }
+.md ul { padding-left: var(--space-lg); list-style: disc; }
+.md li::marker { color: var(--color-ink-3); }
+.md strong { font-weight: 600; }
+.md code { padding: 1px var(--space-2xs); background: var(--md-code, var(--color-paper-3)); border-radius: var(--md-r, 3px); font-size: 0.86em; }
+.md pre { padding: var(--space-xs) var(--space-sm); overflow-x: auto; background: var(--md-pre, var(--color-paper-2)); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--md-r, 3px); }
+.md pre code { padding: 0; background: none; font-size: var(--text-sm); }
+.md table { border-collapse: collapse; font-size: var(--text-base); font-variant-numeric: tabular-nums; }
+.md th, .md td { padding: var(--space-2xs) var(--space-lg) var(--space-2xs) 0; border-bottom: var(--rule-hair) solid var(--color-rule); text-align: left; }
+.md th { color: var(--color-ink-2); font-weight: 500; border-bottom-color: var(--color-rule-2); }
+
+/* =================================================================================================
+ * A · Panes. A terminal multiplexer: hairline panes, square corners, mono chrome. The status line and the
+ * conversations as windows run along the bottom like tmux's bar. The composer is a prompt line, no box.
+ * ================================================================================================= */
+
+.A {
+	--color-paper: oklch(12.5% 0 0); --color-paper-2: oklch(15% 0 0);
+	grid-template-columns: 252px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 26px;
+	background: var(--color-paper); font-size: var(--text-sm);
+}
+.a-side { display: flex; flex-direction: column; min-height: 0; border-right: var(--rule-hair) solid var(--color-rule); }
+.a-search { display: flex; align-items: center; gap: var(--space-xs); height: 40px; flex: none; padding: 0 var(--space-sm); border-bottom: var(--rule-hair) solid var(--color-rule); font-family: var(--font-mono); font-size: var(--text-xs); }
+.a-search input { flex: 1; min-width: 0; font-size: var(--text-xs); }
+.a-search .k { color: var(--color-ink-3); }
+.a-search:focus-within .k { color: var(--color-accent); }
+.a-new { color: var(--color-ink-2); }
+.a-new:hover { color: var(--color-accent); }
+.a-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-xs) 0; }
+.a-label { padding: var(--space-xs) var(--space-sm) var(--space-2xs); color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); letter-spacing: 0.04em; }
+.a-agent { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: var(--space-xs); padding: var(--space-xs) var(--space-sm); border-left: 2px solid transparent; }
+.a-agent:hover { background: var(--color-paper-2); }
+.a-agent.cur { border-left-color: var(--color-accent); background: var(--color-paper-2); }
+.a-agent .dot { align-self: center; width: 6px; height: 6px; border-radius: 50%; background: var(--color-rule-2); }
+.a-agent .dot.live { background: var(--color-accent); }
+.a-agent .n { color: var(--color-ink); font-family: var(--font-mono); font-size: var(--text-sm); }
+.a-agent .t { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); align-self: center; }
+.a-agent .p { grid-column: 2 / -1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-ink-3); font-size: var(--text-xs); }
+.a-agent .p.acc { color: var(--color-accent); }
+.a-agent .w { color: var(--color-warn); }
+.a-tree { margin: 0 0 var(--space-xs); font-family: var(--font-mono); font-size: var(--text-xs); }
+.a-tree a { display: flex; gap: var(--space-xs); padding: 3px var(--space-sm) 3px calc(var(--space-sm) + 2px); color: var(--color-ink-2); white-space: nowrap; }
+.a-tree a:hover { background: var(--color-paper-2); color: var(--color-ink); }
+.a-tree a .g { color: var(--color-rule-2); }
+.a-tree a .x { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.a-tree a .t { color: var(--color-ink-3); }
+.a-tree a.cur { color: var(--color-ink); background: var(--color-paper-3); }
+.a-tree a.cur .g { color: var(--color-accent); }
+.a-tree .more { color: var(--color-ink-3); }
+.a-foot { flex: none; padding: var(--space-2xs) 0 var(--space-sm); border-top: var(--rule-hair) solid var(--color-rule); }
+.a-keys { display: grid; grid-template-columns: 1fr 1fr; padding: 0 var(--space-2xs); }
+.a-keys a { display: flex; align-items: baseline; gap: var(--space-xs); padding: 3px var(--space-xs); color: var(--color-ink-2); font-size: var(--text-sm); }
+.a-keys a:hover { background: var(--color-paper-2); color: var(--color-ink); }
+.a-keys kbd { width: 1.4em; color: var(--color-ink-3); font-size: var(--text-2xs); }
+.a-keys .c { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.a-keys .c.warn { color: var(--color-warn); }
+.a-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.a-head { display: flex; align-items: center; gap: var(--space-sm); flex: none; height: 40px; padding: 0 var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); font-family: var(--font-mono); font-size: var(--text-xs); }
+.a-head .path { color: var(--color-ink-3); }
+.a-head .path b { color: var(--color-ink); font-weight: 500; }
+.a-head .tag { color: var(--color-accent); }
+.a-head .r { margin-left: auto; color: var(--color-ink-3); }
+.a-menu { display: none; padding: 0; background: none; border: 0; color: var(--color-ink-2); font-family: var(--font-mono); }
+.a-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.a-log { max-width: 860px; padding: var(--space-lg) var(--space-lg) var(--space-md); }
+.a-row { display: grid; grid-template-columns: 6ch minmax(0, 1fr); column-gap: var(--space-md); padding: 2px 0; }
+.a-row .t { padding-top: 3px; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
+.a-row.you { margin-top: var(--space-lg); }
+.a-row.you:first-child { margin-top: 0; }
+.a-row.you .b { color: var(--color-ink); font-size: var(--text-md); }
+.a-row.you .b::before { content: "› "; color: var(--color-accent); font-family: var(--font-mono); }
+.a-row.who .b { margin-top: var(--space-sm); color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-xs); }
+.a-tool { display: flex; gap: var(--space-xs); align-items: baseline; font-family: var(--font-mono); font-size: var(--text-xs); white-space: nowrap; }
+.a-tool .c { color: var(--color-ink-3); }
+.a-tool .n { color: var(--color-accent); }
+.a-tool .x { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--color-ink-3); }
+.a-row .md { padding: var(--space-2xs) 0; }
+.A .md { --md-r: 0; }
+.a-dock { flex: none; margin: 0 var(--space-lg) var(--space-sm); max-width: 812px; padding: var(--space-xs) var(--space-sm); border-left: 2px solid var(--color-warn); background: var(--color-warn-wash); font-family: var(--font-mono); font-size: var(--text-xs); }
+.a-dock .q { display: flex; flex-wrap: wrap; gap: var(--space-xs); align-items: baseline; }
+.a-dock .q b { color: var(--color-warn); font-weight: 500; }
+.a-dock .q .what { color: var(--color-ink); font-family: var(--font-body); font-size: var(--text-sm); }
+.a-dock .acts { display: flex; flex-wrap: wrap; gap: var(--space-2xs) var(--space-md); margin-top: var(--space-xs); }
+.a-dock button { padding: 0; background: none; border: 0; color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-xs); }
+.a-dock button:hover { color: var(--color-ink); }
+.a-dock button kbd { color: var(--color-warn); }
+.a-dock button.y { color: var(--color-accent); }
+.a-dock button.n { color: var(--color-bad); }
+.a-dock .exp { margin-left: auto; color: var(--color-ink-3); }
+.a-prompt { flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: var(--space-xs); align-items: start; padding: var(--space-sm) var(--space-lg) var(--space-sm); border-top: var(--rule-hair) solid var(--color-rule); }
+.a-prompt .caret { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-md); line-height: 1.55; }
+.a-prompt:focus-within .caret { color: var(--color-accent); }
+.a-prompt textarea { min-height: calc(2 * 1.55em); font-size: var(--text-md); line-height: 1.55; }
+.a-prompt button { padding: 0 var(--space-2xs); background: none; border: 0; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-xs); line-height: 2.2; }
+.a-prompt:focus-within button { color: var(--color-accent); }
+.a-bar { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-md); min-width: 0; padding: 0 var(--space-sm); background: var(--color-paper-3); font-family: var(--font-mono); font-size: var(--text-2xs); white-space: nowrap; overflow: hidden; }
+.a-bar .s { padding: 0 var(--space-xs); background: var(--color-accent); color: var(--color-accent-ink); font-weight: 600; }
+.a-bar .win { color: var(--color-ink-3); }
+.a-bar .win.cur { color: var(--color-ink); }
+.a-bar .win.cur::after { content: "*"; color: var(--color-accent); }
+.a-bar .r { display: flex; gap: var(--space-md); margin-left: auto; color: var(--color-ink-2); }
+.a-bar .r .warn { display: inline-flex; align-items: center; gap: var(--space-2xs); }
+
+@media (max-width: 600px) {
+	.A { grid-template-columns: minmax(0, 1fr); }
+	.a-side { display: none; }
+	.a-menu { display: inline; }
+	.a-head { padding: 0 var(--space-md); }
+	.a-head .r { display: none; }
+	.a-log { padding: var(--space-md); }
+	.a-row { grid-template-columns: minmax(0, 1fr); }
+	.a-row .t { display: none; }
+	.a-dock { margin: 0 var(--space-sm) var(--space-xs); }
+	.a-dock .exp { flex-basis: 100%; margin: 0; }
+	.a-prompt { padding: var(--space-sm) var(--space-md); }
+	.a-prompt textarea { min-height: 1.55em; font-size: 16px; }
+	.a-bar .win, .a-bar .r .hide { display: none; }
+}
+
+/* =================================================================================================
+ * B · Palette. No sidebar. A breadcrumb bar on top, and everything else, agents, threads, pages and commands,
+ * through one menu on Ctrl K. The conversation gets the whole width; the composer is a line, not a card.
+ * ================================================================================================= */
+
+.B { grid-template-columns: minmax(0, 1fr); grid-template-rows: 44px minmax(0, 1fr) auto auto; background: var(--color-paper); }
+.b-top { display: flex; align-items: center; gap: var(--space-2xs); min-width: 0; overflow: hidden; padding: 0 var(--space-sm); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.b-crumb { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 30px; padding: 0 var(--space-xs); background: none; border: 0; border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: 500; }
+.b-crumb:hover { background: var(--color-paper-3); }
+.b-crumb .v { color: var(--color-ink-3); font-size: var(--text-2xs); }
+.b-crumb.thread { color: var(--color-ink-2); font-weight: 400; }
+.b-sep { color: var(--color-rule-2); }
+.b-tag { margin-left: var(--space-2xs); color: var(--color-accent); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.b-spacer { flex: 1; }
+.b-others { display: flex; gap: var(--space-2xs); }
+.b-others a { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 30px; padding: 0 var(--space-xs); border-radius: var(--radius-sm); color: var(--color-ink-2); font-size: var(--text-sm); }
+.b-others a:hover { background: var(--color-paper-3); }
+.b-others .n { min-width: 16px; padding: 0 4px; border-radius: var(--radius-pill); background: var(--color-warn); color: var(--color-paper); font-size: var(--text-2xs); font-weight: 600; text-align: center; }
+.b-others .working { color: var(--color-accent); }
+.b-go { display: inline-flex; align-items: center; gap: var(--space-sm); min-height: 30px; margin-left: var(--space-xs); padding: 0 var(--space-xs) 0 var(--space-sm); background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-sm); color: var(--color-ink-3); font-size: var(--text-sm); }
+.b-go:hover { color: var(--color-ink); border-color: var(--color-rule-2); }
+.b-go kbd { padding: 0 var(--space-2xs); border: var(--rule-hair) solid var(--color-rule-2); border-radius: 3px; font-size: var(--text-2xs); }
+.b-scroll { overflow-y: auto; min-height: 0; }
+.b-log { max-width: var(--measure); margin: 0 auto; padding: var(--space-xl) var(--space-lg) var(--space-md); }
+.b-you { margin: var(--space-xl) 0 var(--space-md); padding-left: var(--space-sm); border-left: 2px solid var(--color-rule-2); color: var(--color-ink); font-size: var(--text-md); }
+.b-you:first-child { margin-top: 0; }
+.b-you .t { display: block; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.b-tools { margin: 0 0 var(--space-sm); font-family: var(--font-mono); font-size: var(--text-xs); }
+.b-tools li { display: flex; gap: var(--space-sm); padding: 2px 0; color: var(--color-ink-3); white-space: nowrap; }
+.b-tools .n { width: 11ch; flex: none; color: var(--color-ink-2); }
+.b-tools .x { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.b-dock { width: 100%; max-width: var(--measure); margin: 0 auto; padding: 0 var(--space-lg) var(--space-sm); }
+.b-card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm); padding: var(--space-sm) 0; border-top: var(--rule-hair) solid var(--color-warn-line); border-bottom: var(--rule-hair) solid var(--color-warn-line); }
+.b-card .k { color: var(--color-warn); font-size: var(--text-xs); font-weight: 500; }
+.b-card .what { flex: 1; min-width: 24ch; font-size: var(--text-sm); }
+.b-card .what code { color: var(--color-ink-2); font-size: var(--text-xs); }
+.b-card button { display: inline-flex; align-items: center; gap: var(--space-xs); min-height: 28px; padding: 0 var(--space-sm); background: none; border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: 500; }
+.b-card button.y { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.b-card button.n { border-color: transparent; color: var(--color-bad); }
+.b-card kbd { font-size: var(--text-2xs); opacity: 0.7; }
+.b-prompt { width: 100%; max-width: var(--measure); margin: 0 auto; padding: 0 var(--space-lg) var(--space-md); }
+.b-field { padding: var(--space-sm) 0 var(--space-xs); border-top: var(--rule-hair) solid var(--color-rule-2); transition: border-color var(--dur-short) var(--ease-out); }
+.b-prompt:focus-within .b-field { border-top-color: var(--color-accent); }
+.b-field textarea { min-height: calc(2 * 1.55em); font-size: var(--text-md); line-height: 1.55; }
+.b-status { display: flex; align-items: center; gap: var(--space-md); color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); white-space: nowrap; overflow: hidden; }
+.b-status .st { display: inline-flex; align-items: center; gap: var(--space-xs); color: var(--color-warn); }
+.b-status .st::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.b-status button { padding: 0; background: none; border: 0; color: var(--color-ink-2); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.b-status button:hover { color: var(--color-ink); }
+.b-status .r { margin-left: auto; }
+.b-status .send { color: var(--color-accent); }
+.b-status .send:hover { color: var(--color-accent-strong); }
+.b-scrim { position: absolute; inset: 0; z-index: 4; display: none; background: var(--color-scrim); }
+.B.palette .b-scrim { display: block; }
+.b-pal {
+	position: absolute; z-index: 5; top: 72px; left: 50%; display: none; flex-direction: column; width: min(640px, calc(100% - 2 * var(--space-md))); max-height: min(560px, calc(100% - 96px)); transform: translateX(-50%);
+	background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule-2); border-radius: var(--radius-md); box-shadow: 0 16px 48px var(--color-shadow); overflow: hidden;
+}
+.B.palette .b-pal { display: flex; }
+.b-pal .in { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-sm) var(--space-md); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.b-pal .in input { flex: 1; min-width: 0; font-size: var(--text-md); }
+.b-pal .in kbd { color: var(--color-ink-3); font-size: var(--text-2xs); }
+.b-pal .groups { overflow-y: auto; padding: var(--space-2xs); }
+.b-pal .g { padding: var(--space-xs) var(--space-sm) var(--space-2xs); color: var(--color-ink-3); font-size: var(--text-xs); }
+.b-pal .it { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: var(--space-sm); padding: 6px var(--space-sm); border-radius: var(--radius-sm); font-size: var(--text-sm); }
+.b-pal .it:hover, .b-pal .it.on { background: var(--color-paper-4); }
+.b-pal .it.on .l { color: var(--color-accent); }
+.b-pal .it .ic { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-xs); text-align: center; }
+.b-pal .it .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b-pal .it .l .dim { margin-left: var(--space-xs); font-size: var(--text-xs); }
+.b-pal .it .h { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.b-pal .it .h.warn { color: var(--color-warn); }
+.b-pal .two { display: grid; grid-template-columns: 1fr 1fr; }
+
+@media (max-width: 600px) {
+	.b-top { padding: 0 var(--space-2xs); }
+	.b-crumb.thread, .b-sep, .b-tag, .b-others a:not(.waits) { display: none; }
+	.b-go { margin-left: 0; }
+	.b-go span { display: none; }
+	.b-log { padding: var(--space-lg) var(--space-md) var(--space-sm); }
+	.b-dock, .b-prompt { padding-left: var(--space-md); padding-right: var(--space-md); }
+	.b-field textarea { min-height: 1.55em; font-size: 16px; }
+	.b-status { gap: var(--space-sm); }
+	.b-status .hide { display: none; }
+	.b-pal { top: var(--space-sm); }
+	.b-pal .two { grid-template-columns: 1fr; }
+}
+
+/* =================================================================================================
+ * C · Gutter. A chat client's log, IRC-style: time and who in a mono gutter, what was said beside it. A rail of
+ * agents; beside it the agent's column with its pages as one line of tabs, then its threads by day.
+ * ================================================================================================= */
+
+.C {
+	--color-paper: oklch(11.5% 0 0); --color-paper-2: oklch(14.5% 0 0);
+	grid-template-columns: 64px 244px minmax(0, 1fr); background: var(--color-paper);
+}
+.c-rail { display: flex; flex-direction: column; align-items: center; gap: var(--space-2xs); padding: var(--space-sm) 0; background: oklch(9.5% 0 0); border-right: var(--rule-hair) solid var(--color-rule); }
+.c-rail a { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 56px; padding: var(--space-2xs) 0; color: var(--color-ink-3); font-family: var(--font-mono); font-size: 10px; }
+.c-rail a:hover { color: var(--color-ink); }
+.c-rail a.cur { color: var(--color-ink); }
+.c-rail a.cur::before { content: ""; position: absolute; left: -4px; top: 8px; width: 2px; height: 28px; background: var(--color-accent); }
+.c-av { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: var(--color-paper-3); color: var(--color-ink-2); font-family: var(--font-body); font-size: var(--text-sm); font-weight: 600; }
+.cur .c-av { background: var(--color-accent-wash); color: var(--color-accent); }
+.c-rail .badge { position: absolute; top: 0; right: 6px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: var(--radius-pill); background: var(--color-warn); color: var(--color-paper); font-family: var(--font-body); font-size: 10px; font-weight: 600; line-height: 15px; text-align: center; }
+.c-rail .busy { position: absolute; top: 2px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 0 2px oklch(9.5% 0 0); animation: pulse 1.2s var(--ease-in-out) infinite; }
+.c-rail .grow { flex: 1; }
+.c-rail .sys .c-av { background: none; border: var(--rule-hair) solid var(--color-rule-2); color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 400; }
+.c-rail .sys.cur .c-av { border-color: var(--color-accent); color: var(--color-accent); }
+.c-col { display: flex; flex-direction: column; min-height: 0; background: var(--color-paper-2); border-right: var(--rule-hair) solid var(--color-rule); }
+.c-col .pane { display: none; flex-direction: column; min-height: 0; flex: 1; }
+.c-col .pane.on { display: flex; }
+.c-who { display: flex; align-items: baseline; gap: var(--space-xs); padding: var(--space-sm) var(--space-sm) var(--space-2xs); }
+.c-who h2 { margin: 0; font-size: var(--text-md); font-weight: 600; }
+.c-who .job { color: var(--color-ink-3); font-size: var(--text-xs); }
+.c-who .new { margin-left: auto; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-xs); }
+.c-who .new:hover { color: var(--color-accent); }
+.c-tabs { display: flex; gap: 10px; padding: var(--space-2xs) var(--space-sm) 0; border-bottom: var(--rule-hair) solid var(--color-rule); font-size: var(--text-xs); white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+.c-tabs a { display: inline-flex; gap: var(--space-2xs); padding: var(--space-2xs) 0 var(--space-xs); border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--color-ink-3); }
+.c-tabs a:hover { color: var(--color-ink); }
+.c-tabs a.cur { color: var(--color-ink); border-bottom-color: var(--color-accent); }
+.c-tabs .n { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.c-list { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-2xs) var(--space-2xs) var(--space-sm); }
+.c-day { padding: var(--space-sm) var(--space-xs) var(--space-2xs); color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.c-th { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--space-xs); padding: 5px var(--space-xs); border-radius: 4px; }
+.c-th:hover { background: var(--color-paper-3); }
+.c-th.cur { background: var(--color-paper-4); }
+.c-th .x { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-ink-2); font-size: var(--text-sm); }
+.c-th.cur .x { color: var(--color-ink); }
+.c-th .t { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); align-self: center; }
+.c-th .o { grid-column: 1 / -1; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.c-th .o.job { color: var(--color-ok); }
+.c-th .o.agent { color: var(--color-warn); }
+.c-th.home .x { color: var(--color-ink); font-weight: 500; }
+.c-sys a { display: flex; align-items: baseline; gap: var(--space-xs); padding: 6px var(--space-xs); border-radius: 4px; color: var(--color-ink-2); font-size: var(--text-sm); }
+.c-sys a:hover { background: var(--color-paper-3); color: var(--color-ink); }
+.c-sys a .h { margin-left: auto; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.c-sys a .h.warn { color: var(--color-warn); }
+.c-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.c-head { display: flex; align-items: center; gap: var(--space-sm); flex: none; height: 44px; padding: 0 var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.c-head h1 { margin: 0; font-size: var(--text-base); font-weight: 600; }
+.c-head .o { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.c-head .r { margin-left: auto; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.c-menu { display: none; padding: 0; background: none; border: 0; color: var(--color-ink-2); font-family: var(--font-mono); }
+.c-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.c-log { max-width: 980px; padding: var(--space-lg) var(--space-lg) var(--space-md) var(--space-md); }
+.c-line { display: grid; grid-template-columns: 5ch 9ch minmax(0, 1fr); column-gap: var(--space-sm); padding: 2px 0; }
+.c-line .t { padding-top: 4px; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
+.c-line .w { padding-top: 2px; overflow: hidden; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-xs); text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.c-line .b { min-width: 0; border-left: var(--rule-hair) solid var(--color-rule); padding-left: var(--space-md); }
+.c-line.gap { padding-top: var(--space-md); }
+.c-line.you .w { color: var(--color-ink); }
+.c-line.you .b { font-size: var(--text-md); }
+.c-line.ag .w { color: var(--color-accent); }
+.c-line.tool .w { color: var(--color-ink-3); }
+.c-line.tool .b { display: flex; gap: var(--space-sm); align-items: baseline; font-family: var(--font-mono); font-size: var(--text-xs); white-space: nowrap; }
+.c-line.tool .x { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--color-ink-3); }
+.c-line.ask .b { border-left: 2px solid var(--color-warn); margin-left: -1px; padding: var(--space-xs) var(--space-md); background: var(--color-warn-wash); }
+.c-line.ask .w { color: var(--color-warn); }
+.c-line .acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); margin-top: var(--space-xs); }
+.c-line .acts button { min-height: 26px; padding: 0 var(--space-sm); background: none; border: var(--rule-hair) solid var(--color-rule-2); border-radius: 4px; font-size: var(--text-xs); font-weight: 500; }
+.c-line .acts button.y { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.c-line .acts button.n { border-color: transparent; color: var(--color-bad); }
+.c-line .acts kbd { margin-left: var(--space-2xs); font-size: var(--text-2xs); opacity: 0.7; }
+.c-line .acts .exp { margin-left: auto; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.C .md { --md-r: 4px; }
+.c-prompt { flex: none; padding: 0 var(--space-lg) var(--space-sm) var(--space-md); }
+.c-prompt .c-line { padding: var(--space-sm) 0 var(--space-xs); border-top: var(--rule-hair) solid var(--color-rule); }
+.c-prompt .c-line .b { border-left-color: var(--color-rule-2); transition: border-color var(--dur-short) var(--ease-out); }
+.c-prompt:focus-within .c-line .b { border-left-color: var(--color-accent); }
+.c-prompt:focus-within .c-line .w { color: var(--color-accent); }
+.c-prompt textarea { min-height: calc(2 * 1.55em); font-size: var(--text-md); line-height: 1.55; }
+.c-status { display: grid; grid-template-columns: 5ch 9ch minmax(0, 1fr); column-gap: var(--space-sm); color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); white-space: nowrap; }
+.c-status .s { display: flex; gap: var(--space-md); padding-left: calc(var(--space-md) + 1px); overflow: hidden; }
+.c-status .send { margin-left: auto; padding: 0; background: none; border: 0; color: var(--color-accent); font-family: var(--font-mono); font-size: var(--text-2xs); }
+
+@media (max-width: 600px) {
+	.C { grid-template-columns: minmax(0, 1fr); }
+	.c-rail, .c-col { display: none; }
+	.c-menu { display: inline; }
+	.c-head { padding: 0 var(--space-md); }
+	.c-head .r { display: none; }
+	.c-log { padding: var(--space-md) var(--space-md) var(--space-sm) var(--space-xs); }
+	.c-line, .c-status { grid-template-columns: 7ch minmax(0, 1fr); column-gap: var(--space-xs); }
+	.c-line .t, .c-status > span:first-child { display: none; }
+	.c-line .b { padding-left: var(--space-sm); }
+	.c-line .acts .exp { flex-basis: 100%; margin: 0; }
+	.c-prompt { padding: 0 var(--space-md) var(--space-sm) var(--space-xs); }
+	.c-prompt textarea { min-height: 1.55em; font-size: 16px; }
+	.c-status .s { padding-left: calc(var(--space-sm) + 1px); }
+	.c-status .hide { display: none; }
+}
+
+/* =================================================================================================
+ * D · Queue. A workstation: a menu bar of the pages across the top, threads at the left, the conversation in
+ * the middle, and at the right what waits on you from every agent, above the run's settings as a panel.
+ * ================================================================================================= */
+
+.D {
+	--color-paper: oklch(13% 0 0); --color-paper-2: oklch(15.5% 0 0);
+	grid-template-columns: 232px minmax(0, 1fr) 320px; grid-template-rows: 36px minmax(0, 1fr); background: var(--color-paper); font-size: var(--text-sm);
+}
+.d-menu { grid-column: 1 / -1; display: flex; align-items: stretch; min-width: 0; border-bottom: var(--rule-hair) solid var(--color-rule); white-space: nowrap; overflow-x: auto; scrollbar-width: none; }
+.d-menu .ag { display: flex; align-items: center; gap: var(--space-xs); width: 232px; flex: none; padding: 0 var(--space-sm); border-right: var(--rule-hair) solid var(--color-rule); font-weight: 600; }
+.d-menu .ag .av { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; background: var(--color-accent-wash); color: var(--color-accent); font-size: var(--text-2xs); }
+.d-menu .ag .v { margin-left: auto; color: var(--color-ink-3); font-size: var(--text-2xs); font-weight: 400; }
+.d-menu a { display: flex; align-items: center; gap: var(--space-2xs); padding: 0 var(--space-sm); color: var(--color-ink-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.d-menu a:hover { color: var(--color-ink); background: var(--color-paper-2); }
+.d-menu a.cur { color: var(--color-ink); border-bottom-color: var(--color-accent); }
+.d-menu .n { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.d-menu .n.warn { color: var(--color-warn); }
+.d-menu .grow { flex: 1; }
+.d-menu .side { border-left: var(--rule-hair) solid var(--color-rule); }
+.d-threads { display: flex; flex-direction: column; min-height: 0; border-right: var(--rule-hair) solid var(--color-rule); }
+.d-search { display: flex; align-items: center; gap: var(--space-xs); flex: none; height: 36px; padding: 0 var(--space-sm); border-bottom: var(--rule-hair) solid var(--color-rule); color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-xs); }
+.d-search input { flex: 1; min-width: 0; font-family: var(--font-body); font-size: var(--text-sm); }
+.d-search .new { color: var(--color-ink-2); }
+.d-list { flex: 1; min-height: 0; overflow-y: auto; }
+.d-sec { display: flex; justify-content: space-between; padding: var(--space-sm) var(--space-sm) var(--space-2xs); color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.d-th { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; column-gap: var(--space-xs); align-items: center; height: 30px; padding: 0 var(--space-sm); border-left: 2px solid transparent; }
+.d-th:hover { background: var(--color-paper-2); }
+.d-th.cur { background: var(--color-paper-3); border-left-color: var(--color-accent); }
+.d-th .m { width: 6px; height: 6px; border-radius: 1px; background: var(--color-rule-2); }
+.d-th .m.job { background: var(--color-ok); }
+.d-th .m.agent { background: var(--color-warn); }
+.d-th .m.slack { background: var(--color-ink-3); }
+.d-th .m.live { border-radius: 50%; background: var(--color-accent); }
+.d-th .x { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-ink-2); }
+.d-th.cur .x { color: var(--color-ink); }
+.d-th .t { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.d-key { flex: none; display: flex; flex-wrap: wrap; gap: var(--space-2xs) var(--space-sm); padding: var(--space-xs) var(--space-sm); border-top: var(--rule-hair) solid var(--color-rule); color: var(--color-ink-3); font-size: var(--text-2xs); }
+.d-key span { display: inline-flex; align-items: center; gap: 5px; }
+.d-key i { width: 6px; height: 6px; border-radius: 1px; background: var(--color-rule-2); }
+.d-key i.job { background: var(--color-ok); }
+.d-key i.agent { background: var(--color-warn); }
+.d-key i.slack { background: var(--color-ink-3); }
+.d-main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.d-head { display: flex; align-items: center; gap: var(--space-sm); flex: none; height: 40px; padding: 0 var(--space-lg); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.d-head h1 { margin: 0; font-size: var(--text-base); font-weight: 600; }
+.d-head .o { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+.d-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.d-log { max-width: var(--measure); margin: 0 auto; padding: var(--space-lg); }
+.d-you { margin: var(--space-xl) 0 var(--space-md) auto; width: fit-content; max-width: 85%; padding: var(--space-xs) var(--space-sm); background: var(--color-paper-3); font-size: var(--text-md); }
+.d-you:first-child { margin-top: 0; }
+.d-sp { display: flex; align-items: baseline; gap: var(--space-xs); margin-bottom: var(--space-2xs); color: var(--color-ink-2); font-weight: 500; }
+.d-sp .t { color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); font-weight: 400; }
+.d-tools { margin: var(--space-2xs) 0 var(--space-sm); border: var(--rule-hair) solid var(--color-rule); font-family: var(--font-mono); font-size: var(--text-xs); }
+.d-tools li { display: grid; grid-template-columns: 11ch minmax(0, 1fr) auto; column-gap: var(--space-sm); padding: 4px var(--space-sm); color: var(--color-ink-3); white-space: nowrap; }
+.d-tools li + li { border-top: var(--rule-hair) solid var(--color-rule); }
+.d-tools li.sel { background: var(--color-paper-2); }
+.d-tools .n { color: var(--color-accent); }
+.d-tools .x { overflow: hidden; text-overflow: ellipsis; }
+.D .md { --md-r: 0; }
+.d-prompt { flex: none; display: flex; flex-direction: column; border-top: var(--rule-hair) solid var(--color-rule); transition: border-color var(--dur-short) var(--ease-out); }
+.d-prompt:focus-within { border-top-color: var(--color-accent); }
+.d-prompt .in { width: 100%; max-width: var(--measure); margin: 0 auto; padding: var(--space-sm) var(--space-lg) 0; }
+.d-prompt textarea { min-height: calc(3 * 1.55em); font-size: var(--text-md); line-height: 1.55; }
+.d-prompt .bar { display: flex; align-items: center; gap: var(--space-sm); width: 100%; max-width: var(--measure); margin: 0 auto; padding: var(--space-2xs) var(--space-lg) var(--space-sm); color: var(--color-ink-3); font-size: var(--text-xs); }
+.d-prompt .bar .grow { flex: 1; }
+.d-prompt .bar button { min-height: 28px; padding: 0 var(--space-sm); background: none; border: var(--rule-hair) solid var(--color-rule-2); font-size: var(--text-sm); font-weight: 500; }
+.d-prompt .bar button.send { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.d-prompt .bar button.plain { border-color: transparent; color: var(--color-ink-3); }
+.d-prompt .bar kbd { margin-left: var(--space-2xs); font-size: var(--text-2xs); opacity: 0.7; }
+.d-queue { display: flex; flex-direction: column; min-height: 0; overflow-y: auto; border-left: var(--rule-hair) solid var(--color-rule); background: var(--color-paper-2); }
+.d-qh { display: flex; align-items: baseline; justify-content: space-between; height: 40px; flex: none; padding: var(--space-sm) var(--space-md) 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
+.d-qh h2 { margin: 0; font-size: var(--text-sm); font-weight: 600; }
+.d-qh .n { color: var(--color-warn); font-family: var(--font-mono); font-size: var(--text-xs); }
+.d-q { padding: var(--space-sm) var(--space-md); border-bottom: var(--rule-hair) solid var(--color-rule); }
+.d-q.first { box-shadow: inset 2px 0 0 var(--color-warn); }
+.d-q .h { display: flex; align-items: center; gap: var(--space-xs); color: var(--color-ink-3); font-size: var(--text-xs); }
+.d-q .h b { color: var(--color-ink); font-weight: 500; }
+.d-q .h code { color: var(--color-accent); }
+.d-q .h .t { margin-left: auto; font-family: var(--font-mono); font-size: var(--text-2xs); }
+.d-q p { margin: var(--space-2xs) 0 var(--space-xs); color: var(--color-ink); }
+.d-q p code { color: var(--color-ink-2); font-size: var(--text-xs); }
+.d-q .acts { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+.d-q button { min-height: 26px; padding: 0 var(--space-sm); background: none; border: var(--rule-hair) solid var(--color-rule-2); font-size: var(--text-xs); font-weight: 500; }
+.d-q button.y { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.d-q button.n { border-color: transparent; color: var(--color-bad); }
+.d-q kbd { margin-left: var(--space-2xs); font-size: var(--text-2xs); opacity: 0.7; }
+.d-props { padding: var(--space-sm) var(--space-md); }
+.d-props h2 { margin: var(--space-xs) 0 var(--space-xs); font-size: var(--text-sm); font-weight: 600; }
+.d-props dl { display: grid; grid-template-columns: 11ch minmax(0, 1fr); gap: 0; margin: 0; }
+.d-props dt, .d-props dd { margin: 0; padding: 5px 0; border-bottom: var(--rule-hair) solid var(--color-rule); }
+.d-props dt { color: var(--color-ink-3); font-size: var(--text-xs); }
+.d-props dd { display: flex; justify-content: space-between; gap: var(--space-xs); font-family: var(--font-mono); font-size: var(--text-xs); }
+.d-props dd a { color: var(--color-ink-3); font-family: var(--font-body); }
+.d-props dd a:hover { color: var(--color-accent); }
+.d-meter { height: 3px; margin-top: var(--space-xs); background: var(--color-paper-4); }
+.d-meter span { display: block; width: 18%; height: 100%; background: var(--color-accent); }
+.d-qstrip { display: none; }
+
+@media (max-width: 600px) {
+	.D { grid-template-columns: minmax(0, 1fr); grid-template-rows: 40px minmax(0, 1fr); }
+	.d-menu .ag { width: auto; }
+	.d-menu .side, .d-menu .grow { display: none; }
+	.d-threads, .d-queue { display: none; }
+	.d-head { padding: 0 var(--space-md); }
+	.d-log { padding: var(--space-md); }
+	.d-qstrip { display: flex; align-items: center; gap: var(--space-xs); flex: none; padding: var(--space-xs) var(--space-md); border-top: var(--rule-hair) solid var(--color-warn-line); background: var(--color-warn-wash); color: var(--color-warn); font-size: var(--text-sm); }
+	.d-qstrip .t { margin-left: auto; color: var(--color-ink-3); font-family: var(--font-mono); font-size: var(--text-2xs); }
+	.d-prompt .in { padding: var(--space-sm) var(--space-md) 0; }
+	.d-prompt .bar { padding: var(--space-2xs) var(--space-md) var(--space-sm); }
+	.d-prompt textarea { min-height: 1.55em; font-size: 16px; }
+	.d-prompt .bar .hide { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="sheet-bar" role="toolbar" aria-label="Directions">
+	<button type="button" data-dir="a">A · Panes</button>
+	<button type="button" data-dir="b">B · Palette</button>
+	<button type="button" data-dir="c">C · Gutter</button>
+	<button type="button" data-dir="d">D · Queue</button>
+	<span class="sep"></span>
+	<button type="button" data-view="desk">Computer</button>
+	<button type="button" data-view="phone">Phone</button>
+	<span class="note">Mock content. Click into the composer to see its focus; in B, Ctrl K opens the menu.</span>
+</div>
+
+<div id="stage">
+
+<template id="answer">
+	<div class="md">
+		<p>Here's where things stand on <strong>think-2</strong> this morning.</p>
+		<h3>Backups</h3>
+		<ul>
+			<li><code>vm-104</code> finished at 03:12, 41 GB</li>
+			<li><code>vm-107</code> failed: the NAS share was asleep</li>
+			<li>Next run tonight at 03:00</li>
+		</ul>
+		<pre><code>ssh think-2 'pvesm status | grep nas'</code></pre>
+		<div class="table"><table>
+			<thead><tr><th>Host</th><th>Disk</th><th>Memory</th></tr></thead>
+			<tbody><tr><td>think-1</td><td>61%</td><td>48%</td></tr><tr><td>think-2</td><td>87%</td><td>72%</td></tr></tbody>
+		</table></div>
+		<p>I'd wake the NAS before tonight's run, or move <code>vm-107</code> to local storage.</p>
+	</div>
+</template>
+
+<!-- A · Panes -->
+<section class="dir A" id="a" aria-label="A · Panes">
+	<nav class="a-side" aria-label="Conversations">
+		<label class="a-search"><span class="k">/</span><input type="search" placeholder="search agents and threads"><a class="a-new">+ new</a></label>
+		<div class="a-list">
+			<div class="a-label">agents</div>
+			<a class="a-agent cur"><span class="dot live"></span><span class="n">gaidin</span><span class="t"><span class="w">1 waiting</span></span><span class="p acc">working…</span></a>
+			<ol class="a-tree">
+				<li><a><span class="g">├</span><span class="x">home</span><span class="t">2m</span></a></li>
+				<li><a class="cur"><span class="g">├</span><span class="x">think-2 backups</span><span class="t">now</span></a></li>
+				<li><a><span class="g">├</span><span class="x ok">morning briefing</span><span class="t">7h</span></a></li>
+				<li><a><span class="g">├</span><span class="x">renew the tailnet cert</span><span class="t">1d</span></a></li>
+				<li><a><span class="g">├</span><span class="x warn">verin: NAS spin-down</span><span class="t">2d</span></a></li>
+				<li><a><span class="g">└</span><span class="x more">show all 23</span></a></li>
+			</ol>
+			<a class="a-agent"><span class="dot"></span><span class="n">verin</span><span class="t">1h</span><span class="p">The three papers on bonding agree on one point…</span></a>
+			<a class="a-agent"><span class="dot"></span><span class="n">elayne</span><span class="t">3d</span><span class="p">You: book the train for the 14th</span></a>
+		</div>
+		<div class="a-foot">
+			<div class="a-label">gaidin</div>
+			<div class="a-keys">
+				<a><kbd>gs</kbd>schedule<span class="c">3</span></a>
+				<a><kbd>gm</kbd>memory</a>
+				<a><kbd>gk</kbd>skills</a>
+				<a><kbd>g,</kbd>settings</a>
+			</div>
+			<div class="a-label">everyone</div>
+			<div class="a-keys">
+				<a><kbd>ga</kbd>agents</a>
+				<a><kbd>gc</kbd>connectors<span class="c warn">1</span></a>
+				<a><kbd>gr</kbd>rules</a>
+				<a><kbd>gb</kbd>browser</a>
+				<a><kbd>gl</kbd>activity</a>
+			</div>
+		</div>
+	</nav>
+	<main class="a-main">
+		<header class="a-head">
+			<button class="a-menu" type="button" aria-label="Conversations">≡</button>
+			<span class="path">gaidin / <b>think-2 backups</b></span><span class="tag">app</span>
+			<span class="r">started 09:12 · 14 messages</span>
+		</header>
+		<div class="a-scroll"><div class="a-log">
+			<div class="a-row you"><span class="t">09:12</span><div class="b">How did last night's backups go on think-2?</div></div>
+			<div class="a-row who"><span class="t"></span><div class="b">gaidin</div></div>
+			<div class="a-row"><span class="t">09:12</span><div class="a-tool"><span class="c">▸</span><span class="n">ssh</span><span class="x">think-2 'tail -40 /var/log/pve/tasks/active'</span><span class="ok">✓ 1.2s</span></div></div>
+			<div class="a-row"><span class="t">09:12</span><div class="a-tool"><span class="c">▸</span><span class="n">fetch_url</span><span class="x">http://nas.lan:5000/api/status</span><span class="ok">✓ 0.4s</span></div></div>
+			<div class="a-row"><span class="t">09:13</span><div data-slot="answer"></div></div>
+			<div class="a-row you"><span class="t">09:15</span><div class="b">Wake the NAS and run vm-107 again.</div></div>
+			<div class="a-row who"><span class="t"></span><div class="b">gaidin</div></div>
+			<div class="a-row"><span class="t">09:15</span><div class="a-tool"><span class="c">▸</span><span class="n">wake_on_lan</span><span class="x">nas</span><span class="ok">✓ 0.1s</span></div></div>
+			<div class="a-row"><span class="t">09:16</span><div class="a-tool"><span class="c">▸</span><span class="n">ssh</span><span class="x">think-2 'vzdump 107 --storage nas'</span><span class="warn">waiting on you</span></div></div>
+		</div></div>
+		<div class="a-dock">
+			<div class="q"><b>approve?</b><span class="dim">gaidin · ssh</span><span class="what">Run <code>vzdump 107 --storage nas</code> on think-2</span></div>
+			<div class="acts">
+				<button type="button" class="y"><kbd>y</kbd> allow once</button>
+				<button type="button"><kbd>a</kbd> always</button>
+				<button type="button" class="n"><kbd>n</kbd> deny</button>
+				<button type="button"><kbd>r</kbd> make a rule</button>
+				<span class="exp">waits until 09:45</span>
+			</div>
+		</div>
+		<form class="a-prompt" onsubmit="return false">
+			<span class="caret">›</span>
+			<textarea rows="1" placeholder="Message gaidin, or / for commands"></textarea>
+			<button type="submit">send ↵</button>
+		</form>
+	</main>
+	<footer class="a-bar">
+		<span class="s">gaidin</span>
+		<span class="win">0:home</span>
+		<span class="win cur">1:think-2 backups</span>
+		<span class="win">2:morning briefing</span>
+		<span class="r">
+			<span class="warn"><span class="live"></span>waiting on you</span>
+			<span class="hide">claude-opus-5-5</span>
+			<span class="hide">thinking medium</span>
+			<span class="hide">14 tools</span>
+			<span>$1.84 / $10</span>
+		</span>
+	</footer>
+</section>
+
+<!-- B · Palette -->
+<section class="dir B" id="b" aria-label="B · Palette">
+	<header class="b-top">
+		<button class="b-crumb" type="button" data-open-palette><span class="c-av" style="width:20px;height:20px;border-radius:5px;font-size:10px;background:var(--color-accent-wash);color:var(--color-accent)">G</span>gaidin<span class="v">▾</span></button>
+		<span class="b-sep">/</span>
+		<button class="b-crumb thread" type="button" data-open-palette>think-2 backups<span class="v">▾</span></button>
+		<span class="b-tag">app</span>
+		<span class="b-spacer"></span>
+		<nav class="b-others" aria-label="Other agents">
+			<a class="waits"><span class="name">verin</span><span class="n">1</span></a>
+			<a><span class="name">elayne</span></a>
+		</nav>
+		<button class="b-go" type="button" data-open-palette><span>Go to…</span><kbd>Ctrl K</kbd></button>
+	</header>
+	<div class="b-scroll"><div class="b-log">
+		<div class="b-you"><span class="t">you · 09:12</span>How did last night's backups go on think-2?</div>
+		<ol class="b-tools">
+			<li><span class="n">ssh</span><span class="x">think-2 'tail -40 /var/log/pve/tasks/active'</span><span class="ok">✓ 1.2s</span></li>
+			<li><span class="n">fetch_url</span><span class="x">http://nas.lan:5000/api/status</span><span class="ok">✓ 0.4s</span></li>
+		</ol>
+		<div data-slot="answer"></div>
+		<div class="b-you"><span class="t">you · 09:15</span>Wake the NAS and run vm-107 again.</div>
+		<ol class="b-tools">
+			<li><span class="n">wake_on_lan</span><span class="x">nas</span><span class="ok">✓ 0.1s</span></li>
+			<li><span class="n">ssh</span><span class="x">think-2 'vzdump 107 --storage nas'</span><span class="warn">waiting on you</span></li>
+		</ol>
+	</div></div>
+	<div class="b-dock">
+		<div class="b-card">
+			<span class="k">gaidin asks</span>
+			<span class="what">Run <code>vzdump 107 --storage nas</code> on think-2</span>
+			<button type="button" class="y">Allow once <kbd>Alt Y</kbd></button>
+			<button type="button">Always <kbd>Alt A</kbd></button>
+			<button type="button" class="n">Deny <kbd>Alt N</kbd></button>
+		</div>
+	</div>
+	<form class="b-prompt" onsubmit="return false">
+		<div class="b-field"><textarea rows="1" placeholder="Message gaidin"></textarea></div>
+		<div class="b-status">
+			<span class="st">waiting on you</span>
+			<button type="button">claude-opus-5-5</button>
+			<button type="button" class="hide">thinking medium</button>
+			<button type="button" class="hide">14 tools</button>
+			<span class="hide">$1.84 of $10 today</span>
+			<span class="r hide">/ commands</span>
+			<button type="submit" class="send">↵ send</button>
+		</div>
+	</form>
+	<div class="b-scrim" data-close-palette></div>
+	<div class="b-pal" role="dialog" aria-label="Go to">
+		<div class="in"><span class="dim mono">›</span><input placeholder="Go to an agent, a thread, a page, or run a command"><kbd>Esc</kbd></div>
+		<div class="groups">
+			<div class="g">gaidin's threads</div>
+			<a class="it on"><span class="ic">#</span><span class="l">think-2 backups<span class="dim">app</span></span><span class="h">now</span></a>
+			<a class="it"><span class="ic">#</span><span class="l">home</span><span class="h">2m</span></a>
+			<a class="it"><span class="ic">#</span><span class="l">morning briefing<span class="dim">job run</span></span><span class="h">7h</span></a>
+			<a class="it"><span class="ic">#</span><span class="l">renew the tailnet cert<span class="dim">Slack</span></span><span class="h">1d</span></a>
+			<div class="g">Agents</div>
+			<a class="it"><span class="ic">@</span><span class="l">verin<span class="dim">research</span></span><span class="h warn">1 waiting</span></a>
+			<a class="it"><span class="ic">@</span><span class="l">elayne<span class="dim">errands</span></span><span class="h">3d</span></a>
+			<div class="two">
+				<div>
+					<div class="g">gaidin's pages</div>
+					<a class="it"><span class="ic">→</span><span class="l">Schedule</span><span class="h">3</span></a>
+					<a class="it"><span class="ic">→</span><span class="l">Memory</span><span class="h"></span></a>
+					<a class="it"><span class="ic">→</span><span class="l">Skills</span><span class="h"></span></a>
+					<a class="it"><span class="ic">→</span><span class="l">Settings</span><span class="h"></span></a>
+				</div>
+				<div>
+					<div class="g">Everyone</div>
+					<a class="it"><span class="ic">→</span><span class="l">Agents</span><span class="h"></span></a>
+					<a class="it"><span class="ic">→</span><span class="l">Connectors</span><span class="h warn">1</span></a>
+					<a class="it"><span class="ic">→</span><span class="l">Rules</span><span class="h"></span></a>
+					<a class="it"><span class="ic">→</span><span class="l">Activity</span><span class="h"></span></a>
+				</div>
+			</div>
+			<div class="g">Commands</div>
+			<a class="it"><span class="ic">/</span><span class="l">model<span class="dim">switch the model</span></span><span class="h"></span></a>
+			<a class="it"><span class="ic">/</span><span class="l">thinking<span class="dim">change the thinking level</span></span><span class="h"></span></a>
+			<a class="it"><span class="ic">+</span><span class="l">New thread with gaidin</span><span class="h">Ctrl N</span></a>
+		</div>
+	</div>
+</section>
+
+<!-- C · Gutter -->
+<section class="dir C" id="c" aria-label="C · Gutter">
+	<nav class="c-rail" aria-label="Agents">
+		<a class="cur" data-pane="agent"><span class="c-av">G</span><span class="busy"></span>gaidin</a>
+		<a data-pane="agent"><span class="c-av">V</span><span class="badge">1</span>verin</a>
+		<a data-pane="agent"><span class="c-av">E</span>elayne</a>
+		<span class="grow"></span>
+		<a class="sys" data-pane="sys"><span class="c-av">⌘</span>system</a>
+	</nav>
+	<nav class="c-col" aria-label="gaidin">
+		<div class="pane on" data-pane-body="agent">
+			<div class="c-who"><h2>gaidin</h2><span class="job">homelab</span><a class="new">+ thread</a></div>
+			<div class="c-tabs">
+				<a>Schedule <span class="n">3</span></a>
+				<a>Memory</a>
+				<a>Skills</a>
+				<a>Settings</a>
+			</div>
+			<div class="c-list">
+				<a class="c-th home"><span class="x">Home</span><span class="t">2m</span></a>
+				<div class="c-day">today</div>
+				<a class="c-th cur"><span class="x">think-2 backups</span><span class="t">now</span><span class="o">app</span></a>
+				<a class="c-th"><span class="x">Morning briefing</span><span class="t">07:30</span><span class="o job">job run</span></a>
+				<div class="c-day">this week</div>
+				<a class="c-th"><span class="x">Renew the tailnet cert</span><span class="t">Tue</span><span class="o">Slack</span></a>
+				<a class="c-th"><span class="x">NAS spin-down</span><span class="t">Mon</span><span class="o agent">from verin</span></a>
+				<a class="c-th"><span class="x">Proxmox 9 upgrade notes</span><span class="t">Mon</span><span class="o">app</span></a>
+				<div class="c-day">older</div>
+				<a class="c-th"><span class="x">Pi-hole lists</span><span class="t">Sep 30</span><span class="o">app</span></a>
+			</div>
+		</div>
+		<div class="pane" data-pane-body="sys">
+			<div class="c-who"><h2>System</h2><span class="job">every agent</span></div>
+			<div class="c-list c-sys">
+				<a>Agents<span class="h">3</span></a>
+				<a>Connectors<span class="h warn">1 to sign in</span></a>
+				<a>Rules<span class="h">12</span></a>
+				<a>Browser<span class="h">2 profiles</span></a>
+				<a>Activity</a>
+			</div>
+		</div>
+	</nav>
+	<main class="c-main">
+		<header class="c-head">
+			<button class="c-menu" type="button" aria-label="Conversations">≡</button>
+			<h1>think-2 backups</h1><span class="o">app</span>
+			<span class="r">gaidin · claude-opus-5-5</span>
+		</header>
+		<div class="c-scroll"><div class="c-log">
+			<div class="c-line you"><span class="t">09:12</span><span class="w">you</span><div class="b">How did last night's backups go on think-2?</div></div>
+			<div class="c-line tool gap"><span class="t">09:12</span><span class="w">ssh</span><div class="b"><span class="x">think-2 'tail -40 /var/log/pve/tasks/active'</span><span class="ok">✓ 1.2s</span></div></div>
+			<div class="c-line tool"><span class="t"></span><span class="w">fetch_url</span><div class="b"><span class="x">http://nas.lan:5000/api/status</span><span class="ok">✓ 0.4s</span></div></div>
+			<div class="c-line ag gap"><span class="t">09:13</span><span class="w">gaidin</span><div class="b" data-slot="answer"></div></div>
+			<div class="c-line you gap"><span class="t">09:15</span><span class="w">you</span><div class="b">Wake the NAS and run vm-107 again.</div></div>
+			<div class="c-line tool gap"><span class="t">09:15</span><span class="w">wake_on_lan</span><div class="b"><span class="x">nas</span><span class="ok">✓ 0.1s</span></div></div>
+			<div class="c-line ask"><span class="t">09:16</span><span class="w">ssh</span><div class="b">
+				Run <code class="mono">vzdump 107 --storage nas</code> on think-2?
+				<div class="acts">
+					<button type="button" class="y">Allow once<kbd>Alt Y</kbd></button>
+					<button type="button">Always<kbd>Alt A</kbd></button>
+					<button type="button" class="n">Deny<kbd>Alt N</kbd></button>
+					<span class="exp">waits until 09:45</span>
+				</div>
+			</div></div>
+		</div></div>
+		<form class="c-prompt" onsubmit="return false">
+			<div class="c-line"><span class="t"></span><span class="w">you ›</span><div class="b"><textarea rows="1" placeholder="Message gaidin, or / for commands"></textarea></div></div>
+			<div class="c-status"><span></span><span></span><div class="s"><span class="warn">● waiting on you</span><span class="hide">thinking medium</span><span class="hide">14 tools</span><span class="hide">$1.84 / $10</span><button type="submit" class="send">↵ send</button></div></div>
+		</form>
+	</main>
+</section>
+
+<!-- D · Queue -->
+<section class="dir D" id="d" aria-label="D · Queue">
+	<header class="d-menu">
+		<span class="ag"><span class="av">G</span>gaidin<span class="v">▾</span></span>
+		<a class="cur">Conversations</a>
+		<a>Schedule <span class="n">3</span></a>
+		<a>Memory</a>
+		<a>Skills</a>
+		<a>Settings</a>
+		<span class="grow"></span>
+		<a class="side">Agents</a>
+		<a>Connectors <span class="n warn">1</span></a>
+		<a>Rules</a>
+		<a>Browser</a>
+		<a>Activity</a>
+	</header>
+	<nav class="d-threads" aria-label="Threads">
+		<label class="d-search"><span>/</span><input type="search" placeholder="Search threads"><a class="new">+ new</a></label>
+		<div class="d-list">
+			<div class="d-sec"><span>gaidin</span><span>23</span></div>
+			<a class="d-th"><span class="m"></span><span class="x">Home</span><span class="t">2m</span></a>
+			<a class="d-th cur"><span class="m live"></span><span class="x">think-2 backups</span><span class="t">now</span></a>
+			<a class="d-th"><span class="m job"></span><span class="x">Morning briefing</span><span class="t">07:30</span></a>
+			<a class="d-th"><span class="m slack"></span><span class="x">Renew the tailnet cert</span><span class="t">Tue</span></a>
+			<a class="d-th"><span class="m agent"></span><span class="x">NAS spin-down</span><span class="t">Mon</span></a>
+			<a class="d-th"><span class="m"></span><span class="x">Proxmox 9 upgrade notes</span><span class="t">Mon</span></a>
+			<a class="d-th"><span class="m"></span><span class="x">Pi-hole lists</span><span class="t">Sep 30</span></a>
+			<div class="d-sec"><span>other agents</span></div>
+			<a class="d-th"><span class="m"></span><span class="x">verin</span><span class="t warn">1 waiting</span></a>
+			<a class="d-th"><span class="m"></span><span class="x">elayne</span><span class="t">3d</span></a>
+		</div>
+		<div class="d-key"><span><i></i>app</span><span><i class="slack"></i>Slack</span><span><i class="job"></i>job run</span><span><i class="agent"></i>from an agent</span></div>
+	</nav>
+	<main class="d-main">
+		<header class="d-head"><h1>think-2 backups</h1><span class="o">app · started 09:12</span></header>
+		<div class="d-scroll"><div class="d-log">
+			<div class="d-you">How did last night's backups go on think-2?</div>
+			<div class="d-sp">gaidin <span class="t">09:13</span></div>
+			<ol class="d-tools">
+				<li><span class="n">ssh</span><span class="x">think-2 'tail -40 /var/log/pve/tasks/active'</span><span class="ok">✓ 1.2s</span></li>
+				<li><span class="n">fetch_url</span><span class="x">http://nas.lan:5000/api/status</span><span class="ok">✓ 0.4s</span></li>
+			</ol>
+			<div data-slot="answer"></div>
+			<div class="d-you">Wake the NAS and run vm-107 again.</div>
+			<div class="d-sp">gaidin <span class="t">09:16</span></div>
+			<ol class="d-tools">
+				<li><span class="n">wake_on_lan</span><span class="x">nas</span><span class="ok">✓ 0.1s</span></li>
+				<li class="sel"><span class="n">ssh</span><span class="x">think-2 'vzdump 107 --storage nas'</span><span class="warn">waiting</span></li>
+			</ol>
+		</div></div>
+		<div class="d-qstrip"><span class="live"></span>2 waiting on you<span class="t">see ›</span></div>
+		<form class="d-prompt" onsubmit="return false">
+			<div class="in"><textarea rows="1" placeholder="Message gaidin, or / for commands"></textarea></div>
+			<div class="bar">
+				<button type="button" class="plain" aria-label="Attach files">attach</button>
+				<span class="grow"></span>
+				<span class="hide">Shift ↵ new line</span>
+				<button type="submit" class="send">Send<kbd>↵</kbd></button>
+			</div>
+		</form>
+	</main>
+	<aside class="d-queue" aria-label="Waiting on you">
+		<div class="d-qh"><h2>Waiting on you</h2><span class="n">2</span></div>
+		<div class="d-q first">
+			<div class="h"><b>gaidin</b><code>ssh</code><span class="t">until 09:45</span></div>
+			<p>Run <code>vzdump 107 --storage nas</code> on think-2</p>
+			<div class="acts"><button type="button" class="y">Allow once<kbd>Alt Y</kbd></button><button type="button">Always<kbd>Alt A</kbd></button><button type="button" class="n">Deny<kbd>Alt N</kbd></button></div>
+		</div>
+		<div class="d-q">
+			<div class="h"><b>verin</b>question<span class="t">until 11:00</span></div>
+			<p>Keep the old branch?</p>
+			<div class="acts"><button type="button">Yes</button><button type="button">No</button></div>
+		</div>
+		<div class="d-props">
+			<h2>This conversation</h2>
+			<dl>
+				<dt>status</dt><dd class="warn">waiting on you</dd>
+				<dt>model</dt><dd>claude-opus-5-5<a>change</a></dd>
+				<dt>thinking</dt><dd>medium<a>change</a></dd>
+				<dt>tools</dt><dd>14 on<a>change</a></dd>
+				<dt>instructions</dt><dd>2 standing<a>show</a></dd>
+				<dt>spend today</dt><dd>$1.84 of $10</dd>
+			</dl>
+			<div class="d-meter"><span></span></div>
+		</div>
+	</aside>
+</section>
+
+<div id="phone"><iframe title="Phone width" loading="lazy"></iframe></div>
+</div>
+
+<script>
+	const params = new URLSearchParams(location.search);
+	if (params.has("bare")) document.body.classList.add("bare");
+	for (const slot of document.querySelectorAll("[data-slot=answer]")) slot.append(document.getElementById("answer").content.cloneNode(true));
+
+	let dir = params.get("d") ?? (location.hash.slice(1) || "a");
+	let view = "desk";
+	const frame = document.querySelector("#phone iframe");
+	function show() {
+		for (const section of document.querySelectorAll(".dir")) section.classList.toggle("on", section.id === dir);
+		for (const button of document.querySelectorAll("[data-dir]")) button.setAttribute("aria-pressed", String(button.dataset.dir === dir));
+		for (const button of document.querySelectorAll("[data-view]")) button.setAttribute("aria-pressed", String(button.dataset.view === view));
+		document.body.classList.toggle("phone", view === "phone");
+		if (view === "phone") frame.src = `${location.pathname}?bare&d=${dir}`;
+		if (!params.has("bare")) history.replaceState(null, "", `#${dir}`);
+	}
+	document.querySelectorAll("[data-dir]").forEach((b) => b.addEventListener("click", () => { dir = b.dataset.dir; show(); }));
+	document.querySelectorAll("[data-view]").forEach((b) => b.addEventListener("click", () => { view = b.dataset.view; show(); }));
+	show();
+
+	// B: the menu on Ctrl K, closed with Esc or a click outside it.
+	const B = document.getElementById("b");
+	const palette = (open) => { B.classList.toggle("palette", open); if (open) B.querySelector(".b-pal input").focus(); };
+	document.querySelectorAll("[data-open-palette]").forEach((b) => b.addEventListener("click", () => palette(true)));
+	document.querySelector("[data-close-palette]").addEventListener("click", () => palette(false));
+	addEventListener("keydown", (event) => {
+		if (dir === "b" && (event.ctrlKey || event.metaKey) && event.key === "k") { event.preventDefault(); palette(!B.classList.contains("palette")); }
+		if (event.key === "Escape") palette(false);
+	});
+	if (params.has("palette")) palette(true);
+
+	// C: the rail switches the column between the agent and the system pages.
+	document.querySelectorAll(".c-rail a").forEach((a) => a.addEventListener("click", () => {
+		document.querySelectorAll(".c-rail a").forEach((x) => x.classList.toggle("cur", x === a));
+		document.querySelectorAll("[data-pane-body]").forEach((p) => p.classList.toggle("on", p.dataset.paneBody === a.dataset.pane));
+	}));
+</script>
+</body>
+</html>
